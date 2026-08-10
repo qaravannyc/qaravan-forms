@@ -152,6 +152,20 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--q-sky); outline-off
 #thanks .mark{font-weight:900; font-size:44px; letter-spacing:-.03em; line-height:1; margin-bottom:20px}
 #thanks h1{margin-top:0}
 
+
+/* photos */
+.ph-add{border:2px dashed var(--q-ink); background:var(--q-white); border-radius:var(--radius-md); width:100%; padding:15px; font:inherit; font-size:16px; font-weight:700; color:var(--q-ink); cursor:pointer; transition:transform .15s ease, background .15s ease}
+.ph-add:active{transform:scale(.99)}
+.ph-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px}
+.ph-item{position:relative; border-radius:var(--radius-md); overflow:hidden; background:var(--q-line); aspect-ratio:1}
+.ph-item img,.ph-item video{width:100%; height:100%; object-fit:cover; display:block}
+.ph-bar{position:absolute; left:0; right:0; bottom:0; height:5px; background:rgba(255,255,255,.55)}
+.ph-bar i{display:block; height:100%; width:0; background:var(--q-sky); transition:width .2s}
+.ph-item.done .ph-bar{display:none}
+.ph-item.fail .ph-bar{display:none}
+.ph-retry{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; border:0; cursor:pointer; font:inherit; font-size:13px; font-weight:700; color:var(--q-white); background:rgba(255,51,51,.72)}
+.ph-x{position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:50%; border:0; background:rgba(0,0,0,.55); color:#fff; font-weight:900; font-size:14px; cursor:pointer; line-height:1; display:flex; align-items:center; justify-content:center}
+.ph-badge{position:absolute; left:6px; top:6px; background:rgba(0,0,0,.55); color:#fff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:99px}
 .hp{position:absolute; left:-9999px; top:-9999px}
 footer{margin-top:56px; color:var(--q-gray); font-size:13px}
 </style>
@@ -207,23 +221,34 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
       </fieldset>
 
       <fieldset>
+        <legend><span data-i18n="q_whycome"></span><span class="hint" data-i18n="multi"></span></legend>
+        <div class="chips" id="chipsWhy"></div>
+        <div class="other-input" id="whyOtherWrap">
+          <input type="text" id="whyOther" maxlength="200">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span data-i18n="q_photos"></span><span class="hint" data-i18n="photos_hint"></span></legend>
+        <input type="file" id="phInput" accept="image/*,video/*" multiple style="display:none">
+        <button type="button" class="ph-add" id="phAdd"></button>
+        <div class="ph-grid" id="phGrid"></div>
+        <p class="err" id="phErr" role="alert" style="margin-top:14px"></p>
+        <div id="phConsentWrap" style="display:none">
+          <div class="opts" id="phConsentOpts" style="margin-top:18px"></div>
+          <div id="phCreditWrap" style="margin-top:4px">
+            <p class="hint" data-i18n="photos_credit"></p>
+            <input type="text" id="phCredit" maxlength="120">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend data-i18n="q_consent"></legend>
         <div class="opts" id="consentOpts"></div>
         <div id="nameWrap">
           <p class="hint" data-i18n="name_hint"></p>
           <input type="text" id="respName" maxlength="120">
-        </div>
-        <div id="demogWrap" style="display:none">
-          <p class="hint" data-i18n="demog_hint" style="margin-top:20px"></p>
-          <p style="font-weight:700;margin:26px 0 0" data-i18n="q_stay"></p>
-          <div class="chips" id="chipsStay"></div>
-          <p style="font-weight:700;margin:26px 0 0" data-i18n="q_age"></p>
-          <div class="chips" id="chipsAge"></div>
-          <p style="font-weight:700;margin:26px 0 0" data-i18n="q_whycome"></p>
-          <div class="chips" id="chipsWhy"></div>
-          <div class="other-input" id="whyOtherWrap">
-            <input type="text" id="whyOther" maxlength="200">
-          </div>
         </div>
       </fieldset>
 
@@ -236,6 +261,16 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
           <input type="email" id="respEmail" maxlength="200" autocomplete="email" inputmode="email">
           <input type="tel" id="respPhone" maxlength="40" autocomplete="tel" inputmode="tel">
         </div>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="q_donate_t"></legend>
+        <div class="donate">
+          <p data-i18n="donate_1"></p>
+          <p data-i18n="donate_2" style="font-weight:400"></p>
+          <a href="#" target="_blank" rel="noopener" class="tdl" data-i18n="donate_btn"></a>
+        </div>
+        <div class="opts" id="donateOpts"></div>
       </fieldset>
 
       <div class="submit">
@@ -266,34 +301,38 @@ const DONATE_URL = window.__DONATE_URL__ || "https://givebutter.com/qaravan"; //
 const STRINGS = {
 ru: {
   loading: "Отзыв о событии QARAVAN",
-  multi: "Можно выбрать несколько вариантов.",
-  multi_none: "Можно выбрать несколько вариантов или ничего.",
+  multi: "Можно несколько.",
+  multi_none: "Можно несколько, можно ничего.",
   q_rating: "Как тебе в целом?",
   q_high: "Что запомнилось больше всего?",
   high: ["Люди и общение","Атмосфера","Тема и содержание","Те, кто вёл","Другое"],
   q_low: "Что было некомфортно?",
   low: ["Неудобное время","Сложно добираться","Слишком долго","Слишком коротко","Было сложно включиться","Мало информации заранее","Другое","Всё было ок"],
-  q_moment: "Расскажи про момент, который остался с тобой.",
-  moment_hint: "Пара фраз своими словами. Их прочитают те, кто готовил и вёл событие.",
+  q_moment: "Что организаторам удалось особенно хорошо — и почему для тебя это было важно?",
+  moment_hint: "Твой ответ прочитают те, кто готовил и вёл событие.",
   q_whycome: "Я пошёл / пошла на эту встречу, потому что…",
-  whycome: ["Было одиноко","Здесь мало друзей и знакомых","Интересна тема","Хотелось побыть среди своих","Хотелось говорить по-русски","Хотелось говорить по-английски","Искал(а) поддержку","Хотелось новых знакомств","Другое"],
-  q_consent: "Можем ли мы использовать твои ответы в отчётах и грантовых заявках? Так мы показываем, зачем QARAVAN существует.",
+  whycome: ["Было одиноко","Здесь мало друзей и знакомых","Интересна тема","Хотелось побыть среди своих","Хотелось говорить на русском языке","Хотелось говорить на английском языке","Искал(а) поддержку","Новые знакомства","Другое"],
+  q_photos: "Есть фото или видео с события?",
+  photos_hint: "Они попадут в альбом QARAVAN. Загрузка начинается сразу, до отправки формы.",
+  photos_add: "Выбрать фото или видео",
+  photos_consent: ["Разрешаю QARAVAN использовать их в соцсетях и материалах организации","Только для внутреннего архива, не публиковать"],
+  photos_credit: "Как тебя подписать как автора? Можно оставить пустым.",
+  photos_retry: "Ещё раз",
+  photos_err_size: "Файл больше 300 МБ. Сними покороче или сожми — и попробуй снова.",
+  photos_err_count: "Не больше 10 файлов за раз.",
+  photos_wait: "Файлы ещё загружаются — подожди пару секунд и нажми ещё раз.",
+  q_consent: "Время от времени нам в QARAVAN приходится объяснять людям со стороны, зачем существует наша организация и почему её работа важна. Можно ли использовать твои ответы в отчётах и заявках?",
   consent: ["Да, с именем","Да, но без имени","Лучше не надо"],
   name_hint: "Как тебя подписать?",
-  demog_hint: "Ещё пара вопросов для отчётов и заявок — можно пропустить.",
-  q_stay: "Как давно ты в США?",
-  stay: ["Меньше года","1–3 года","3–10 лет","Больше 10 лет","Вырос / выросла здесь"],
-  q_age: "Сколько тебе лет?",
-  age: ["18–24","25–34","35–44","45–54","55+"],
-  q_contact: "Можно тебе написать?",
-  contact_opts: ["Да, мне можно написать про этот отзыв","Я анонимно — не пишите мне"],
+  q_contact: "Контакты",
+  contact_opts: ["Можно написать мне по поводу этого отзыва","Оставлю отзыв анонимно — не пишите мне"],
   contact_hint: "Достаточно имени и почты — или телефона.",
   contact_name: "Имя",
   contact_email: "Почта",
   contact_phone: "Телефон",
   q_donate_t: "И последнее.",
-  donate_1: "Все события QARAVAN бесплатные, и мы хотим, чтобы так оставалось. <b>Ежемесячные донаты помогают планировать</b> — снимать залы, готовить программы, делать больше встреч.",
-  donate_2: "Подпишись на любую комфортную сумму: <b>даже $10 в месяц многое меняют.</b>",
+  donate_1: "Мы проводим все эти мероприятия бесплатно и хотим, чтобы так оставалось и дальше. Но нам нужно планировать работу, и мы стремимся проводить больше событий и помогать всем, кто в этом нуждается.",
+  donate_2: "Небольшие ежемесячные донаты делают эту работу легче. Если у вас есть возможность, подпишись на любую комфортную сумму: <b>даже $10 в месяц для нас очень важны.</b>",
   donate_btn: "Оформить донат",
   donate: ["Оформлю по ссылке","Вернусь к этому позже","Сейчас не могу"],
   send: "Отправить",
@@ -313,27 +352,31 @@ en: {
   high: ["The people","The atmosphere","The topic & content","The hosts","Something else"],
   q_low: "Anything uncomfortable?",
   low: ["Inconvenient time","Hard to get to","Too long","Too short","Hard to join in","Not enough info beforehand","Other","All good"],
-  q_moment: "Tell us about a moment that stayed with you.",
-  moment_hint: "A few lines in your own words. The people who ran this event will read them.",
+  q_moment: "What did the organizers do especially well — and why did it matter to you?",
+  moment_hint: "The people who prepared and ran this event will read your answer.",
   q_whycome: "I came to this event because…",
-  whycome: ["I was feeling lonely","I don't have many friends here","The topic interested me","I wanted to be around my people","I wanted to speak Russian","I wanted to speak English","I was looking for support","To meet new people","Other"],
-  q_consent: "May we use your answers in reports and grant applications? That\u2019s how we show why QARAVAN exists.",
+  whycome: ["I was feeling lonely","I don't have many friends here","The topic interested me","I wanted to be around my people","I wanted to speak Russian","I wanted to speak English","I was looking for support","New connections","Other"],
+  q_photos: "Any photos or videos from the event?",
+  photos_hint: "They go into the QARAVAN album. Uploading starts right away, before you send the form.",
+  photos_add: "Pick photos or videos",
+  photos_consent: ["QARAVAN may use them in its social media and materials","Internal archive only, please don't publish"],
+  photos_credit: "How should we credit you? You can leave this empty.",
+  photos_retry: "Retry",
+  photos_err_size: "That file is over 300 MB. Trim or compress it and try again.",
+  photos_err_count: "Up to 10 files at a time.",
+  photos_wait: "Files are still uploading — give it a few seconds and tap again.",
+  q_consent: "Every now and then we at QARAVAN have to explain to people outside the community why this organization exists and why its work matters. May we use your answers in reports and applications?",
   consent: ["Yes, with my name","Yes, anonymously","Please don't"],
   name_hint: "How should we credit you?",
-  demog_hint: "A couple more questions for reports and grants — feel free to skip.",
-  q_stay: "How long have you been in the US?",
-  stay: ["Under a year","1–3 years","3–10 years","Over 10 years","I grew up here"],
-  q_age: "How old are you?",
-  age: ["18–24","25–34","35–44","45–54","55+"],
-  q_contact: "Want us to be able to reply?",
-  contact_opts: ["You can reach out to me about this feedback","I'm staying anonymous — please don't reach out"],
+  q_contact: "Contact",
+  contact_opts: ["You can write to me about this feedback","I'm leaving this anonymously — please don't write to me"],
   contact_hint: "A name plus email — or a phone number — is enough.",
   contact_name: "Name",
   contact_email: "Email",
   contact_phone: "Phone",
   q_donate_t: "One last thing.",
-  donate_1: "Every QARAVAN event is free, and we want to keep it that way. <b>Monthly donations let us plan</b> — book venues, prepare programs, run more events.",
-  donate_2: "Pick any amount that feels right: <b>even $10 a month goes a long way.</b>",
+  donate_1: "We run all of these events for free, and we want to keep it that way. But we need to plan our work — and we want to run more events and help everyone who needs it.",
+  donate_2: "Small monthly donations make this work easier. If you can, set one up for any amount that feels right: <b>even $10 a month means a lot to us.</b>",
   donate_btn: "Set up a donation",
   donate: ["I'll set it up via the link","I'll come back to this later","Can't right now"],
   send: "Send",
@@ -351,8 +394,9 @@ const eventId = ((window.__EVENT_ID__ || "") || params.get("event") || "").repla
 let lang = params.get("lang") === "en" ? "en" : "ru";
 let rating = 0;
 let high = new Set(), low = new Set(), why = new Set();
-let stay = "", age = "";
 let consent = "", donate = "", contactOk = "";
+let photoConsent = "";
+const pTok = ((window.__P__ || "") || params.get("p") || "").replace(/[^0-9a-zA-Z.]/g, "").slice(0, 80);
 let eventName = "", eventDate = "", customQ = "";
 
 const $ = id => document.getElementById(id);
@@ -383,37 +427,6 @@ function chip(list, set, wrap, otherWrap){
   // восстановить видимость «Другое» при смене языка
   const otherIdx = list.findIndex(l => OTHER_LABELS.has(l));
   otherWrap.classList.toggle("show", set.has(otherIdx));
-}
-
-// один выбор чипами (демография)
-function chipOne(list, get, set, wrap){
-  wrap.innerHTML = "";
-  list.forEach((label, i) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.textContent = label;
-    b.setAttribute("aria-pressed", get() === i ? "true" : "false");
-    b.onclick = () => {
-      set(get() === i ? "" : i);
-      [...wrap.children].forEach((c, j) => c.setAttribute("aria-pressed", get() === j ? "true" : "false"));
-    };
-    wrap.appendChild(b);
-  });
-}
-
-// демография появляется с паузой после согласия, а не сразу
-let demogTimer;
-function revealDemog(i){
-  clearTimeout(demogTimer);
-  const w = $("demogWrap");
-  const yes = i === 0 || i === 1;
-  if (!yes) { w.style.display = "none"; return; }
-  if (w.style.display !== "none") return;
-  demogTimer = setTimeout(() => {
-    w.style.display = "";
-    w.style.opacity = "0"; w.style.transform = "translateY(8px)";
-    w.style.transition = "opacity .28s ease-out, transform .28s ease-out";
-    requestAnimationFrame(() => { w.style.opacity = "1"; w.style.transform = "none"; });
-  }, 450);
 }
 
 function radios(list, wrap, name, onPick, picked){
@@ -449,13 +462,18 @@ function render(){
   chip(T().high, high, $("chipsHigh"), $("highOtherWrap"));
   chip(T().low,  low,  $("chipsLow"),  $("lowOtherWrap"));
   chip(T().whycome, why, $("chipsWhy"), $("whyOtherWrap"));
-  chipOne(T().stay, () => stay, v => stay = v, $("chipsStay"));
-  chipOne(T().age, () => age, v => age = v, $("chipsAge"));
   radios(T().consent, $("consentOpts"), "consent",
-    i => { consent = i; $("nameWrap").classList.toggle("show", i === 0); revealDemog(i); },
+    i => { consent = i; $("nameWrap").classList.toggle("show", i === 0); },
     consent === "" ? -1 : consent);
   $("nameWrap").classList.toggle("show", consent === 0);
-  revealDemog(consent === "" ? -1 : consent);
+  radios(T().donate, $("donateOpts"), "donate",
+    i => { donate = i; },
+    donate === "" ? -1 : donate);
+  $("phAdd").textContent = T().photos_add;
+  radios(T().photos_consent, $("phConsentOpts"), "phconsent",
+    i => { photoConsent = i; },
+    photoConsent === "" ? -1 : photoConsent);
+  phSync();
   radios(T().contact_opts, $("contactOpts"), "contactok",
     i => { contactOk = i; $("contactWrap").style.display = i === 0 ? "" : "none"; },
     contactOk === "" ? -1 : contactOk);
@@ -501,6 +519,90 @@ async function loadEvent(){
   render();
 }
 
+
+// ===== фото и видео: сразу напрямую в Google Photos =====
+const PH_MAX_SIZE = 300 * 1024 * 1024, PH_MAX_COUNT = 10, PH_PARALLEL = 3;
+const photos = []; // {file, el, status: "wait"|"up"|"done"|"fail", token}
+let phAccess = null, phAccessExp = 0, phActive = 0;
+
+async function phGetAccess(){
+  if (phAccess && Date.now() < phAccessExp - 60000) return phAccess;
+  const r = await fetch("/api/photos-token", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ eventId }) });
+  if (!r.ok) throw new Error("token");
+  const d = await r.json();
+  phAccess = d.token; phAccessExp = Date.now() + (d.expiresIn || 3600) * 1000;
+  return phAccess;
+}
+
+function phPump(){
+  if (phActive >= PH_PARALLEL) return;
+  const next = photos.find(p => p.status === "wait");
+  if (!next) return;
+  phActive++;
+  phSend(next).finally(() => { phActive--; phPump(); });
+  phPump();
+}
+
+async function phSend(p){
+  p.status = "up";
+  const retry = p.el.querySelector(".ph-retry");
+  if (retry) retry.remove();
+  try {
+    const tok = await phGetAccess();
+    const text = await new Promise((ok, no) => {
+      const x = new XMLHttpRequest();
+      x.open("POST", "https://photoslibrary.googleapis.com/v1/uploads");
+      x.setRequestHeader("Authorization", "Bearer " + tok);
+      x.setRequestHeader("Content-Type", "application/octet-stream");
+      x.setRequestHeader("X-Goog-Upload-Content-Type", p.file.type || "application/octet-stream");
+      x.setRequestHeader("X-Goog-Upload-Protocol", "raw");
+      x.upload.onprogress = e => { if (e.lengthComputable) p.el.querySelector(".ph-bar i").style.width = (e.loaded / e.total * 100) + "%"; };
+      x.onload = () => (x.status === 200 && x.responseText) ? ok(x.responseText) : no(new Error("http " + x.status));
+      x.onerror = () => no(new Error("net"));
+      x.timeout = 15 * 60 * 1000;
+      x.ontimeout = () => no(new Error("timeout"));
+      x.send(p.file);
+    });
+    p.token = text.trim(); p.status = "done"; p.el.classList.add("done");
+  } catch (e) {
+    p.status = "fail"; p.el.classList.add("fail");
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "ph-retry"; b.textContent = T().photos_retry;
+    b.onclick = () => { p.el.classList.remove("fail"); p.status = "wait"; phPump(); };
+    p.el.appendChild(b);
+  }
+}
+
+function phAddFiles(files){
+  const err = $("phErr"); err.classList.remove("show");
+  for (const f of files) {
+    if (photos.filter(p => p.status !== "removed").length >= PH_MAX_COUNT) { err.textContent = T().photos_err_count; err.classList.add("show"); break; }
+    if (f.size > PH_MAX_SIZE) { err.textContent = T().photos_err_size; err.classList.add("show"); continue; }
+    const el = document.createElement("div");
+    el.className = "ph-item";
+    const url = URL.createObjectURL(f);
+    const isVideo = (f.type || "").startsWith("video/");
+    el.innerHTML = (isVideo
+      ? `<video muted playsinline preload="metadata" src="${url}"></video><span class="ph-badge">видео</span>`
+      : `<img alt="" src="${url}">`)
+      + `<div class="ph-bar"><i></i></div>`;
+    const x = document.createElement("button");
+    x.type = "button"; x.className = "ph-x"; x.textContent = "×"; x.setAttribute("aria-label", "remove");
+    const rec = { file: f, el, status: "wait", token: "" };
+    x.onclick = () => { rec.status = "removed"; el.remove(); URL.revokeObjectURL(url); phSync(); };
+    el.appendChild(x);
+    $("phGrid").appendChild(el);
+    photos.push(rec);
+  }
+  phSync();
+  phPump();
+}
+
+function phSync(){
+  const has = photos.some(p => p.status !== "removed");
+  $("phConsentWrap").style.display = has ? "" : "none";
+}
+
 // ===== отправка =====
 $("f").addEventListener("submit", async ev => {
   ev.preventDefault();
@@ -509,6 +611,10 @@ $("f").addEventListener("submit", async ev => {
     err.textContent = T().err_rating; err.classList.add("show");
     const box = $("stars").getBoundingClientRect();
     window.scrollTo({ top: window.scrollY + box.top - 120, behavior: "smooth" });
+    return;
+  }
+  if (photos.some(p => p.status === "up" || p.status === "wait")){
+    err.textContent = T().photos_wait; err.classList.add("show");
     return;
   }
   err.classList.remove("show");
@@ -527,8 +633,8 @@ $("f").addEventListener("submit", async ev => {
     discomfort: pick(low, "low", $("lowOther").value),
     moment: $("moment").value.trim(),
     why_come: pick(why, "whycome", $("whyOther").value),
-    stay: stay === "" ? "" : STRINGS.ru.stay[stay],
-    age: age === "" ? "" : STRINGS.ru.age[age],
+    stay: "",
+    age: "",
     consent: consent === "" ? "" : STRINGS.ru.consent[consent],
     name: consent === 0 ? $("respName").value.trim() : "",
     email: contactOk === 0 ? $("respEmail").value.trim() : "",
@@ -537,6 +643,12 @@ $("f").addEventListener("submit", async ev => {
     contact_ok: contactOk === "" ? "" : STRINGS.ru.contact_opts[contactOk],
     donate: donate === "" ? "" : STRINGS.ru.donate[donate],
     custom_a: customQ ? $("customA").value.trim() : "",
+    photos: photos.filter(p => p.status === "done").map(p => ({ token: p.token, mime: p.file.type || "", name: p.file.name || "" })),
+    photo_consent: photos.some(p => p.status === "done")
+      ? (photoConsent === "" ? "" : STRINGS.ru.photos_consent[photoConsent])
+      : "",
+    photo_credit: $("phCredit").value.trim(),
+    p: pTok,
     website: document.querySelector(".hp").value
   };
   try{
@@ -553,6 +665,9 @@ $("f").addEventListener("submit", async ev => {
     $("send").disabled = false;
   }
 });
+
+$("phAdd").onclick = () => $("phInput").click();
+$("phInput").onchange = e => { phAddFiles([...e.target.files]); e.target.value = ""; };
 
 render();
 loadEvent();
