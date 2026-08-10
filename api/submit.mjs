@@ -179,6 +179,34 @@ async function filePhotos(ev, photos, credit) {
   return { created, errors, albumId };
 }
 
+// ---------- Slack: every submission lands in #event-feedback ----------
+async function slackNotify(text, blocks) {
+  const tok = process.env.SLACK_BOT_TOKEN, ch = process.env.SLACK_CHANNEL_ID;
+  if (!tok || !ch) return;
+  try {
+    await fetch("https://slack.com/api/chat.postMessage", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${tok}`, "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ channel: ch, text, blocks, unfurl_links: false, unfurl_media: false }),
+    });
+  } catch (e) { console.error("slack notify failed:", e.message); }
+}
+
+const slackCtx = (ev) => [ev?.date, ev?.location, ev?.lead ? `Ведущие: ${ev.lead}` : ""].filter(Boolean).join(" — ") || "событие с календаря QARAVAN";
+const slackLinks = (ev, itemId) => [
+  ev?.partiful ? `<${ev.partiful}|Регистрация на Partiful>` : "",
+  `<https://qaravan.monday.com/boards/${FEEDBACK_BOARD}/pulses/${itemId}|Открыть отзыв на доске>`,
+].filter(Boolean).join("     ");
+
+function slackBlocks(header, ev, bodyText, itemId) {
+  return [
+    { type: "header", text: { type: "plain_text", text: header.slice(0, 150), emoji: true } },
+    { type: "context", elements: [{ type: "mrkdwn", text: slackCtx(ev).slice(0, 250) }] },
+    { type: "section", text: { type: "mrkdwn", text: bodyText.slice(0, 2900) } },
+    { type: "context", elements: [{ type: "mrkdwn", text: slackLinks(ev, itemId) }] },
+  ];
+}
+
 const split = (arr) => ({
   labels: (arr || []).filter((v) => !String(v).startsWith("Другое: ")),
   other: (arr || []).filter((v) => String(v).startsWith("Другое: ")),
@@ -215,6 +243,9 @@ export default async function handler(req, res) {
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
         { i: String(c.create_item.id), t: "Отметил(а) в форме: не был(а) на событии" });
     }
+    await slackNotify(`«Меня там не было» — ${ev.name}`, [
+      { type: "section", text: { type: "mrkdwn", text: `*«Меня там не было»* — ${ev.name}\n${slackCtx(ev)}${rKey ? "" : " — аноним"}` } },
+    ]);
     return res.end('{"ok":true}');
   }
 
@@ -251,6 +282,8 @@ export default async function handler(req, res) {
     ].filter(Boolean).join("\n");
     await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
       { i: String(d.create_item.id), t: body });
+    await slackNotify(`Отзыв ведущего — ${ev?.name || "событие"}`,
+      slackBlocks(`Отзыв ведущего — ${ev?.name || "событие"}`, ev, body, d.create_item.id));
     return res.end('{"ok":true}');
   }
 
@@ -321,6 +354,11 @@ export default async function handler(req, res) {
   ].filter(Boolean);
   await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
     { i: String(itemId), t: lines.join("\n") });
+
+  const stars = b.rating >= 1 && b.rating <= 5 ? "★".repeat(b.rating) + "☆".repeat(5 - b.rating) : "без оценки";
+  const header = `${updated ? "Обновлённый отзыв" : "Новый отзыв"} — ${ev?.name || "событие"}`;
+  await slackNotify(`${header} (${stars})`,
+    slackBlocks(`${header}`, ev, `*${stars}*\n${lines.join("\n")}`, itemId));
 
   res.end(JSON.stringify({ ok: true, updated }));
 }
