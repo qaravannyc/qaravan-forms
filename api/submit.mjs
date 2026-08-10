@@ -99,6 +99,16 @@ function respondentKey(eventId, p) {
   return want === m[2] ? `${eventId}:${m[1]}` : null;
 }
 
+// Personal token of the Sunday combined form: attendeeId.hmac16("multi:attendeeId")
+function multiAttendee(p) {
+  const secret = process.env.UNSUB_SECRET;
+  if (!secret || !p) return null;
+  const m = String(p).match(/^(\d+)\.([0-9a-f]{16})$/);
+  if (!m) return null;
+  const want = createHmac("sha256", secret).update(`multi:${m[1]}`).digest("hex").slice(0, 16);
+  return want === m[2] ? m[1] : null;
+}
+
 async function findByRespondentKey(key) {
   const d = await monday(
     `query ($b: ID!, $v: [String]!) { items_page_by_column_values(board_id: $b, limit: 1, columns: [{column_id: "${RESPONDENT_COL}", column_values: $v}]) { items { id } } }`,
@@ -247,6 +257,66 @@ export default async function handler(req, res) {
       { type: "section", text: { type: "mrkdwn", text: `*«Меня там не было»* — ${ev.name}\n${slackCtx(ev)}${rKey ? "" : " — аноним"}` } },
     ]);
     return res.end('{"ok":true}');
+  }
+
+  // Combined Sunday form: short answers about several events at once.
+  if (b.multi) {
+    const attendeeId = multiAttendee(b.p);
+    const entries = Array.isArray(b.events) ? b.events.slice(0, 10) : [];
+    const summary = [];
+    let processed = 0;
+    for (const entry of entries) {
+      const evi = await getEvent(entry.id).catch(() => null);
+      if (!evi) continue;
+      const noShow = !!entry.no_show;
+      const rating = Number(entry.rating) || 0;
+      const comment = String(entry.comment || "").trim().slice(0, 2000);
+      if (!noShow && !rating && !comment) continue; // про это событие ничего не сказали
+      processed++;
+      const rKey = attendeeId ? `${evi.id}:${attendeeId}` : null;
+      const cv = { [F.eventName]: evi.name, [F.lang]: { labels: [b.lang === "en" ? "en" : "ru"] }, [F.eventRel]: { item_ids: [Number(evi.id)] } };
+      if (rKey) cv[RESPONDENT_COL] = rKey;
+      if (!noShow && rating >= 1 && rating <= 5) cv[F.rating] = { rating };
+      if (!noShow && b.consent) cv[F.consent] = { labels: [b.consent] };
+      if (!noShow && b.name) cv[F.quoteName] = String(b.name).slice(0, 120);
+      const who = b.name || b.contact_name || "аноним";
+      const itemName = noShow ? `НЕ БЫЛ(А) — ${evi.name}${attendeeId ? "" : " — аноним"}` : `${evi.name} — ${who}`;
+      const existing = rKey ? await findByRespondentKey(rKey) : null;
+      let itemId;
+      if (existing) {
+        await monday(
+          `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v,create_labels_if_missing:true){id} }`,
+          { b: FEEDBACK_BOARD, i: String(existing), v: JSON.stringify(cv) });
+        itemId = existing;
+      } else {
+        const d = await monday(
+          `mutation ($b: ID!, $n: String!, $v: JSON!) { create_item(board_id:$b,item_name:$n,column_values:$v,create_labels_if_missing:true){id} }`,
+          { b: FEEDBACK_BOARD, n: itemName, v: JSON.stringify(cv) });
+        itemId = d.create_item.id;
+      }
+      const lines = noShow
+        ? ["Отметил(а) в общей форме: не был(а) на событии"]
+        : [
+            existing ? "ОБНОВЛЁННЫЙ ОТВЕТ (общая форма недели)" : "Ответ из общей формы недели",
+            `Оценка: ${rating || "—"}`,
+            `Комментарий: ${comment || "—"}`,
+            `Согласие на цитаты: ${b.consent || "—"}${b.name ? ` (подпись: ${b.name})` : ""}`,
+            `Связь: ${b.contact_ok || "—"}${b.contact_name ? ` | Имя: ${b.contact_name}` : ""}${b.email ? ` | Почта: ${b.email}` : ""}${b.phone ? ` | Телефон: ${b.phone}` : ""}`,
+            `Язык формы: ${b.lang || "ru"}`,
+          ];
+      await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
+        { i: String(itemId), t: lines.filter(Boolean).join("\n") });
+      const stars = noShow ? "не был(а)" : (rating ? "★".repeat(rating) + "☆".repeat(5 - rating) : "без оценки");
+      summary.push(`*${evi.name}* — ${stars}${comment ? `\n${comment}` : ""}`);
+    }
+    if (summary.length) {
+      const who = b.name || b.contact_name || "аноним";
+      await slackNotify(`Новый отзыв (общая форма, ${processed} соб.) — ${who}`, [
+        { type: "header", text: { type: "plain_text", text: `Новый отзыв — общая форма недели (${processed} соб.)`.slice(0, 150), emoji: true } },
+        { type: "section", text: { type: "mrkdwn", text: summary.join("\n\n").slice(0, 2900) } },
+      ]);
+    }
+    return res.end(JSON.stringify({ ok: true, processed }));
   }
 
   if (b.isLead) {

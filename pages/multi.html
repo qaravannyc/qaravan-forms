@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Отзыв — QARAVAN</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFFDF5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --q-red:#FF3333; --q-orange:#FF9933; --q-sky:#0099CC; --q-purple:#7668AA; --q-green:#66CC66;
+  --q-ink:#333333; --q-gray:#6E6E6E; --q-line:#ECE8DE; --q-paper:#FFFDF5; --q-white:#FFFFFF;
+  --q-red-tint:#FFE4E4; --q-orange-tint:#FFEDD9; --q-sky-tint:#DDF1F8;
+  --font-brand:'Montserrat','Helvetica Neue',Arial,sans-serif;
+  --radius-md:12px; --radius-lg:16px; --radius-pill:999px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--q-paper); color:var(--q-ink); font-family:var(--font-brand); font-size:17px; line-height:1.55; -webkit-font-smoothing:antialiased}
+a{color:var(--q-sky); font-weight:700}
+.wrap{max-width:560px; margin:0 auto; padding:20px 20px 64px}
+.top{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:4px 0 32px}
+.wordmark{font-weight:900; font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap}
+.lang{display:flex; border:2px solid var(--q-ink); border-radius:var(--radius-pill); overflow:hidden; background:var(--q-white)}
+.lang button{border:0; background:transparent; padding:8px 15px; font:inherit; font-size:13px; font-weight:700; color:var(--q-ink); cursor:pointer; line-height:1.2}
+.lang button[aria-pressed="true"]{background:var(--q-ink); color:var(--q-white)}
+h1{font-weight:800; font-size:clamp(26px,7vw,36px); line-height:1.15; letter-spacing:-.02em; margin:0 0 8px; text-wrap:balance}
+.sub{color:var(--q-gray); margin:0 0 10px; text-wrap:pretty}
+.ev{border:2px solid var(--q-ink); border-radius:var(--radius-lg); background:var(--q-white); padding:20px; margin-top:22px; transition:opacity .2s ease}
+.ev.skipped{opacity:.45}
+.ev .date{font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--q-sky)}
+.ev h2{font-weight:700; font-size:19px; line-height:1.3; margin:6px 0 14px; text-wrap:pretty}
+.stars{display:flex; gap:8px}
+.stars button{width:48px; height:48px; border-radius:var(--radius-md); border:2px solid var(--q-ink); background:var(--q-white); color:#D8D3C6; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; transition:transform .15s ease, border-color .15s ease, background .15s ease, color .15s ease}
+.stars button:active{transform:scale(.95)}
+.stars button.on{color:var(--q-orange); border-color:var(--q-orange); background:var(--q-orange-tint)}
+.stars svg{width:22px; height:22px; display:block; fill:currentColor}
+textarea,input[type="text"],input[type="email"],input[type="tel"]{width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-md); background:var(--q-white); padding:12px 15px; font:inherit; font-size:16px; color:var(--q-ink); margin-top:14px}
+textarea{min-height:76px; resize:vertical; line-height:1.5}
+textarea:focus,input:focus{outline:none; border-color:var(--q-sky); box-shadow:0 0 0 3px var(--q-sky-tint)}
+input.ok{border-color:var(--q-green) !important}
+input.bad{border-color:var(--q-red) !important}
+.field-hint{display:none; color:var(--q-red); font-size:14px; margin:8px 0 0}
+.field-hint.show{display:block}
+.na-link{border:0; background:none; color:var(--q-gray); font:inherit; font-size:14px; font-weight:700; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:0; margin-top:14px; display:block}
+fieldset{border:0; padding:36px 0 0; margin:0}
+legend{float:left; width:100%; padding:0; margin:0 0 18px; font-weight:700; font-size:19px; line-height:1.35; text-wrap:pretty}
+legend+*{clear:both}
+.hint{color:var(--q-gray); font-size:14px; font-weight:400; margin:8px 0 0}
+.opts{display:grid; gap:12px}
+.opts label{display:flex; gap:12px; align-items:flex-start; border:2px solid var(--q-ink); background:var(--q-white); border-radius:var(--radius-md); padding:14px 16px; cursor:pointer; font-size:16px}
+.opts input{margin:4px 0 0; accent-color:var(--q-sky); width:19px; height:19px; flex:none}
+.opts label:has(input:checked){border-color:var(--q-sky); background:var(--q-sky-tint)}
+#nameWrap,#contactWrap{display:none}
+#nameWrap.show,#contactWrap.show{display:block}
+.donate{background:var(--q-sky-tint); border-radius:var(--radius-lg); padding:22px; margin-top:18px}
+.donate p{margin:0 0 14px; font-size:16px}
+.donate a{display:inline-block; background:var(--q-sky); border:2px solid var(--q-sky); color:var(--q-white); text-decoration:none; border-radius:var(--radius-pill); padding:13px 24px; font-weight:700; font-size:16px}
+.submit{margin-top:44px}
+.submit button{width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink); color:var(--q-white); font:inherit; font-size:18px; font-weight:700; padding:17px; cursor:pointer}
+.submit button:disabled{opacity:.4; cursor:default}
+.err{display:none; margin:0 0 14px; background:var(--q-red-tint); color:var(--q-ink); border-radius:var(--radius-md); padding:14px 18px; font-size:15px; font-weight:500}
+.err.show{display:block}
+#thanks{display:none; padding-top:6vh}
+#thanks.show{display:block}
+#thanks .mark{font-weight:900; font-size:44px; letter-spacing:-.03em; line-height:1; margin-bottom:20px}
+.hp{position:absolute; left:-9999px; top:-9999px}
+footer{margin-top:56px; color:var(--q-gray); font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="wordmark" aria-label="qaravan"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="btnRu" aria-pressed="true">РУ</button>
+      <button type="button" id="btnEn" aria-pressed="false">EN</button>
+    </div>
+  </div>
+
+  <div id="formView">
+    <h1 data-i18n="title"></h1>
+    <p class="sub" data-i18n="intro"></p>
+
+    <form id="f" novalidate="">
+      <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div id="events"></div>
+
+      <fieldset>
+        <legend data-i18n="q_consent"></legend>
+        <div class="opts" id="consentOpts"></div>
+        <div id="nameWrap">
+          <p class="hint" data-i18n="name_hint"></p>
+          <input type="text" id="respName" maxlength="120">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="q_contact"></legend>
+        <div class="opts" id="contactOpts"></div>
+        <div id="contactWrap">
+          <input type="text" id="respContactName" maxlength="120" autocomplete="name">
+          <input type="email" id="respEmail" maxlength="200" autocomplete="email" inputmode="email">
+          <input type="tel" id="respPhone" maxlength="40" autocomplete="tel" inputmode="tel">
+          <p class="field-hint" id="phoneHint" data-i18n="phone_bad"></p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="q_donate_t"></legend>
+        <div class="donate">
+          <p data-i18n="donate_1"></p>
+          <p data-i18n="donate_2" style="font-weight:400"></p>
+          <a href="#" target="_blank" rel="noopener" class="tdl" data-i18n="donate_btn"></a>
+        </div>
+      </fieldset>
+
+      <div class="submit">
+        <p class="err" id="err" role="alert"></p>
+        <button type="submit" id="send" data-i18n="send"></button>
+        <footer>qaravan.org</footer>
+      </div>
+    </form>
+  </div>
+
+  <div id="thanks">
+    <div class="mark" aria-hidden="true"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
+    <h1 data-i18n="thanks_t"></h1>
+    <p class="sub" data-i18n="thanks_p"></p>
+  </div>
+</div>
+
+<script>
+const DONATE_URL = window.__DONATE_URL__ || "https://givebutter.com/qaravan";
+const STRINGS = {
+ru: {
+  title: "Ты был(а) на нескольких наших событиях",
+  intro: "Расскажи коротко про каждое — звёзды и, если хочется, пара слов. Всё на одной странице.",
+  ev_comment_ph: "Пара слов: что понравилось, что улучшить?",
+  na: "Меня там не было",
+  na_undo: "Я всё-таки там был(а)",
+  q_consent: "Время от времени нам в QARAVAN приходится объяснять людям со стороны, зачем существует наша организация и почему её работа важна. Можно ли использовать твои ответы в отчётах и заявках?",
+  consent: ["Да, с именем","Да, но без имени","Лучше не надо"],
+  name_hint: "Как тебя подписать?",
+  q_contact: "Контакты",
+  contact_opts: ["Можно написать мне по поводу этого отзыва","Оставлю отзыв анонимно — не пишите мне"],
+  contact_name: "Имя", contact_email: "Почта", contact_phone: "Телефон",
+  err_contact: "Оставь почту или телефон — иначе мы не сможем ответить.",
+  phone_bad: "Проверь номер — похоже, в нём опечатка.",
+  q_donate_t: "И последнее.",
+  donate_1: "Мы проводим все эти мероприятия бесплатно и хотим, чтобы так оставалось и дальше. Но нам нужно планировать работу, и мы стремимся проводить больше событий и помогать всем, кто в этом нуждается.",
+  donate_2: "Небольшие ежемесячные донаты делают эту работу легче. Если у вас есть возможность, подпишись на любую комфортную сумму: <b>даже $20 в месяц для нас очень важны.</b>",
+  donate_btn: "Оформить донат",
+  send: "Отправить",
+  err_rating: "Поставь оценку хотя бы одному событию — или отметь, что тебя там не было.",
+  err_net: "Не отправилось. Проверь интернет и попробуй ещё раз.",
+  thanks_t: "Спасибо!",
+  thanks_p: "Твои слова прочитают те, кто делал эти события."
+},
+en: {
+  title: "You've been to a few of our events",
+  intro: "A quick word on each — stars, and a line or two if you feel like it. All on one page.",
+  ev_comment_ph: "A few words: what you liked, what to improve?",
+  na: "I didn't attend",
+  na_undo: "Actually, I was there",
+  q_consent: "Every now and then we at QARAVAN have to explain to people outside the community why this organization exists and why its work matters. May we use your answers in reports and applications?",
+  consent: ["Yes, with my name","Yes, anonymously","Please don't"],
+  name_hint: "How should we credit you?",
+  q_contact: "Contact",
+  contact_opts: ["You can write to me about this feedback","I'm leaving this anonymously — please don't write to me"],
+  contact_name: "Name", contact_email: "Email", contact_phone: "Phone",
+  err_contact: "Leave an email or a phone number — otherwise we can't reply.",
+  phone_bad: "Double-check the number — it looks like a typo.",
+  q_donate_t: "One last thing.",
+  donate_1: "We run all of these events for free, and we want to keep it that way. But we need to plan our work — and we want to run more events and help everyone who needs it.",
+  donate_2: "Small monthly donations make this work easier. If you can, set one up for any amount that feels right: <b>even $20 a month means a lot to us.</b>",
+  donate_btn: "Set up a donation",
+  send: "Send",
+  err_rating: "Rate at least one event — or mark that you weren't there.",
+  err_net: "Didn't go through. Check your connection and try again.",
+  thanks_t: "Thank you!",
+  thanks_p: "The people who made these events will read your words."
+}};
+
+const params = new URLSearchParams(location.search);
+const ids = ((window.__EVENTS__ || "") || params.get("e") || "").split(",").map(s => s.replace(/\D/g, "")).filter(Boolean).slice(0, 10);
+const pTok = ((window.__P__ || "") || params.get("p") || "").replace(/[^0-9a-zA-Z.]/g, "").slice(0, 80);
+let lang = params.get("lang") === "en" ? "en" : "ru";
+let consent = "", contactOk = "";
+const ev = ids.map(id => ({ id, name: "", date: "", rating: 0, na: false }));
+
+const $ = id => document.getElementById(id);
+const T = () => STRINGS[lang];
+const HTML_KEYS = new Set(["donate_1", "donate_2"]);
+const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15.1,8.3 22,9.3 17,14.1 18.2,21 12,17.8 5.8,21 7,14.1 2,9.3 8.9,8.3"/></svg>';
+
+const phoneDigits = v => v.replace(/\D/g, "");
+function phoneFormat(v){
+  const plus = v.trim().startsWith("+");
+  let d = phoneDigits(v);
+  if (!plus && d.length === 11 && d[0] === "8") return "8 (" + d.slice(1,4) + ") " + d.slice(4,7) + "-" + d.slice(7,9) + "-" + d.slice(9);
+  if (!plus && d.length === 11 && d[0] === "1") return "+1 (" + d.slice(1,4) + ") " + d.slice(4,7) + "-" + d.slice(7);
+  if (!plus && d.length === 10) return "(" + d.slice(0,3) + ") " + d.slice(3,6) + "-" + d.slice(6);
+  if (plus && d.length === 11 && d[0] === "1") return "+1 (" + d.slice(1,4) + ") " + d.slice(4,7) + "-" + d.slice(7);
+  if (plus && d.length === 11 && d[0] === "7") return "+7 (" + d.slice(1,4) + ") " + d.slice(4,7) + "-" + d.slice(7,9) + "-" + d.slice(9);
+  return (plus ? "+" : "") + d;
+}
+const phoneValid = v => { const n = phoneDigits(v).length; return n >= 10 && n <= 15; };
+const emailValid = v => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v.trim());
+
+function radios(list, wrap, name, onPick, picked){
+  wrap.innerHTML = "";
+  list.forEach((label, i) => {
+    const l = document.createElement("label");
+    const r = document.createElement("input");
+    r.type = "radio"; r.name = name; r.value = i; r.checked = picked === i;
+    r.onchange = () => onPick(i);
+    const s = document.createElement("span"); s.textContent = label;
+    l.append(r, s); wrap.appendChild(l);
+  });
+}
+
+function drawEvent(e, host){
+  host.innerHTML = "";
+  const date = document.createElement("div"); date.className = "date"; date.textContent = e.date;
+  const h = document.createElement("h2"); h.textContent = e.name || "Событие QARAVAN";
+  host.append(date, h);
+  if (!e.na) {
+    const stars = document.createElement("div"); stars.className = "stars";
+    for (let i = 1; i <= 5; i++){
+      const b = document.createElement("button");
+      b.type = "button"; b.innerHTML = STAR;
+      b.classList.toggle("on", i <= e.rating);
+      b.setAttribute("aria-label", String(i));
+      b.onclick = () => { e.rating = i; drawEvent(e, host); $("err").classList.remove("show"); };
+      stars.appendChild(b);
+    }
+    host.appendChild(stars);
+    const ta = document.createElement("textarea");
+    ta.placeholder = T().ev_comment_ph; ta.maxLength = 2000; ta.value = e.comment || "";
+    ta.oninput = () => { e.comment = ta.value; };
+    host.appendChild(ta);
+  }
+  const na = document.createElement("button");
+  na.type = "button"; na.className = "na-link";
+  na.textContent = e.na ? T().na_undo : T().na;
+  na.onclick = () => { e.na = !e.na; host.parentElement.classList.toggle("skipped", e.na); drawEvent(e, host); };
+  host.appendChild(na);
+}
+
+function render(){
+  document.documentElement.lang = lang;
+  $("btnRu").setAttribute("aria-pressed", lang === "ru");
+  $("btnEn").setAttribute("aria-pressed", lang === "en");
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const k = el.dataset.i18n;
+    if (HTML_KEYS.has(k)) { el.innerHTML = T()[k]; return; }
+    el.textContent = T()[k];
+  });
+  document.querySelectorAll(".tdl").forEach(a => a.href = DONATE_URL);
+  $("respEmail").placeholder = T().contact_email;
+  $("respPhone").placeholder = T().contact_phone;
+  $("respContactName").placeholder = T().contact_name;
+  const box = $("events"); box.innerHTML = "";
+  ev.forEach(e => {
+    const card = document.createElement("div"); card.className = "ev" + (e.na ? " skipped" : "");
+    const inner = document.createElement("div");
+    card.appendChild(inner); box.appendChild(card);
+    drawEvent(e, inner);
+  });
+  radios(T().consent, $("consentOpts"), "consent",
+    i => { consent = i; $("nameWrap").classList.toggle("show", i === 0); },
+    consent === "" ? -1 : consent);
+  $("nameWrap").classList.toggle("show", consent === 0);
+  radios(T().contact_opts, $("contactOpts"), "contactok",
+    i => { contactOk = i; $("contactWrap").classList.toggle("show", i === 0); },
+    contactOk === "" ? -1 : contactOk);
+  $("contactWrap").classList.toggle("show", contactOk === 0);
+}
+
+$("btnRu").onclick = () => { lang = "ru"; render(); };
+$("btnEn").onclick = () => { lang = "en"; render(); };
+
+const ph = $("respPhone"), em = $("respEmail"), hint = $("phoneHint");
+ph.addEventListener("input", () => { ph.value = phoneFormat(ph.value); ph.classList.remove("bad"); hint.classList.remove("show"); ph.classList.toggle("ok", phoneValid(ph.value)); });
+ph.addEventListener("blur", () => { if (!ph.value.trim()) { ph.classList.remove("ok","bad"); hint.classList.remove("show"); return; } const g = phoneValid(ph.value); ph.classList.toggle("ok", g); ph.classList.toggle("bad", !g); hint.classList.toggle("show", !g); });
+em.addEventListener("input", () => { em.classList.remove("bad"); em.classList.toggle("ok", emailValid(em.value)); });
+em.addEventListener("blur", () => { if (!em.value.trim()) { em.classList.remove("ok","bad"); return; } const g = emailValid(em.value); em.classList.toggle("ok", g); em.classList.toggle("bad", !g); });
+
+async function loadEvents(){
+  await Promise.all(ev.map(async e => {
+    try{
+      const r = await fetch(`/api/event?id=${e.id}`);
+      if (r.ok){ const d = await r.json(); e.name = d.name || ""; e.date = d.date || ""; }
+    }catch(x){}
+  }));
+  render();
+}
+
+$("f").addEventListener("submit", async x => {
+  x.preventDefault();
+  const err = $("err");
+  if (!ev.some(e => e.na || e.rating)){
+    err.textContent = T().err_rating; err.classList.add("show");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+  if (contactOk === 0 && !emailValid(em.value) && !phoneValid(ph.value)){
+    err.textContent = T().err_contact; err.classList.add("show");
+    em.classList.add("bad");
+    return;
+  }
+  err.classList.remove("show");
+  $("send").disabled = true;
+  const body = {
+    multi: 1, p: pTok, lang,
+    events: ev.map(e => ({ id: e.id, rating: e.rating || 0, comment: (e.comment || "").trim(), no_show: !!e.na })),
+    consent: consent === "" ? "" : STRINGS.ru.consent[consent],
+    name: consent === 0 ? $("respName").value.trim() : "",
+    contact_ok: contactOk === "" ? "" : STRINGS.ru.contact_opts[contactOk],
+    contact_name: contactOk === 0 ? $("respContactName").value.trim() : "",
+    email: contactOk === 0 ? em.value.trim() : "",
+    phone: contactOk === 0 ? ph.value.trim() : "",
+    website: document.querySelector(".hp").value
+  };
+  try{
+    const r = await fetch("/api/submit", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error();
+    $("formView").style.display = "none";
+    $("thanks").classList.add("show");
+    window.scrollTo({top:0});
+  }catch(e2){
+    err.textContent = T().err_net; err.classList.add("show");
+    $("send").disabled = false;
+  }
+});
+
+render();
+loadEvents();
+</script>
+</body></html>

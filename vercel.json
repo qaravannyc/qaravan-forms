@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/feedback/:id(\\d+)/lead", "destination": "/api/page?id=:id&lead=1" },
     { "source": "/feedback/:id(\\d+)", "destination": "/api/page?id=:id" },
+    { "source": "/multi", "destination": "/api/page?multi=1" },
     { "source": "/:id(\\d+)/lead", "destination": "/api/page?id=:id&lead=1" },
     { "source": "/:id(\\d+)", "destination": "/api/page?id=:id" }
   ]
