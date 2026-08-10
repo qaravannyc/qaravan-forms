@@ -76,7 +76,7 @@ export default async function handler(req, res) {
       const cv = { [RESPONDENT_COL]: key, [F_EVENT_NAME]: ev.name, [F_EVENT_REL]: { item_ids: [Number(ev.id)] } };
       const c = await monday(
         `mutation ($b: ID!, $n: String!, $v: JSON!) { create_item(board_id:$b,item_name:$n,column_values:$v,create_labels_if_missing:true){id} }`,
-        { b: FEEDBACK_BOARD, n: `НЕ БЫЛ(А) — ${ev.name}${person ? ` — ${person.name}` : ""}`, v: JSON.stringify(cv) });
+        { b: FEEDBACK_BOARD, n: `No show — ${ev.name}${person ? ` — ${person.name}` : ""}`, v: JSON.stringify(cv) });
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
         { i: String(c.create_item.id), t: "Отметил(а) по ссылке из письма: не был(а) на событии" });
     }

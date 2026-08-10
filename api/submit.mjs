@@ -249,7 +249,7 @@ export default async function handler(req, res) {
       if (rKey) cv[RESPONDENT_COL] = rKey;
       const c = await monday(
         `mutation ($b: ID!, $n: String!, $v: JSON!) { create_item(board_id:$b,item_name:$n,column_values:$v,create_labels_if_missing:true){id} }`,
-        { b: FEEDBACK_BOARD, n: `НЕ БЫЛ(А) — ${ev.name} — ${rKey ? "по личной ссылке" : "аноним"}`, v: JSON.stringify(cv) });
+        { b: FEEDBACK_BOARD, n: `No show — ${ev.name} — ${rKey ? "по личной ссылке" : "аноним"}`, v: JSON.stringify(cv) });
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
         { i: String(c.create_item.id), t: "Отметил(а) в форме: не был(а) на событии" });
     }
@@ -280,7 +280,7 @@ export default async function handler(req, res) {
       if (!noShow && b.consent) cv[F.consent] = { labels: [b.consent] };
       if (!noShow && b.name) cv[F.quoteName] = String(b.name).slice(0, 120);
       const who = b.name || b.contact_name || "аноним";
-      const itemName = noShow ? `НЕ БЫЛ(А) — ${evi.name}${attendeeId ? "" : " — аноним"}` : `${evi.name} — ${who}`;
+      const itemName = noShow ? `No show — ${evi.name}${attendeeId ? "" : " — аноним"}` : `${evi.name} — ${who}`;
       const existing = rKey ? await findByRespondentKey(rKey) : null;
       let itemId;
       if (existing) {
