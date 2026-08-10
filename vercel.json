@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/feedback/:id/lead", "destination": "/api/feedback?id=:id&lead=1" },
+    { "source": "/feedback/:id", "destination": "/api/feedback?id=:id" },
+    { "source": "/:id(\\d+)/lead", "destination": "/api/feedback?id=:id&lead=1" },
+    { "source": "/:id(\\d+)", "destination": "/api/feedback?id=:id" }
+  ]
+}
