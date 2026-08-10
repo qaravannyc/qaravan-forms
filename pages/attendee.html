@@ -301,16 +301,6 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
         </div>
       </fieldset>
 
-      <fieldset>
-        <legend data-i18n="q_donate_t"></legend>
-        <div class="donate">
-          <p data-i18n="donate_1"></p>
-          <p data-i18n="donate_2" style="font-weight:400"></p>
-          <a href="#" target="_blank" rel="noopener" class="tdl" data-i18n="donate_btn"></a>
-        </div>
-        <div class="opts" id="donateOpts"></div>
-      </fieldset>
-
       <div class="submit">
         <p class="err" id="err" role="alert"></p>
         <button type="submit" id="send" data-i18n="send"></button>
@@ -371,11 +361,9 @@ ru: {
   contact_phone: "Телефон",
   err_contact: "Оставь почту или телефон — иначе мы не сможем ответить.",
   phone_bad: "Проверь номер — похоже, в нём опечатка.",
-  q_donate_t: "И последнее.",
-  donate_1: "Мы проводим все эти мероприятия бесплатно и хотим, чтобы так оставалось и дальше. Но нам нужно планировать работу, и мы стремимся проводить больше событий и помогать всем, кто в этом нуждается.",
-  donate_2: "Небольшие ежемесячные донаты делают эту работу легче. Если у вас есть возможность, подпишись на любую комфортную сумму: <b>даже $20 в месяц для нас очень важны.</b>",
-  donate_btn: "Оформить донат",
-  donate: ["Оформлю по ссылке","Вернусь к этому позже","Сейчас не могу"],
+  donate_1: "Твой отзыв уже помогает — спасибо! Есть и второй способ: все события QARAVAN бесплатные, и такими их держат донаты сообщества.",
+  donate_2: "Подпишись на ежемесячный донат: <b>$20 в месяц помогают снимать залы и готовить новые встречи.</b> Разовый тоже очень поможет.",
+  donate_btn: "Поддержать QARAVAN",
   na_link: "Меня там не было",
   na_done_t: "Принято!",
   na_done_p: "Мы отметили, что тебя не было на этом событии. Извини, что потревожили.",
@@ -421,11 +409,9 @@ en: {
   contact_phone: "Phone",
   err_contact: "Leave an email or a phone number — otherwise we can't reply.",
   phone_bad: "Double-check the number — it looks like a typo.",
-  q_donate_t: "One last thing.",
-  donate_1: "We run all of these events for free, and we want to keep it that way. But we need to plan our work — and we want to run more events and help everyone who needs it.",
-  donate_2: "Small monthly donations make this work easier. If you can, set one up for any amount that feels right: <b>even $20 a month means a lot to us.</b>",
-  donate_btn: "Set up a donation",
-  donate: ["I'll set it up via the link","I'll come back to this later","Can't right now"],
+  donate_1: "Your feedback already helps — thank you! There's a second way: every QARAVAN event is free, and community donations keep it that way.",
+  donate_2: "Set up a monthly donation: <b>$20 a month helps us book venues and prepare new meetups.</b> A one-time gift helps a lot too.",
+  donate_btn: "Support QARAVAN",
   na_link: "I didn't attend",
   na_done_t: "Got it!",
   na_done_p: "We've noted you weren't at this event. Sorry for the trouble.",
@@ -446,7 +432,7 @@ const eventId = ((window.__EVENT_ID__ || "") || params.get("event") || "").repla
 let lang = params.get("lang") === "en" ? "en" : "ru";
 let rating = 0;
 let high = new Set(), low = new Set(), why = new Set();
-let consent = "", donate = "", contactOk = "";
+let consent = "", contactOk = "";
 const pTok = ((window.__P__ || "") || params.get("p") || "").replace(/[^0-9a-zA-Z.]/g, "").slice(0, 80);
 let eventName = "", eventDate = "", customQ = "";
 
@@ -518,9 +504,6 @@ function render(){
     i => { consent = i; $("nameWrap").classList.toggle("show", i === 0); },
     consent === "" ? -1 : consent);
   $("nameWrap").classList.toggle("show", consent === 0);
-  radios(T().donate, $("donateOpts"), "donate",
-    i => { donate = i; },
-    donate === "" ? -1 : donate);
   $("phAdd").textContent = T().photos_add;
   phSync();
   radios(T().contact_opts, $("contactOpts"), "contactok",
@@ -774,7 +757,6 @@ $("f").addEventListener("submit", async ev => {
     phone: contactOk === 0 ? $("respPhone").value.trim() : "",
     contact_name: contactOk === 0 ? $("respContactName").value.trim() : "",
     contact_ok: contactOk === "" ? "" : STRINGS.ru.contact_opts[contactOk],
-    donate: donate === "" ? "" : STRINGS.ru.donate[donate],
     custom_a: customQ ? $("customA").value.trim() : "",
     photos: photos.filter(p => p.status === "done").map(p => ({ token: p.token, mime: p.file.type || "", name: p.file.name || "" })),
     photo_credit: $("phCredit").value.trim(),
