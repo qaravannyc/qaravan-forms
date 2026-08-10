@@ -265,8 +265,8 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
         <div class="ph-grid" id="phGrid"></div>
         <p class="err" id="phErr" role="alert" style="margin-top:14px"></p>
         <div id="phConsentWrap" style="display:none">
-          <div class="opts" id="phConsentOpts" style="margin-top:18px"></div>
-          <div id="phCreditWrap" style="margin-top:4px">
+          <p class="hint" data-i18n="photos_agree" style="margin-top:16px"></p>
+          <div id="phCreditWrap" style="margin-top:6px">
             <p class="hint" data-i18n="photos_credit"></p>
             <input type="text" id="phCredit" maxlength="120">
           </div>
@@ -355,7 +355,7 @@ ru: {
   whycome: ["Было одиноко","Здесь мало друзей и знакомых","Интересна тема","Хотелось побыть среди своих","Хотелось говорить на русском языке","Хотелось говорить на английском языке","Искал(а) поддержку","Новые знакомства","Другое"],
   q_photos: "Есть фото или видео с события?",
   photos_add: "Выбрать фото или видео",
-  photos_consent: ["Разрешаю QARAVAN использовать их в соцсетях и материалах организации","Только для внутреннего архива, не публиковать"],
+  photos_agree: "Загружая файлы, ты соглашаешься, что QARAVAN может использовать их в своих материалах и соцсетях.",
   photos_credit: "Как тебя подписать как автора? Можно оставить пустым.",
   photos_retry: "Ещё раз",
   photos_err_size: "Файл больше 300 МБ. Сними покороче или сожми — и попробуй снова.",
@@ -405,7 +405,7 @@ en: {
   whycome: ["I was feeling lonely","I don't have many friends here","The topic interested me","I wanted to be around my people","I wanted to speak Russian","I wanted to speak English","I was looking for support","New connections","Other"],
   q_photos: "Any photos or videos from the event?",
   photos_add: "Pick photos or videos",
-  photos_consent: ["QARAVAN may use them in its social media and materials","Internal archive only, please don't publish"],
+  photos_agree: "By uploading, you agree that QARAVAN may use these files in its materials and social media.",
   photos_credit: "How should we credit you? You can leave this empty.",
   photos_retry: "Retry",
   photos_err_size: "That file is over 300 MB. Trim or compress it and try again.",
@@ -447,7 +447,6 @@ let lang = params.get("lang") === "en" ? "en" : "ru";
 let rating = 0;
 let high = new Set(), low = new Set(), why = new Set();
 let consent = "", donate = "", contactOk = "";
-let photoConsent = "";
 const pTok = ((window.__P__ || "") || params.get("p") || "").replace(/[^0-9a-zA-Z.]/g, "").slice(0, 80);
 let eventName = "", eventDate = "", customQ = "";
 
@@ -523,9 +522,6 @@ function render(){
     i => { donate = i; },
     donate === "" ? -1 : donate);
   $("phAdd").textContent = T().photos_add;
-  radios(T().photos_consent, $("phConsentOpts"), "phconsent",
-    i => { photoConsent = i; },
-    photoConsent === "" ? -1 : photoConsent);
   phSync();
   radios(T().contact_opts, $("contactOpts"), "contactok",
     i => { contactOk = i; $("contactWrap").style.display = i === 0 ? "" : "none"; },
@@ -781,9 +777,6 @@ $("f").addEventListener("submit", async ev => {
     donate: donate === "" ? "" : STRINGS.ru.donate[donate],
     custom_a: customQ ? $("customA").value.trim() : "",
     photos: photos.filter(p => p.status === "done").map(p => ({ token: p.token, mime: p.file.type || "", name: p.file.name || "" })),
-    photo_consent: photos.some(p => p.status === "done")
-      ? (photoConsent === "" ? "" : STRINGS.ru.photos_consent[photoConsent])
-      : "",
     photo_credit: $("phCredit").value.trim(),
     p: pTok,
     website: document.querySelector(".hp").value

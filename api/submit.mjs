@@ -54,15 +54,38 @@ async function monday(query, variables = {}) {
   return j.data;
 }
 
+const MONTHS_RU = ["января", "февраля", "марта", "апреля", "мая", "июня",
+  "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+function ruDate(text) {
+  const m = (text || "").match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2}))?/);
+  if (!m) return "";
+  const [, y, mo, d, hh, mm] = m;
+  let t = "";
+  if (hh !== undefined) {
+    const h = Number(hh);
+    t = `, ${h % 12 || 12}:${mm} ${h < 12 ? "AM" : "PM"}`;
+  }
+  return `${Number(d)} ${MONTHS_RU[Number(mo) - 1]} ${y}${t}`;
+}
+
 async function getEvent(id) {
   if (!id) return null;
   const d = await monday(
-    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["long_text_custom","${ALBUM_COL}"]) { id text } } }`,
+    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["long_text_custom","${ALBUM_COL}","date4","location","text_mm5qsspp","text_mm5b1czz","link"]) { id text } } }`,
     { ids: [String(id)] });
   const item = d.items?.[0];
   if (!item || String(item.board.id) !== EVENTS_BOARD) return null;
   const cols = Object.fromEntries(item.column_values.map((c) => [c.id, c.text || ""]));
-  return { id: item.id, name: item.name, custom: (cols.long_text_custom || "").trim(), albumId: (cols[ALBUM_COL] || "").trim() };
+  return {
+    id: item.id, name: item.name,
+    custom: (cols.long_text_custom || "").trim(),
+    albumId: (cols[ALBUM_COL] || "").trim(),
+    date: ruDate(cols.date4),
+    location: (cols.location || "").trim(),
+    ruName: (cols.text_mm5qsspp || "").trim(),
+    lead: (cols.text_mm5b1czz || "").trim(),
+    partiful: (String(cols.link || "").match(/https?:\/\/\S+/) || [""])[0],
+  };
 }
 
 
@@ -101,7 +124,7 @@ async function googleToken() {
   return j.access_token;
 }
 
-async function filePhotos(ev, photos, credit, consent) {
+async function filePhotos(ev, photos, credit) {
   const token = await googleToken();
   let albumId = ev.albumId;
   if (!albumId) {
@@ -112,12 +135,26 @@ async function filePhotos(ev, photos, credit, consent) {
     }).then((r) => r.json());
     if (!a.id) throw new Error("album create: " + JSON.stringify(a).slice(0, 200));
     albumId = a.id;
+    // Album "description": Google Photos albums have no description field, so
+    // the event info goes in as a text enrichment pinned to the top.
+    const info = [
+      ev.ruName && ev.ruName !== ev.name ? `${ev.name} / ${ev.ruName}` : ev.name,
+      ev.date, ev.location,
+      ev.lead ? `Ведущие: ${ev.lead}` : "",
+      ev.partiful,
+      "Фото и видео гостей и ведущих, загружены через форму отзыва QARAVAN. Загружая, авторы согласились на использование в материалах и соцсетях организации.",
+    ].filter(Boolean).join("\n");
+    await fetch(`https://photoslibrary.googleapis.com/v1/albums/${albumId}:addEnrichment`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ newEnrichmentItem: { textEnrichment: { text: info.slice(0, 1000) } }, albumPosition: { position: "FIRST_IN_ALBUM" } }),
+    }).catch((e) => console.error("album enrichment failed:", e.message));
     await monday(
       `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v){id} }`,
       { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({ [ALBUM_COL]: albumId }) }
     ).catch(() => {}); // filing photos matters more than caching the album id
   }
-  const description = [credit ? `Автор: ${credit}` : "", consent || ""].filter(Boolean).join(". ");
+  const description = credit ? `Автор: ${credit}` : "";
   let created = 0;
   const errors = [];
   for (let i = 0; i < photos.length; i += 50) {
@@ -193,12 +230,25 @@ export default async function handler(req, res) {
     const d = await monday(
       `mutation ($b: ID!, $n: String!, $v: JSON!) { create_item(board_id:$b,item_name:$n,column_values:$v,create_labels_if_missing:true){id} }`,
       { b: FEEDBACK_BOARD, n: `LEAD — ${ev?.name || "событие"}`, v: JSON.stringify(cv) });
+    let leadPhotoLine = null;
+    const leadMedia = Array.isArray(b.photos) ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20) : [];
+    if (ev && leadMedia.length) {
+      try {
+        const done = await filePhotos(ev, leadMedia, String(b.photo_credit || "").slice(0, 120));
+        leadPhotoLine = `Фото/видео: ${done.created} шт. в альбоме события (согласие на использование подтверждено при загрузке)` +
+          (b.photo_credit ? `, автор: ${b.photo_credit}` : "") +
+          (done.errors.length ? ` — не приняты Google: ${done.errors.length}` : "");
+      } catch (e) {
+        leadPhotoLine = `Фото/видео: загружены (${leadMedia.length} шт.), но разложить в альбом не вышло — ${e.message}`;
+      }
+    }
     const body = [
       `Сколько пришло: ${b.headcount}`, `Оценка: ${b.rating || "—"}`,
       `Комментарий: ${b.comment || "—"}`,
       `Мешало: ${(b.obstacles || []).join("; ") || "—"}`,
       `Не хватило от QARAVAN: ${(b.missing || []).join("; ") || "—"}`,
-    ].join("\n");
+      leadPhotoLine,
+    ].filter(Boolean).join("\n");
     await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
       { i: String(d.create_item.id), t: body });
     return res.end('{"ok":true}');
@@ -244,9 +294,8 @@ export default async function handler(req, res) {
   const media = Array.isArray(b.photos) ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20) : [];
   if (ev && media.length) {
     try {
-      const done = await filePhotos(ev, media, String(b.photo_credit || "").slice(0, 120), String(b.photo_consent || "").slice(0, 200));
-      photoLine = `Фото/видео: ${done.created} шт. в альбоме события` +
-        (b.photo_consent ? ` (${b.photo_consent})` : "") +
+      const done = await filePhotos(ev, media, String(b.photo_credit || "").slice(0, 120));
+      photoLine = `Фото/видео: ${done.created} шт. в альбоме события (согласие на использование подтверждено при загрузке)` +
         (b.photo_credit ? `, автор: ${b.photo_credit}` : "") +
         (done.errors.length ? ` — не приняты Google: ${done.errors.length}` : "");
     } catch (e) {

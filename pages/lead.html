@@ -161,6 +161,19 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--q-sky); outline-off
   transition:transform .15s ease, background .15s ease, opacity .15s ease}
 .stepper button:active{transform:scale(.95)}
 .stepper button:disabled{opacity:.35; cursor:default; transform:none}
+/* photos */
+.ph-add{border:2px dashed var(--q-ink); background:var(--q-white); border-radius:var(--radius-md); width:100%; padding:15px; font:inherit; font-size:16px; font-weight:700; color:var(--q-ink); cursor:pointer; transition:transform .15s ease, background .15s ease}
+.ph-add:active{transform:scale(.99)}
+.ph-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px}
+.ph-item{position:relative; border-radius:var(--radius-md); overflow:hidden; background:var(--q-line); aspect-ratio:1}
+.ph-item img,.ph-item video{width:100%; height:100%; object-fit:cover; display:block}
+.ph-bar{position:absolute; left:0; right:0; bottom:0; height:5px; background:rgba(255,255,255,.55)}
+.ph-bar i{display:block; height:100%; width:0; background:var(--q-sky); transition:width .2s}
+.ph-item.done .ph-bar{display:none}
+.ph-item.fail .ph-bar{display:none}
+.ph-retry{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; border:0; cursor:pointer; font:inherit; font-size:13px; font-weight:700; color:var(--q-white); background:rgba(255,51,51,.72)}
+.ph-x{position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:50%; border:0; background:rgba(0,0,0,.55); color:#fff; font-weight:900; font-size:14px; cursor:pointer; line-height:1; display:flex; align-items:center; justify-content:center}
+.ph-badge{position:absolute; left:6px; top:6px; background:rgba(0,0,0,.55); color:#fff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:99px}
 .hp{position:absolute; left:-9999px; top:-9999px}
 footer{margin-top:56px; color:var(--q-gray); font-size:13px}
 </style>
@@ -219,6 +232,21 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
         </div>
       </fieldset>
 
+      <fieldset>
+        <legend><span data-i18n="q_photos"></span></legend>
+        <input type="file" id="phInput" accept="image/*,video/*" multiple style="display:none">
+        <button type="button" class="ph-add" id="phAdd"></button>
+        <div class="ph-grid" id="phGrid"></div>
+        <p class="err" id="phErr" role="alert" style="margin-top:14px"></p>
+        <div id="phConsentWrap" style="display:none">
+          <p class="hint" data-i18n="photos_agree" style="margin-top:16px"></p>
+          <div style="margin-top:6px">
+            <p class="hint" data-i18n="photos_credit"></p>
+            <input type="text" id="phCredit" maxlength="120">
+          </div>
+        </div>
+      </fieldset>
+
       <div class="submit">
         <p class="err" id="err" role="alert"></p>
         <button type="submit" id="send" data-i18n="send"></button>
@@ -252,6 +280,14 @@ ru: {
   q_missing: "Чего не хватило от QARAVAN?",
   missing: ["Продвижения события","Помощи на месте","Материалов или реквизита","Связи с командой","Всего хватило","Другое"],
   multi_none: "Можно выбрать несколько вариантов или ничего.",
+  q_photos: "Есть фото или видео с события?",
+  photos_add: "Выбрать фото или видео",
+  photos_agree: "Загружая файлы, ты соглашаешься, что QARAVAN может использовать их в своих материалах и соцсетях.",
+  photos_credit: "Как подписать автора? Можно оставить пустым.",
+  photos_retry: "Ещё раз",
+  photos_err_size: "Файл больше 300 МБ. Сними покороче или сожми — и попробуй снова.",
+  photos_err_count: "Не больше 10 файлов за раз.",
+  photos_wait: "Файлы ещё загружаются — подожди пару секунд и нажми ещё раз.",
   send: "Отправить",
   err_head: "Укажи число участников — это единственный обязательный вопрос.",
   err_net: "Не отправилось. Проверь интернет и попробуй ещё раз.",
@@ -274,6 +310,14 @@ en: {
   q_missing: "What did you need more of from QARAVAN?",
   missing: ["Event promotion","Help on site","Materials or supplies","Contact with the team","Had everything","Other"],
   multi_none: "Pick any, or none.",
+  q_photos: "Any photos or videos from the event?",
+  photos_add: "Pick photos or videos",
+  photos_agree: "By uploading, you agree that QARAVAN may use these files in its materials and social media.",
+  photos_credit: "How should we credit the author? You can leave this empty.",
+  photos_retry: "Retry",
+  photos_err_size: "That file is over 300 MB. Trim or compress it and try again.",
+  photos_err_count: "Up to 10 files at a time.",
+  photos_wait: "Files are still uploading — give it a few seconds and tap again.",
   send: "Send",
   err_head: "Please add the headcount — it\u2019s the only required question.",
   err_net: "Didn\u2019t go through. Check your connection and try again.",
@@ -336,6 +380,8 @@ function render(){
   $("evDate").textContent = cleanDate(eventDate);
   chip(T().obstacles, obstacles, $("chipsObstacles"), $("obstaclesOtherWrap"));
   chip(T().missing, missing, $("chipsMissing"), $("missingOtherWrap"));
+  $("phAdd").textContent = T().photos_add;
+  phSync();
   drawStars();
   commentBlock();
 }
@@ -389,6 +435,90 @@ async function loadEvent(){
   render();
 }
 
+// ===== фото и видео: сразу напрямую в Google Photos =====
+const PH_MAX_SIZE = 300 * 1024 * 1024, PH_MAX_COUNT = 10, PH_PARALLEL = 3;
+const photos = []; // {file, el, status: "wait"|"up"|"done"|"fail", token}
+let phAccess = null, phAccessExp = 0, phActive = 0;
+
+async function phGetAccess(){
+  if (phAccess && Date.now() < phAccessExp - 60000) return phAccess;
+  const r = await fetch("/api/photos-token", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ eventId }) });
+  if (!r.ok) throw new Error("token");
+  const d = await r.json();
+  phAccess = d.token; phAccessExp = Date.now() + (d.expiresIn || 3600) * 1000;
+  return phAccess;
+}
+
+function phPump(){
+  if (phActive >= PH_PARALLEL) return;
+  const next = photos.find(p => p.status === "wait");
+  if (!next) return;
+  phActive++;
+  phSend(next).finally(() => { phActive--; phPump(); });
+  phPump();
+}
+
+async function phSend(p){
+  p.status = "up";
+  const retry = p.el.querySelector(".ph-retry");
+  if (retry) retry.remove();
+  try {
+    const tok = await phGetAccess();
+    const text = await new Promise((ok, no) => {
+      const x = new XMLHttpRequest();
+      x.open("POST", "https://photoslibrary.googleapis.com/v1/uploads");
+      x.setRequestHeader("Authorization", "Bearer " + tok);
+      x.setRequestHeader("Content-Type", "application/octet-stream");
+      x.setRequestHeader("X-Goog-Upload-Content-Type", p.file.type || "application/octet-stream");
+      x.setRequestHeader("X-Goog-Upload-Protocol", "raw");
+      x.upload.onprogress = e => { if (e.lengthComputable) p.el.querySelector(".ph-bar i").style.width = (e.loaded / e.total * 100) + "%"; };
+      x.onload = () => (x.status === 200 && x.responseText) ? ok(x.responseText) : no(new Error("http " + x.status));
+      x.onerror = () => no(new Error("net"));
+      x.timeout = 15 * 60 * 1000;
+      x.ontimeout = () => no(new Error("timeout"));
+      x.send(p.file);
+    });
+    p.token = text.trim(); p.status = "done"; p.el.classList.add("done");
+  } catch (e) {
+    p.status = "fail"; p.el.classList.add("fail");
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "ph-retry"; b.textContent = T().photos_retry;
+    b.onclick = () => { p.el.classList.remove("fail"); p.status = "wait"; phPump(); };
+    p.el.appendChild(b);
+  }
+}
+
+function phAddFiles(files){
+  const err = $("phErr"); err.classList.remove("show");
+  for (const f of files) {
+    if (photos.filter(p => p.status !== "removed").length >= PH_MAX_COUNT) { err.textContent = T().photos_err_count; err.classList.add("show"); break; }
+    if (f.size > PH_MAX_SIZE) { err.textContent = T().photos_err_size; err.classList.add("show"); continue; }
+    const el = document.createElement("div");
+    el.className = "ph-item";
+    const url = URL.createObjectURL(f);
+    const isVideo = (f.type || "").startsWith("video/");
+    el.innerHTML = (isVideo
+      ? `<video muted playsinline preload="metadata" src="${url}"></video><span class="ph-badge">видео</span>`
+      : `<img alt="" src="${url}">`)
+      + `<div class="ph-bar"><i></i></div>`;
+    const x = document.createElement("button");
+    x.type = "button"; x.className = "ph-x"; x.textContent = "×"; x.setAttribute("aria-label", "remove");
+    const rec = { file: f, el, status: "wait", token: "" };
+    x.onclick = () => { rec.status = "removed"; el.remove(); URL.revokeObjectURL(url); phSync(); };
+    el.appendChild(x);
+    $("phGrid").appendChild(el);
+    photos.push(rec);
+  }
+  phSync();
+  phPump();
+}
+
+function phSync(){
+  const has = photos.some(p => p.status !== "removed");
+  $("phConsentWrap").style.display = has ? "" : "none";
+}
+
+
 // ===== отправка =====
 $("f").addEventListener("submit", async ev => {
   ev.preventDefault();
@@ -398,6 +528,10 @@ $("f").addEventListener("submit", async ev => {
     err.textContent = T().err_head; err.classList.add("show");
     const box = $("headcount").getBoundingClientRect();
     window.scrollTo({ top: window.scrollY + box.top - 120, behavior: "smooth" });
+    return;
+  }
+  if (photos.some(p => p.status === "up" || p.status === "wait")){
+    err.textContent = T().photos_wait; err.classList.add("show");
     return;
   }
   err.classList.remove("show");
@@ -416,6 +550,8 @@ $("f").addEventListener("submit", async ev => {
     comment: rating ? $("comment").value.trim() : "",
     obstacles: pick(obstacles, "obstacles", $("obstaclesOther").value),
     missing: pick(missing, "missing", $("missingOther").value),
+    photos: photos.filter(p => p.status === "done").map(p => ({ token: p.token, mime: p.file.type || "", name: p.file.name || "" })),
+    photo_credit: $("phCredit").value.trim(),
     website: document.querySelector(".hp").value
   };
   try{
@@ -432,6 +568,9 @@ $("f").addEventListener("submit", async ev => {
     $("send").disabled = false;
   }
 });
+
+$("phAdd").onclick = () => $("phInput").click();
+$("phInput").onchange = e => { phAddFiles([...e.target.files]); e.target.value = ""; };
 
 render();
 loadEvent();
