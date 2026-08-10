@@ -153,6 +153,23 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--q-sky); outline-off
 #thanks h1{margin-top:0}
 
 
+
+input.ok{border-color:var(--q-green) !important}
+input.bad{border-color:var(--q-red) !important}
+.field-hint{display:none; color:var(--q-red); font-size:14px; margin:8px 0 0}
+.field-hint.show{display:block}
+
+/* steps */
+.step{display:none}
+.step.on{display:block; animation:stepin .3s ease-out}
+@keyframes stepin{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+@media (prefers-reduced-motion:reduce){ .step.on{animation:none} }
+.stepnav{margin-top:46px; display:flex; align-items:center; justify-content:space-between; gap:14px}
+.stepnav .next{border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink); color:var(--q-white); font:inherit; font-size:17px; font-weight:700; padding:15px 34px; cursor:pointer; transition:transform .15s ease}
+.stepnav .next:active{transform:scale(.97)}
+.stepnav .back{border:0; background:none; color:var(--q-gray); font:inherit; font-size:15px; font-weight:700; cursor:pointer; padding:10px 0}
+.stepcount{color:var(--q-gray); font-size:13px; font-weight:700; letter-spacing:.06em}
+.submit .back{border:0; background:none; color:var(--q-gray); font:inherit; font-size:15px; font-weight:700; cursor:pointer; padding:0; margin-top:22px}
 /* photos */
 .ph-add{border:2px dashed var(--q-ink); background:var(--q-white); border-radius:var(--radius-md); width:100%; padding:15px; font:inherit; font-size:16px; font-weight:700; color:var(--q-ink); cursor:pointer; transition:transform .15s ease, background .15s ease}
 .ph-add:active{transform:scale(.99)}
@@ -189,6 +206,7 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
     <form id="f" novalidate="">
       <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
 
+      <div class="step on" data-step="1">
       <fieldset>
         <legend><span data-i18n="q_rating"></span> <span class="req">*</span></legend>
         <div class="stars" id="stars" role="radiogroup"></div>
@@ -210,6 +228,14 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
         </div>
       </fieldset>
 
+      <p class="err" id="err1" role="alert" style="margin-top:26px"></p>
+      <div class="stepnav">
+        <span class="stepcount">1 / 3</span>
+        <button type="button" class="next" data-goto="2" data-i18n="nav_next"></button>
+      </div>
+      </div>
+
+      <div class="step" data-step="2">
       <fieldset id="customWrap" style="display:none">
         <legend id="customQ"></legend>
         <textarea id="customA" maxlength="4000"></textarea>
@@ -229,7 +255,7 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
       </fieldset>
 
       <fieldset>
-        <legend><span data-i18n="q_photos"></span><span class="hint" data-i18n="photos_hint"></span></legend>
+        <legend><span data-i18n="q_photos"></span></legend>
         <input type="file" id="phInput" accept="image/*,video/*" multiple style="display:none">
         <button type="button" class="ph-add" id="phAdd"></button>
         <div class="ph-grid" id="phGrid"></div>
@@ -243,6 +269,14 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
         </div>
       </fieldset>
 
+      <div class="stepnav">
+        <button type="button" class="back" data-goto="1" data-i18n="nav_back"></button>
+        <span class="stepcount">2 / 3</span>
+        <button type="button" class="next" data-goto="3" data-i18n="nav_next"></button>
+      </div>
+      </div>
+
+      <div class="step" data-step="3">
       <fieldset>
         <legend data-i18n="q_consent"></legend>
         <div class="opts" id="consentOpts"></div>
@@ -256,10 +290,10 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
         <legend data-i18n="q_contact"></legend>
         <div class="opts" id="contactOpts"></div>
         <div id="contactWrap" style="display:none">
-          <p class="hint" data-i18n="contact_hint"></p>
           <input type="text" id="respContactName" maxlength="120" autocomplete="name">
           <input type="email" id="respEmail" maxlength="200" autocomplete="email" inputmode="email">
           <input type="tel" id="respPhone" maxlength="40" autocomplete="tel" inputmode="tel">
+          <p class="field-hint" id="phoneHint" data-i18n="phone_bad"></p>
         </div>
       </fieldset>
 
@@ -276,7 +310,9 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
       <div class="submit">
         <p class="err" id="err" role="alert"></p>
         <button type="submit" id="send" data-i18n="send"></button>
+        <button type="button" class="back" data-goto="2" data-i18n="nav_back"></button>
         <footer>qaravan.org</footer>
+      </div>
       </div>
     </form>
   </div>
@@ -308,12 +344,12 @@ ru: {
   high: ["Люди и общение","Атмосфера","Тема и содержание","Организаторы","Другое"],
   q_low: "Что было некомфортно?",
   low: ["Неудобное время","Сложно добираться","Слишком долго","Слишком коротко","Было сложно включиться","Мало информации заранее","Другое","Всё было ок"],
-  q_moment: "Что организаторам удалось особенно хорошо — и почему для тебя это было важно?",
+  q_moment_good: "Что организаторам удалось особенно хорошо — и почему для тебя это было важно?",
+  q_moment_bad: "Что пошло не так — и что нам стоит поменять в следующий раз?",
   moment_hint: "Твой ответ прочитают те, кто готовил и вёл событие.",
   q_whycome: "Я пошёл / пошла на эту встречу, потому что…",
   whycome: ["Было одиноко","Здесь мало друзей и знакомых","Интересна тема","Хотелось побыть среди своих","Хотелось говорить на русском языке","Хотелось говорить на английском языке","Искал(а) поддержку","Новые знакомства","Другое"],
   q_photos: "Есть фото или видео с события?",
-  photos_hint: "Они попадут в альбом QARAVAN. Загрузка начинается сразу, до отправки формы.",
   photos_add: "Выбрать фото или видео",
   photos_consent: ["Разрешаю QARAVAN использовать их в соцсетях и материалах организации","Только для внутреннего архива, не публиковать"],
   photos_credit: "Как тебя подписать как автора? Можно оставить пустым.",
@@ -326,15 +362,18 @@ ru: {
   name_hint: "Как тебя подписать?",
   q_contact: "Контакты",
   contact_opts: ["Можно написать мне по поводу этого отзыва","Оставлю отзыв анонимно — не пишите мне"],
-  contact_hint: "Достаточно имени и почты — или телефона.",
   contact_name: "Имя",
   contact_email: "Почта",
   contact_phone: "Телефон",
+  err_contact: "Оставь почту или телефон — иначе мы не сможем ответить.",
+  phone_bad: "Проверь номер — похоже, в нём опечатка.",
   q_donate_t: "И последнее.",
   donate_1: "Мы проводим все эти мероприятия бесплатно и хотим, чтобы так оставалось и дальше. Но нам нужно планировать работу, и мы стремимся проводить больше событий и помогать всем, кто в этом нуждается.",
   donate_2: "Небольшие ежемесячные донаты делают эту работу легче. Если у вас есть возможность, подпишись на любую комфортную сумму: <b>даже $10 в месяц для нас очень важны.</b>",
   donate_btn: "Оформить донат",
   donate: ["Оформлю по ссылке","Вернусь к этому позже","Сейчас не могу"],
+  nav_next: "Дальше",
+  nav_back: "Назад",
   send: "Отправить",
   err_rating: "Поставь оценку. Это единственный обязательный вопрос.",
   err_net: "Не отправилось. Проверь интернет и попробуй ещё раз.",
@@ -352,12 +391,12 @@ en: {
   high: ["The people","The atmosphere","The topic & content","The organizers","Something else"],
   q_low: "Anything uncomfortable?",
   low: ["Inconvenient time","Hard to get to","Too long","Too short","Hard to join in","Not enough info beforehand","Other","All good"],
-  q_moment: "What did the organizers do especially well — and why did it matter to you?",
+  q_moment_good: "What did the organizers do especially well — and why did it matter to you?",
+  q_moment_bad: "What went wrong — and what should we change next time?",
   moment_hint: "The people who prepared and ran this event will read your answer.",
   q_whycome: "I came to this event because…",
   whycome: ["I was feeling lonely","I don't have many friends here","The topic interested me","I wanted to be around my people","I wanted to speak Russian","I wanted to speak English","I was looking for support","New connections","Other"],
   q_photos: "Any photos or videos from the event?",
-  photos_hint: "They go into the QARAVAN album. Uploading starts right away, before you send the form.",
   photos_add: "Pick photos or videos",
   photos_consent: ["QARAVAN may use them in its social media and materials","Internal archive only, please don't publish"],
   photos_credit: "How should we credit you? You can leave this empty.",
@@ -370,15 +409,18 @@ en: {
   name_hint: "How should we credit you?",
   q_contact: "Contact",
   contact_opts: ["You can write to me about this feedback","I'm leaving this anonymously — please don't write to me"],
-  contact_hint: "A name plus email — or a phone number — is enough.",
   contact_name: "Name",
   contact_email: "Email",
   contact_phone: "Phone",
+  err_contact: "Leave an email or a phone number — otherwise we can't reply.",
+  phone_bad: "Double-check the number — it looks like a typo.",
   q_donate_t: "One last thing.",
   donate_1: "We run all of these events for free, and we want to keep it that way. But we need to plan our work — and we want to run more events and help everyone who needs it.",
   donate_2: "Small monthly donations make this work easier. If you can, set one up for any amount that feels right: <b>even $10 a month means a lot to us.</b>",
   donate_btn: "Set up a donation",
   donate: ["I'll set it up via the link","I'll come back to this later","Can't right now"],
+  nav_next: "Next",
+  nav_back: "Back",
   send: "Send",
   err_rating: "Please add a star rating. It's the only required question.",
   err_net: "Didn't go through. Check your connection and try again.",
@@ -451,6 +493,7 @@ function render(){
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const k = el.dataset.i18n;
     if (k === "loading") { el.textContent = eventName || T().loading; return; }
+    if (k === "q_moment") { el.textContent = momentQuestion(); return; }
     if (HTML_KEYS.has(k)) { el.innerHTML = T()[k]; return; }
     el.textContent = T()[k];
   });
@@ -495,10 +538,32 @@ function drawStars(){
     b.setAttribute("aria-checked", rating === i ? "true" : "false");
     b.setAttribute("aria-label", String(i));
     b.classList.toggle("on", i <= rating);
-    b.onclick = () => { rating = i; drawStars(); $("err").classList.remove("show"); };
+    b.onclick = () => { rating = i; drawStars(); updateMoment(); $("err").classList.remove("show"); $("err1").classList.remove("show"); };
     w.appendChild(b);
   }
 }
+
+// вопрос про впечатление зависит от оценки: 1-3 звезды — что пошло не так, 4-5 — что удалось
+const momentQuestion = () => (rating >= 1 && rating <= 3) ? T().q_moment_bad : T().q_moment_good;
+function updateMoment(){
+  document.querySelectorAll('[data-i18n="q_moment"]').forEach(el => { el.textContent = momentQuestion(); });
+}
+
+// ===== шаги: вопросы появляются порциями, а не все сразу =====
+let curStep = 1;
+function goStep(n){
+  if (n > 1 && curStep === 1 && !rating){
+    const e1 = $("err1");
+    e1.textContent = T().err_rating; e1.classList.add("show");
+    return;
+  }
+  curStep = n;
+  document.querySelectorAll(".step").forEach(el => el.classList.toggle("on", el.dataset.step === String(n)));
+  $("err").classList.remove("show");
+  $("err1").classList.remove("show");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+document.querySelectorAll("[data-goto]").forEach(b => { b.onclick = () => goStep(Number(b.dataset.goto)); });
 
 $("btnRu").onclick = () => { lang = "ru"; render(); };
 $("btnEn").onclick = () => { lang = "en"; render(); };
@@ -603,6 +668,44 @@ function phSync(){
   $("phConsentWrap").style.display = has ? "" : "none";
 }
 
+
+// ===== телефон: живое форматирование и проверка от опечаток =====
+const phoneDigits = v => v.replace(/\D/g, "");
+function phoneFormat(v){
+  const plus = v.trim().startsWith("+");
+  let d = phoneDigits(v);
+  if (!plus && d.length === 11 && d[0] === "8") return "8 (" + d.slice(1,4) + ") " + d.slice(4,7) + "-" + d.slice(7,9) + "-" + d.slice(9);
+  if (!plus && d.length === 11 && d[0] === "1") return "+1 (" + d.slice(1,4) + ") " + d.slice(4,7) + "-" + d.slice(7);
+  if (!plus && d.length === 10) return "(" + d.slice(0,3) + ") " + d.slice(3,6) + "-" + d.slice(6);
+  if (plus && d.length === 11 && d[0] === "1") return "+1 (" + d.slice(1,4) + ") " + d.slice(4,7) + "-" + d.slice(7);
+  if (plus && d.length === 11 && d[0] === "7") return "+7 (" + d.slice(1,4) + ") " + d.slice(4,7) + "-" + d.slice(7,9) + "-" + d.slice(9);
+  return (plus ? "+" : "") + d;
+}
+const phoneValid = v => { const n = phoneDigits(v).length; return n >= 10 && n <= 15; };
+const emailValid = v => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v.trim());
+
+function wireContactValidation(){
+  const ph = $("respPhone"), em = $("respEmail"), hint = $("phoneHint");
+  ph.addEventListener("input", () => {
+    ph.value = phoneFormat(ph.value);
+    ph.classList.remove("bad"); hint.classList.remove("show");
+    ph.classList.toggle("ok", phoneValid(ph.value));
+  });
+  ph.addEventListener("blur", () => {
+    if (!ph.value.trim()) { ph.classList.remove("ok", "bad"); hint.classList.remove("show"); return; }
+    const good = phoneValid(ph.value);
+    ph.classList.toggle("ok", good); ph.classList.toggle("bad", !good);
+    hint.classList.toggle("show", !good);
+  });
+  em.addEventListener("input", () => { em.classList.remove("bad"); em.classList.toggle("ok", emailValid(em.value)); });
+  em.addEventListener("blur", () => {
+    if (!em.value.trim()) { em.classList.remove("ok", "bad"); return; }
+    const good = emailValid(em.value);
+    em.classList.toggle("ok", good); em.classList.toggle("bad", !good);
+  });
+}
+wireContactValidation();
+
 // ===== отправка =====
 $("f").addEventListener("submit", async ev => {
   ev.preventDefault();
@@ -615,6 +718,11 @@ $("f").addEventListener("submit", async ev => {
   }
   if (photos.some(p => p.status === "up" || p.status === "wait")){
     err.textContent = T().photos_wait; err.classList.add("show");
+    return;
+  }
+  if (contactOk === 0 && !emailValid($("respEmail").value) && !phoneValid($("respPhone").value)){
+    err.textContent = T().err_contact; err.classList.add("show");
+    $("respEmail").classList.add("bad");
     return;
   }
   err.classList.remove("show");
