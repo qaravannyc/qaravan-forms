@@ -152,6 +152,15 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--q-sky); outline-off
 #thanks .mark{font-weight:900; font-size:44px; letter-spacing:-.03em; line-height:1; margin-bottom:20px}
 #thanks h1{margin-top:0}
 
+.stepper{display:flex; gap:10px; align-items:stretch}
+.stepper input[type="number"]{flex:1; text-align:center; margin-top:0; font-weight:700; font-size:18px}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+.stepper input[type="number"]{-moz-appearance:textfield; appearance:textfield}
+.stepper button{width:56px; flex:none; border-radius:var(--radius-lg); border:2px solid var(--q-ink);
+  background:var(--q-white); color:var(--q-ink); font:700 26px/1 var(--font-brand); cursor:pointer; padding:0;
+  transition:transform .15s ease, background .15s ease, opacity .15s ease}
+.stepper button:active{transform:scale(.95)}
+.stepper button:disabled{opacity:.35; cursor:default; transform:none}
 .hp{position:absolute; left:-9999px; top:-9999px}
 footer{margin-top:56px; color:var(--q-gray); font-size:13px}
 </style>
@@ -177,7 +186,11 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
 
       <fieldset>
         <legend><span data-i18n="q_head"></span> <span class="req">*</span><span class="hint" data-i18n="head_hint"></span></legend>
-        <input type="number" id="headcount" min="0" max="2000" inputmode="numeric">
+        <div class="stepper">
+          <button type="button" id="minus" aria-label="Минус один">−</button>
+          <input type="number" id="headcount" min="0" max="2000" inputmode="numeric" placeholder="0">
+          <button type="button" id="plus" aria-label="Плюс один">+</button>
+        </div>
       </fieldset>
 
       <fieldset>
@@ -342,6 +355,21 @@ function drawStars(){
     w.appendChild(b);
   }
 }
+
+const headEl = () => $("headcount");
+function stepTo(v){
+  v = Math.max(0, Math.min(2000, v));
+  headEl().value = String(v);
+  $("minus").disabled = v <= 0;
+  $("err").classList.remove("show");
+}
+$("plus").onclick = () => stepTo((parseInt(headEl().value, 10) || 0) + 1);
+$("minus").onclick = () => stepTo((parseInt(headEl().value, 10) || 0) - 1);
+$("headcount").addEventListener("input", () => {
+  const v = parseInt(headEl().value, 10);
+  $("minus").disabled = !(v > 0);
+});
+$("minus").disabled = true;
 
 $("btnRu").onclick = () => { lang = "ru"; render(); };
 $("btnEn").onclick = () => { lang = "en"; render(); };

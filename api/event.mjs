@@ -9,11 +9,16 @@ const MONTHS_RU = ["января", "февраля", "марта", "апреля
   "июля", "августа", "сентября", "октября", "ноября", "декабря"];
 
 function ruDate(text) {
-  // monday gives "2026-08-09 18:00" (or just the date)
-  const m = (text || "").match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}:\d{2}))?/);
+  // monday gives "2026-08-09 18:00" (or just the date); time shown as AM/PM
+  const m = (text || "").match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2}))?/);
   if (!m) return "";
-  const [, y, mo, d, hm] = m;
-  return `${Number(d)} ${MONTHS_RU[Number(mo) - 1]} ${y}${hm ? ", " + hm : ""}`;
+  const [, y, mo, d, hh, mm] = m;
+  let t = "";
+  if (hh !== undefined) {
+    const h = Number(hh);
+    t = `, ${h % 12 || 12}:${mm} ${h < 12 ? "AM" : "PM"}`;
+  }
+  return `${Number(d)} ${MONTHS_RU[Number(mo) - 1]} ${y}${t}`;
 }
 
 export default async function handler(req, res) {
