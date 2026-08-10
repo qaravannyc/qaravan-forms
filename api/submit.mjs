@@ -160,6 +160,27 @@ export default async function handler(req, res) {
   const ev = await getEvent(b.eventId).catch(() => null);
   res.setHeader("Content-Type", "application/json");
 
+  // «Меня там не было» — одна отметка. С личным токеном ложится под тот же
+  // respondent key, так что настоящий ответ позже займёт ту же строку.
+  if (b.no_show) {
+    if (!ev) { res.statusCode = 404; return res.end("{}"); }
+    const rKey = respondentKey(ev.id, b.p);
+    const existing = rKey ? await findByRespondentKey(rKey) : null;
+    if (existing) {
+      await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
+        { i: String(existing), t: "Отметил(а) в форме: не был(а) на событии" });
+    } else {
+      const cv = { [F.eventName]: ev.name, [F.eventRel]: { item_ids: [Number(ev.id)] } };
+      if (rKey) cv[RESPONDENT_COL] = rKey;
+      const c = await monday(
+        `mutation ($b: ID!, $n: String!, $v: JSON!) { create_item(board_id:$b,item_name:$n,column_values:$v,create_labels_if_missing:true){id} }`,
+        { b: FEEDBACK_BOARD, n: `НЕ БЫЛ(А) — ${ev.name} — ${rKey ? "по личной ссылке" : "аноним"}`, v: JSON.stringify(cv) });
+      await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
+        { i: String(c.create_item.id), t: "Отметил(а) в форме: не был(а) на событии" });
+    }
+    return res.end('{"ok":true}');
+  }
+
   if (b.isLead) {
     if (ev && Number.isFinite(b.headcount)) {
       await monday(
