@@ -38,7 +38,7 @@ const F = {
 // Canonical chip labels (RU). Free-text "Другое: …" entries stay out of the
 // dropdowns — they go into the update instead, so label sets never bloat.
 const CANON = {
-  highlights: ["Люди и общение", "Атмосфера", "Тема и содержание", "Ведущие", "Другое"],
+  highlights: ["Люди и общение", "Атмосфера", "Тема и содержание", "Организаторы", "Другое"],
   discomfort: ["Неудобное время", "Сложно добираться", "Слишком долго", "Слишком коротко",
     "Было сложно включиться", "Мало информации заранее", "Другое", "Всё было ок"],
 };
