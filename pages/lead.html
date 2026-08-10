@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Как всё прошло — QARAVAN</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFFDF5">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Qaravan tokens */
+  --q-red:#FF3333; --q-orange:#FF9933; --q-yellow:#F8F36E;
+  --q-green:#66CC66; --q-sky:#0099CC; --q-purple:#7668AA;
+  --q-black:#000000; --q-ink:#333333; --q-gray:#6E6E6E;
+  --q-line:#ECE8DE; --q-paper:#FFFDF5; --q-white:#FFFFFF;
+  --q-red-tint:#FFE4E4; --q-orange-tint:#FFEDD9; --q-sky-tint:#DDF1F8;
+  --font-brand:'Montserrat','Helvetica Neue',Arial,sans-serif;
+  --radius-md:12px; --radius-lg:16px; --radius-pill:999px;
+  --shadow-card:0 2px 6px rgba(51,51,51,.05), 0 10px 28px rgba(51,51,51,.07);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--q-paper); color:var(--q-ink);
+  font-family:var(--font-brand); font-size:17px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--q-sky); font-weight:700; text-decoration-thickness:2px}
+a:hover{color:var(--q-purple)}
+.wrap{max-width:560px; margin:0 auto; padding:20px 20px 64px}
+
+/* header */
+.top{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:4px 0 32px}
+.wordmark{font-weight:900; font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap}
+.lang{display:flex; gap:0; border:2px solid var(--q-ink); border-radius:var(--radius-pill); overflow:hidden; background:var(--q-white)}
+.lang button{
+  border:0; background:transparent; padding:8px 15px; font:inherit; font-size:13px; font-weight:700;
+  color:var(--q-ink); cursor:pointer; line-height:1.2; transition:background .15s ease, color .15s ease;
+}
+.lang button[aria-pressed="true"]{background:var(--q-ink); color:var(--q-white)}
+
+/* hero */
+.eyebrow{font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--q-sky)}
+h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-spacing:-.02em; margin:10px 0 8px; text-wrap:balance}
+.sub{color:var(--q-gray); margin:0; text-wrap:pretty}
+.hero{margin-bottom:14px;opacity:0; transform:translateY(8px); transition:opacity .28s ease-out, transform .28s ease-out}
+.hero.on{opacity:1; transform:none}
+@media (prefers-reduced-motion:reduce){ .hero{transition:none; transform:none} }
+
+/* sections */
+fieldset{border:0; padding:24px 0 0; margin:0}
+fieldset+fieldset{border-top:1px solid var(--q-line); margin-top:40px; padding-top:36px}
+legend{float:left; width:100%; padding:0; margin:0 0 22px; font-weight:700; font-size:19px; line-height:1.35; text-wrap:pretty}
+legend+*{clear:both}
+fieldset legend+textarea{margin-top:0}
+fieldset legend+input[type="number"]{margin-top:0}
+.hint{color:var(--q-gray); font-size:14px; font-weight:400; margin:8px 0 0; text-wrap:pretty}
+legend .hint{display:block; margin:6px 0 0}
+.req{color:var(--q-red)}
+
+/* stars */
+.stars{display:flex; gap:10px; margin-top:0}
+.stars button{
+  width:56px; height:56px; border-radius:var(--radius-lg); border:2px solid var(--q-ink);
+  background:var(--q-white); color:#D8D3C6; cursor:pointer; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .15s ease, border-color .15s ease, background .15s ease, color .15s ease;
+}
+.stars button:active{transform:scale(.95)}
+.stars button.on{color:var(--q-orange); border-color:var(--q-orange); background:var(--q-orange-tint)}
+.stars svg{width:26px; height:26px; display:block; fill:currentColor}
+
+/* chips */
+.chips{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+.chips button{
+  border:2px solid var(--q-ink); background:var(--q-white); border-radius:var(--radius-pill);
+  padding:10px 18px; font:inherit; font-size:15px; font-weight:700; line-height:1.25;
+  cursor:pointer; color:var(--q-ink);
+  transition:transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease;
+}
+.chips button:active{transform:scale(.97)}
+.chips button[aria-pressed="true"]{background:var(--q-sky); border-color:var(--q-sky); color:var(--q-white)}
+.chips button:nth-child(6n+1)[aria-pressed="true"]{background:var(--q-red); border-color:var(--q-red)}
+.chips button:nth-child(6n+2)[aria-pressed="true"]{background:var(--q-orange); border-color:var(--q-orange)}
+.chips button:nth-child(6n+3)[aria-pressed="true"]{background:var(--q-green); border-color:var(--q-green)}
+.chips button:nth-child(6n+4)[aria-pressed="true"]{background:var(--q-purple); border-color:var(--q-purple)}
+.chips button:nth-child(6n+5)[aria-pressed="true"]{background:var(--q-sky); border-color:var(--q-sky)}
+.chips button:nth-child(6n)[aria-pressed="true"]{background:var(--q-ink); border-color:var(--q-ink)}
+.other-input{display:none; margin-top:14px}
+.other-input.show{display:block}
+
+/* text fields */
+textarea,input[type="text"],input[type="email"],input[type="tel"],input[type="number"]{
+  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-md); background:var(--q-white);
+  padding:13px 16px; font:inherit; font-size:16px; color:var(--q-ink); margin-top:18px;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+textarea{min-height:118px; resize:vertical; line-height:1.5}
+textarea:focus,input[type="text"]:focus,input[type="email"]:focus,input[type="tel"]:focus{
+  outline:none; border-color:var(--q-sky); box-shadow:0 0 0 3px var(--q-sky-tint);
+}
+button:focus-visible,a:focus-visible{outline:3px solid var(--q-sky); outline-offset:2px}
+
+/* radio rows */
+.opts{display:grid; gap:12px; margin-top:0}
+.donate+.opts{margin-top:18px}
+.opts label{
+  display:flex; gap:12px; align-items:flex-start; border:2px solid var(--q-ink);
+  background:var(--q-white); border-radius:var(--radius-md); padding:14px 16px; cursor:pointer;
+  font-size:16px; transition:border-color .15s ease, background .15s ease;
+}
+.opts input{margin:4px 0 0; accent-color:var(--q-sky); width:19px; height:19px; flex:none}
+.opts label:has(input:checked){border-color:var(--q-sky); background:var(--q-sky-tint)}
+#nameWrap{display:none}
+#nameWrap.show{display:block}
+
+/* donate card */
+.donate{
+  background:var(--q-sky-tint); border-radius:var(--radius-lg);
+  padding:22px; margin-top:18px;
+}
+.donate p{margin:0 0 14px; font-size:16px; text-wrap:pretty}
+.donate a{
+  display:inline-block; background:var(--q-sky); border:2px solid var(--q-sky); color:var(--q-white);
+  text-decoration:none; border-radius:var(--radius-pill); padding:13px 24px; font-weight:700; font-size:16px;
+  transition:transform .15s ease, opacity .15s ease;
+}
+.donate a:hover{color:var(--q-white); opacity:.9}
+.donate a:active{transform:scale(.97)}
+
+/* submit */
+.submit{margin-top:48px}
+.submit button{
+  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink);
+  color:var(--q-white); font:inherit; font-size:18px; font-weight:700; padding:17px; cursor:pointer;
+  transition:transform .15s ease, opacity .15s ease;
+}
+.submit button:active{transform:scale(.99)}
+.submit button:disabled{opacity:.4; cursor:default; transform:none}
+.err{
+  display:none; margin:0 0 14px; background:var(--q-red-tint); color:var(--q-ink);
+  border-radius:var(--radius-md); padding:14px 18px; font-size:15px; font-weight:500;
+}
+.err.show{display:block}
+
+/* thanks */
+#thanks{display:none; padding-top:6vh}
+#thanks.show{display:block}
+#thanks .mark{font-weight:900; font-size:44px; letter-spacing:-.03em; line-height:1; margin-bottom:20px}
+#thanks h1{margin-top:0}
+
+.hp{position:absolute; left:-9999px; top:-9999px}
+footer{margin-top:56px; color:var(--q-gray); font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="wordmark" aria-label="qaravan"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="btnRu" aria-pressed="true">РУ</button>
+      <button type="button" id="btnEn" aria-pressed="false">EN</button>
+    </div>
+  </div>
+
+  <div id="formView">
+    <header class="hero" id="hero">
+      <div class="eyebrow" id="evDate"></div>
+      <h1 id="evName" data-i18n="loading">…</h1>
+      <p class="sub" data-i18n="sub"></p>
+    </header>
+
+    <form id="f" novalidate="">
+      <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+      <fieldset>
+        <legend><span data-i18n="q_head"></span> <span class="req">*</span><span class="hint" data-i18n="head_hint"></span></legend>
+        <input type="number" id="headcount" min="0" max="2000" inputmode="numeric">
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="q_how"></legend>
+        <div class="stars" id="stars" role="radiogroup"></div>
+        <div class="reveal" id="commentWrap">
+          <p style="font-weight:700;margin:22px 0 0" id="commentLabel"></p>
+          <p class="hint" id="commentHint"></p>
+          <textarea id="comment" maxlength="4000"></textarea>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span data-i18n="q_obstacles"></span><span class="hint" data-i18n="multi_none"></span></legend>
+        <div class="chips" id="chipsObstacles"></div>
+        <div class="other-input" id="obstaclesOtherWrap">
+          <input type="text" id="obstaclesOther" maxlength="200">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span data-i18n="q_missing"></span><span class="hint" data-i18n="multi_none"></span></legend>
+        <div class="chips" id="chipsMissing"></div>
+        <div class="other-input" id="missingOtherWrap">
+          <input type="text" id="missingOther" maxlength="200">
+        </div>
+      </fieldset>
+
+      <div class="submit">
+        <p class="err" id="err" role="alert"></p>
+        <button type="submit" id="send" data-i18n="send"></button>
+        <footer>qaravan.org</footer>
+      </div>
+    </form>
+  </div>
+
+  <div id="thanks">
+    <div class="mark" aria-hidden="true"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
+    <h1 data-i18n="thanks_t"></h1>
+    <p class="sub" data-i18n="thanks_p"></p>
+  </div>
+</div>
+
+<script>
+// ===== все тексты формы лида — редактируются здесь =====
+const STRINGS = {
+ru: {
+  loading: "Как всё прошло?",
+  title_tail: " — как всё прошло?",
+  sub: "Почти всё — в один тап.",
+  q_head: "Сколько человек пришло?",
+  head_hint: "Число попадёт в таблицу автоматически.",
+  q_how: "Как всё прошло для тебя?",
+  how_low: "Расскажи, что пошло не так.",
+  how_low_hint: "Как есть — это самое полезное.",
+  how_high: "Что сработало лучше всего?",
+  how_high_hint: "Пара слов — повторим в следующий раз.",
+  q_obstacles: "Что-то мешало?",
+  obstacles: ["Место","Техника","Пришло мало людей","Не хватило времени","Ничего не мешало","Другое"],
+  q_missing: "Чего не хватило от QARAVAN?",
+  missing: ["Продвижения события","Помощи на месте","Материалов или реквизита","Связи с командой","Всего хватило","Другое"],
+  multi_none: "Можно несколько, можно ничего.",
+  send: "Отправить",
+  err_head: "Укажи число участников — это единственный обязательный вопрос.",
+  err_net: "Не отправилось. Проверь интернет и попробуй ещё раз.",
+  thanks_t: "Спасибо, что провёл(а) это событие!",
+  thanks_p: "Число участников уже в таблице.",
+  generic_event: "Событие QARAVAN"
+},
+en: {
+  loading: "How did it go?",
+  title_tail: " — how did it go?",
+  sub: "Almost everything is one tap.",
+  q_head: "How many people came?",
+  head_hint: "The number lands on the event\u2019s row automatically.",
+  q_how: "How did it go for you?",
+  how_low: "Tell us what went wrong.",
+  how_low_hint: "Straight talk helps the most.",
+  how_high: "What worked best?",
+  how_high_hint: "A few words — we\u2019ll do it again next time.",
+  q_obstacles: "Did anything get in the way?",
+  obstacles: ["The venue","Tech","Low turnout","Not enough time","Nothing did","Other"],
+  q_missing: "What did you need more of from QARAVAN?",
+  missing: ["Event promotion","Help on site","Materials or supplies","Contact with the team","Had everything","Other"],
+  multi_none: "Pick any, or none.",
+  send: "Send",
+  err_head: "Please add the headcount — it\u2019s the only required question.",
+  err_net: "Didn\u2019t go through. Check your connection and try again.",
+  thanks_t: "Thank you for running this event!",
+  thanks_p: "The headcount is already on the board.",
+  generic_event: "QARAVAN event"
+}};
+
+// ===== состояние =====
+const params = new URLSearchParams(location.search);
+const eventId = ((window.__EVENT_ID__ || "") || params.get("event") || "").replace(/\D/g, "");
+let lang = params.get("lang") === "en" ? "en" : "ru";
+let rating = 0;
+let obstacles = new Set(), missing = new Set();
+let eventName = "", eventDate = "";
+
+const $ = id => document.getElementById(id);
+const T = () => STRINGS[lang];
+const cleanDate = s => (s || "").replace(/\s*[·•]\s*/g, ", ");
+const OTHER_LABELS = new Set(["Другое", "Other"]);
+
+function chip(list, set, wrap, otherWrap){
+  wrap.innerHTML = "";
+  list.forEach((label, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label;
+    b.setAttribute("aria-pressed", set.has(i) ? "true" : "false");
+    b.onclick = () => {
+      set.has(i) ? set.delete(i) : set.add(i);
+      b.setAttribute("aria-pressed", set.has(i) ? "true" : "false");
+      if (OTHER_LABELS.has(label)) otherWrap.classList.toggle("show", set.has(i));
+    };
+    wrap.appendChild(b);
+  });
+  const otherIdx = list.findIndex(l => OTHER_LABELS.has(l));
+  otherWrap.classList.toggle("show", set.has(otherIdx));
+}
+
+// комментарий появляется только после оценки — и спрашивает по-разному
+function commentBlock(){
+  const w = $("commentWrap");
+  if (!rating) { w.classList.remove("show"); return; }
+  $("commentLabel").textContent = rating <= 3 ? T().how_low : T().how_high;
+  $("commentHint").textContent = rating <= 3 ? T().how_low_hint : T().how_high_hint;
+  w.classList.add("show");
+}
+
+function render(){
+  document.documentElement.lang = lang;
+  $("btnRu").setAttribute("aria-pressed", lang === "ru");
+  $("btnEn").setAttribute("aria-pressed", lang === "en");
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const k = el.dataset.i18n;
+    if (k === "loading") {
+      el.textContent = eventName ? "«" + eventName + "»" + T().title_tail : T().loading;
+      return;
+    }
+    el.textContent = T()[k];
+  });
+  $("evDate").textContent = cleanDate(eventDate);
+  chip(T().obstacles, obstacles, $("chipsObstacles"), $("obstaclesOtherWrap"));
+  chip(T().missing, missing, $("chipsMissing"), $("missingOtherWrap"));
+  drawStars();
+  commentBlock();
+}
+
+const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15.1,8.3 22,9.3 17,14.1 18.2,21 12,17.8 5.8,21 7,14.1 2,9.3 8.9,8.3"/></svg>';
+
+function drawStars(){
+  const w = $("stars"); w.innerHTML = "";
+  for (let i = 1; i <= 5; i++){
+    const b = document.createElement("button");
+    b.type = "button"; b.innerHTML = STAR;
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", rating === i ? "true" : "false");
+    b.setAttribute("aria-label", String(i));
+    b.classList.toggle("on", i <= rating);
+    b.onclick = () => { rating = i; drawStars(); commentBlock(); };
+    w.appendChild(b);
+  }
+}
+
+$("btnRu").onclick = () => { lang = "ru"; render(); };
+$("btnEn").onclick = () => { lang = "en"; render(); };
+
+// ===== имя ивента из monday =====
+async function loadEvent(){
+  if (!eventId) { eventName = ""; $("hero").classList.add("on"); render(); return; }
+  try{
+    const r = await fetch(`/api/event?id=${eventId}`);
+    if (r.ok){
+      const d = await r.json();
+      eventName = d.name || "";
+      eventDate = d.date || "";
+    }
+  }catch(e){}
+  $("hero").classList.add("on");
+  render();
+}
+
+// ===== отправка =====
+$("f").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const err = $("err");
+  const head = $("headcount").value.trim();
+  if (head === "" || Number(head) < 0){
+    err.textContent = T().err_head; err.classList.add("show");
+    const box = $("headcount").getBoundingClientRect();
+    window.scrollTo({ top: window.scrollY + box.top - 120, behavior: "smooth" });
+    return;
+  }
+  err.classList.remove("show");
+  $("send").disabled = true;
+
+  // метки пишем в monday по-русски независимо от языка интерфейса
+  const pick = (set, list, otherVal) => {
+    const out = [...set].map(i => STRINGS.ru[list][i] ?? "").filter(Boolean);
+    if (otherVal.trim()) out.push("Другое: " + otherVal.trim());
+    return out;
+  };
+  const body = {
+    isLead: 1, eventId, lang,
+    headcount: Number(head),
+    rating,
+    comment: rating ? $("comment").value.trim() : "",
+    obstacles: pick(obstacles, "obstacles", $("obstaclesOther").value),
+    missing: pick(missing, "missing", $("missingOther").value),
+    website: document.querySelector(".hp").value
+  };
+  try{
+    const r = await fetch("/api/submit", {
+      method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error();
+    $("formView").style.display = "none";
+    $("thanks").classList.add("show");
+    window.scrollTo({top:0});
+  }catch(e){
+    err.textContent = T().err_net; err.classList.add("show");
+    $("send").disabled = false;
+  }
+});
+
+render();
+loadEvent();
+</script>
+
+</body></html>

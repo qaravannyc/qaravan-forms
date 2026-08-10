@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Отзыв — QARAVAN</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFFDF5">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Qaravan tokens */
+  --q-red:#FF3333; --q-orange:#FF9933; --q-yellow:#F8F36E;
+  --q-green:#66CC66; --q-sky:#0099CC; --q-purple:#7668AA;
+  --q-black:#000000; --q-ink:#333333; --q-gray:#6E6E6E;
+  --q-line:#ECE8DE; --q-paper:#FFFDF5; --q-white:#FFFFFF;
+  --q-red-tint:#FFE4E4; --q-orange-tint:#FFEDD9; --q-sky-tint:#DDF1F8;
+  --font-brand:'Montserrat','Helvetica Neue',Arial,sans-serif;
+  --radius-md:12px; --radius-lg:16px; --radius-pill:999px;
+  --shadow-card:0 2px 6px rgba(51,51,51,.05), 0 10px 28px rgba(51,51,51,.07);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--q-paper); color:var(--q-ink);
+  font-family:var(--font-brand); font-size:17px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--q-sky); font-weight:700; text-decoration-thickness:2px}
+a:hover{color:var(--q-purple)}
+.wrap{max-width:560px; margin:0 auto; padding:20px 20px 64px}
+
+/* header */
+.top{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:4px 0 32px}
+.wordmark{font-weight:900; font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap}
+.lang{display:flex; gap:0; border:2px solid var(--q-ink); border-radius:var(--radius-pill); overflow:hidden; background:var(--q-white)}
+.lang button{
+  border:0; background:transparent; padding:8px 15px; font:inherit; font-size:13px; font-weight:700;
+  color:var(--q-ink); cursor:pointer; line-height:1.2; transition:background .15s ease, color .15s ease;
+}
+.lang button[aria-pressed="true"]{background:var(--q-ink); color:var(--q-white)}
+
+/* hero */
+.eyebrow{font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--q-sky)}
+h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-spacing:-.02em; margin:10px 0 8px; text-wrap:balance}
+.sub{color:var(--q-gray); margin:0; text-wrap:pretty}
+.hero{margin-bottom:14px;opacity:0; transform:translateY(8px); transition:opacity .28s ease-out, transform .28s ease-out}
+.hero.on{opacity:1; transform:none}
+@media (prefers-reduced-motion:reduce){ .hero{transition:none; transform:none} }
+
+/* sections */
+fieldset{border:0; padding:24px 0 0; margin:0}
+fieldset+fieldset{border-top:1px solid var(--q-line); margin-top:40px; padding-top:36px}
+legend{float:left; width:100%; padding:0; margin:0 0 22px; font-weight:700; font-size:19px; line-height:1.35; text-wrap:pretty}
+legend+*{clear:both}
+fieldset legend+textarea{margin-top:0}
+fieldset legend+input[type="number"]{margin-top:0}
+.hint{color:var(--q-gray); font-size:14px; font-weight:400; margin:8px 0 0; text-wrap:pretty}
+legend .hint{display:block; margin:6px 0 0}
+.req{color:var(--q-red)}
+
+/* stars */
+.stars{display:flex; gap:10px; margin-top:0}
+.stars button{
+  width:56px; height:56px; border-radius:var(--radius-lg); border:2px solid var(--q-ink);
+  background:var(--q-white); color:#D8D3C6; cursor:pointer; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .15s ease, border-color .15s ease, background .15s ease, color .15s ease;
+}
+.stars button:active{transform:scale(.95)}
+.stars button.on{color:var(--q-orange); border-color:var(--q-orange); background:var(--q-orange-tint)}
+.stars svg{width:26px; height:26px; display:block; fill:currentColor}
+
+/* chips */
+.chips{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px}
+.chips button{
+  border:2px solid var(--q-ink); background:var(--q-white); border-radius:var(--radius-pill);
+  padding:10px 18px; font:inherit; font-size:15px; font-weight:700; line-height:1.25;
+  cursor:pointer; color:var(--q-ink);
+  transition:transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease;
+}
+.chips button:active{transform:scale(.97)}
+.chips button[aria-pressed="true"]{background:var(--q-sky); border-color:var(--q-sky); color:var(--q-white)}
+.chips button:nth-child(6n+1)[aria-pressed="true"]{background:var(--q-red); border-color:var(--q-red)}
+.chips button:nth-child(6n+2)[aria-pressed="true"]{background:var(--q-orange); border-color:var(--q-orange)}
+.chips button:nth-child(6n+3)[aria-pressed="true"]{background:var(--q-green); border-color:var(--q-green)}
+.chips button:nth-child(6n+4)[aria-pressed="true"]{background:var(--q-purple); border-color:var(--q-purple)}
+.chips button:nth-child(6n+5)[aria-pressed="true"]{background:var(--q-sky); border-color:var(--q-sky)}
+.chips button:nth-child(6n)[aria-pressed="true"]{background:var(--q-ink); border-color:var(--q-ink)}
+.other-input{display:none; margin-top:14px}
+.other-input.show{display:block}
+
+/* text fields */
+textarea,input[type="text"],input[type="email"],input[type="tel"]{
+  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-md); background:var(--q-white);
+  padding:13px 16px; font:inherit; font-size:16px; color:var(--q-ink); margin-top:18px;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+textarea{min-height:118px; resize:vertical; line-height:1.5}
+textarea:focus,input[type="text"]:focus,input[type="email"]:focus,input[type="tel"]:focus{
+  outline:none; border-color:var(--q-sky); box-shadow:0 0 0 3px var(--q-sky-tint);
+}
+button:focus-visible,a:focus-visible{outline:3px solid var(--q-sky); outline-offset:2px}
+
+/* radio rows */
+.opts{display:grid; gap:12px; margin-top:0}
+.donate+.opts{margin-top:18px}
+.opts label{
+  display:flex; gap:12px; align-items:flex-start; border:2px solid var(--q-ink);
+  background:var(--q-white); border-radius:var(--radius-md); padding:14px 16px; cursor:pointer;
+  font-size:16px; transition:border-color .15s ease, background .15s ease;
+}
+.opts input{margin:4px 0 0; accent-color:var(--q-sky); width:19px; height:19px; flex:none}
+.opts label:has(input:checked){border-color:var(--q-sky); background:var(--q-sky-tint)}
+#nameWrap{display:none}
+#nameWrap.show{display:block}
+
+/* donate card */
+.donate{
+  background:var(--q-sky-tint); border-radius:var(--radius-lg);
+  padding:22px; margin-top:18px;
+}
+.donate p{margin:0 0 14px; font-size:16px; text-wrap:pretty}
+.donate a{
+  display:inline-block; background:var(--q-sky); border:2px solid var(--q-sky); color:var(--q-white);
+  text-decoration:none; border-radius:var(--radius-pill); padding:13px 24px; font-weight:700; font-size:16px;
+  transition:transform .15s ease, opacity .15s ease;
+}
+.donate a:hover{color:var(--q-white); opacity:.9}
+.donate a:active{transform:scale(.97)}
+
+/* submit */
+.submit{margin-top:48px}
+.submit button{
+  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink);
+  color:var(--q-white); font:inherit; font-size:18px; font-weight:700; padding:17px; cursor:pointer;
+  transition:transform .15s ease, opacity .15s ease;
+}
+.submit button:active{transform:scale(.99)}
+.submit button:disabled{opacity:.4; cursor:default; transform:none}
+.err{
+  display:none; margin:0 0 14px; background:var(--q-red-tint); color:var(--q-ink);
+  border-radius:var(--radius-md); padding:14px 18px; font-size:15px; font-weight:500;
+}
+.err.show{display:block}
+
+/* thanks */
+#thanks{display:none; padding-top:6vh}
+#thanks.show{display:block}
+#thanks .mark{font-weight:900; font-size:44px; letter-spacing:-.03em; line-height:1; margin-bottom:20px}
+#thanks h1{margin-top:0}
+
+.hp{position:absolute; left:-9999px; top:-9999px}
+footer{margin-top:56px; color:var(--q-gray); font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="wordmark" aria-label="qaravan"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="btnRu" aria-pressed="true">РУ</button>
+      <button type="button" id="btnEn" aria-pressed="false">EN</button>
+    </div>
+  </div>
+
+  <div id="formView">
+    <header class="hero" id="hero">
+      <div class="eyebrow" id="evDate"></div>
+      <h1 id="evName" data-i18n="loading">…</h1>
+    </header>
+
+    <form id="f" novalidate="">
+      <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+      <fieldset>
+        <legend><span data-i18n="q_rating"></span> <span class="req">*</span></legend>
+        <div class="stars" id="stars" role="radiogroup"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span data-i18n="q_high"></span><span class="hint" data-i18n="multi"></span></legend>
+        <div class="chips" id="chipsHigh"></div>
+        <div class="other-input" id="highOtherWrap">
+          <input type="text" id="highOther" maxlength="200">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span data-i18n="q_low"></span><span class="hint" data-i18n="multi_none"></span></legend>
+        <div class="chips" id="chipsLow"></div>
+        <div class="other-input" id="lowOtherWrap">
+          <input type="text" id="lowOther" maxlength="200">
+        </div>
+      </fieldset>
+
+      <fieldset id="customWrap" style="display:none">
+        <legend id="customQ"></legend>
+        <textarea id="customA" maxlength="4000"></textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend><span data-i18n="q_moment"></span><span class="hint" data-i18n="moment_hint"></span></legend>
+        <textarea id="moment" maxlength="4000"></textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="q_consent"></legend>
+        <div class="opts" id="consentOpts"></div>
+        <div id="nameWrap">
+          <p class="hint" data-i18n="name_hint"></p>
+          <input type="text" id="respName" maxlength="120">
+        </div>
+        <div id="demogWrap" style="display:none">
+          <p class="hint" data-i18n="demog_hint" style="margin-top:20px"></p>
+          <p style="font-weight:700;margin:26px 0 0" data-i18n="q_stay"></p>
+          <div class="chips" id="chipsStay"></div>
+          <p style="font-weight:700;margin:26px 0 0" data-i18n="q_age"></p>
+          <div class="chips" id="chipsAge"></div>
+          <p style="font-weight:700;margin:26px 0 0" data-i18n="q_whycome"></p>
+          <div class="chips" id="chipsWhy"></div>
+          <div class="other-input" id="whyOtherWrap">
+            <input type="text" id="whyOther" maxlength="200">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="q_contact"></legend>
+        <div class="opts" id="contactOpts"></div>
+        <div id="contactWrap" style="display:none">
+          <p class="hint" data-i18n="contact_hint"></p>
+          <input type="text" id="respContactName" maxlength="120" autocomplete="name">
+          <input type="email" id="respEmail" maxlength="200" autocomplete="email" inputmode="email">
+          <input type="tel" id="respPhone" maxlength="40" autocomplete="tel" inputmode="tel">
+        </div>
+      </fieldset>
+
+      <div class="submit">
+        <p class="err" id="err" role="alert"></p>
+        <button type="submit" id="send" data-i18n="send"></button>
+        <footer>qaravan.org</footer>
+      </div>
+    </form>
+  </div>
+
+  <div id="thanks">
+    <div class="mark" aria-hidden="true"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
+    <h1 data-i18n="thanks_t"></h1>
+    <p class="sub" data-i18n="thanks_p"></p>
+    <div class="donate" id="thanksDonate">
+      <p data-i18n="donate_1"></p>
+      <p data-i18n="donate_2" style="font-weight:400"></p>
+      <a href="#" target="_blank" rel="noopener" class="tdl" data-i18n="donate_btn"></a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== настройки =====
+const DONATE_URL = window.__DONATE_URL__ || "https://givebutter.com/qaravan"; // ссылка на ежемесячный платёж — задаётся переменной окружения DONATE_URL
+
+// ===== все тексты формы — редактируются здесь =====
+const STRINGS = {
+ru: {
+  loading: "Отзыв о событии QARAVAN",
+  multi: "Можно несколько.",
+  multi_none: "Можно несколько, можно ничего.",
+  q_rating: "Как тебе в целом?",
+  q_high: "Что запомнилось больше всего?",
+  high: ["Люди и общение","Атмосфера","Тема и содержание","Те, кто вёл","Другое"],
+  q_low: "Что было некомфортно?",
+  low: ["Неудобное время","Сложно добираться","Слишком долго","Слишком коротко","Было сложно включиться","Мало информации заранее","Другое","Всё было ок"],
+  q_moment: "Расскажи про момент, который остался с тобой.",
+  moment_hint: "Пара фраз своими словами. Их прочитают те, кто готовил и вёл событие.",
+  q_whycome: "Я пошёл / пошла на эту встречу, потому что…",
+  whycome: ["Было одиноко","Здесь мало друзей и знакомых","Интересна тема","Хотелось побыть среди своих","Хотелось говорить по-русски","Хотелось говорить по-английски","Искал(а) поддержку","Хотелось новых знакомств","Другое"],
+  q_consent: "Можем ли мы использовать твои ответы в отчётах и грантовых заявках? Так мы показываем, зачем QARAVAN существует.",
+  consent: ["Да, с именем","Да, но без имени","Лучше не надо"],
+  name_hint: "Как тебя подписать?",
+  demog_hint: "Ещё пара вопросов для отчётов и заявок — можно пропустить.",
+  q_stay: "Как давно ты в США?",
+  stay: ["Меньше года","1–3 года","3–10 лет","Больше 10 лет","Вырос / выросла здесь"],
+  q_age: "Сколько тебе лет?",
+  age: ["18–24","25–34","35–44","45–54","55+"],
+  q_contact: "Можно тебе написать?",
+  contact_opts: ["Да, мне можно написать про этот отзыв","Я анонимно — не пишите мне"],
+  contact_hint: "Достаточно имени и почты — или телефона.",
+  contact_name: "Имя",
+  contact_email: "Почта",
+  contact_phone: "Телефон",
+  q_donate_t: "И последнее.",
+  donate_1: "Все события QARAVAN бесплатные, и мы хотим, чтобы так оставалось. <b>Ежемесячные донаты помогают планировать</b> — снимать залы, готовить программы, делать больше встреч.",
+  donate_2: "Подпишись на любую комфортную сумму: <b>даже $10 в месяц многое меняют.</b>",
+  donate_btn: "Оформить донат",
+  donate: ["Оформлю по ссылке","Вернусь к этому позже","Сейчас не могу"],
+  send: "Отправить",
+  err_rating: "Поставь оценку. Это единственный обязательный вопрос.",
+  err_net: "Не отправилось. Проверь интернет и попробуй ещё раз.",
+  thanks_t: "Спасибо!",
+  thanks_p: "Твои слова прочитают те, кто делал это событие.",
+  thanks_donate: "Ссылка на регулярный донат:",
+  generic_event: "Событие QARAVAN"
+},
+en: {
+  loading: "Event feedback",
+  multi: "Pick any.",
+  multi_none: "Pick any, or none.",
+  q_rating: "How was it overall?",
+  q_high: "What stood out the most?",
+  high: ["The people","The atmosphere","The topic & content","The hosts","Something else"],
+  q_low: "Anything uncomfortable?",
+  low: ["Inconvenient time","Hard to get to","Too long","Too short","Hard to join in","Not enough info beforehand","Other","All good"],
+  q_moment: "Tell us about a moment that stayed with you.",
+  moment_hint: "A few lines in your own words. The people who ran this event will read them.",
+  q_whycome: "I came to this event because…",
+  whycome: ["I was feeling lonely","I don't have many friends here","The topic interested me","I wanted to be around my people","I wanted to speak Russian","I wanted to speak English","I was looking for support","To meet new people","Other"],
+  q_consent: "May we use your answers in reports and grant applications? That\u2019s how we show why QARAVAN exists.",
+  consent: ["Yes, with my name","Yes, anonymously","Please don't"],
+  name_hint: "How should we credit you?",
+  demog_hint: "A couple more questions for reports and grants — feel free to skip.",
+  q_stay: "How long have you been in the US?",
+  stay: ["Under a year","1–3 years","3–10 years","Over 10 years","I grew up here"],
+  q_age: "How old are you?",
+  age: ["18–24","25–34","35–44","45–54","55+"],
+  q_contact: "Want us to be able to reply?",
+  contact_opts: ["You can reach out to me about this feedback","I'm staying anonymous — please don't reach out"],
+  contact_hint: "A name plus email — or a phone number — is enough.",
+  contact_name: "Name",
+  contact_email: "Email",
+  contact_phone: "Phone",
+  q_donate_t: "One last thing.",
+  donate_1: "Every QARAVAN event is free, and we want to keep it that way. <b>Monthly donations let us plan</b> — book venues, prepare programs, run more events.",
+  donate_2: "Pick any amount that feels right: <b>even $10 a month goes a long way.</b>",
+  donate_btn: "Set up a donation",
+  donate: ["I'll set it up via the link","I'll come back to this later","Can't right now"],
+  send: "Send",
+  err_rating: "Please add a star rating. It's the only required question.",
+  err_net: "Didn't go through. Check your connection and try again.",
+  thanks_t: "Thank you!",
+  thanks_p: "The people who made this event will read your words.",
+  thanks_donate: "The recurring donation link is here:",
+  generic_event: "QARAVAN event"
+}};
+
+// ===== состояние =====
+const params = new URLSearchParams(location.search);
+const eventId = ((window.__EVENT_ID__ || "") || params.get("event") || "").replace(/\D/g, "");
+let lang = params.get("lang") === "en" ? "en" : "ru";
+let rating = 0;
+let high = new Set(), low = new Set(), why = new Set();
+let stay = "", age = "";
+let consent = "", donate = "", contactOk = "";
+let eventName = "", eventDate = "", customQ = "";
+
+const $ = id => document.getElementById(id);
+// эти строки содержат <b> — рендерятся как HTML
+const HTML_KEYS = new Set(["donate_1", "donate_2"]);
+const T = () => STRINGS[lang];
+
+// бренд-правило: запятая — это запятая, никаких средних точек в датах
+const cleanDate = s => (s || "").replace(/\s*[·•]\s*/g, ", ");
+const OTHER_LABELS = new Set(["Другое", "Other", "Something else"]);
+
+// ===== рендер текстов =====
+function chip(list, set, wrap, otherWrap){
+  wrap.innerHTML = "";
+  list.forEach((label, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label;
+    b.dataset.i = i;
+    b.setAttribute("aria-pressed", set.has(i) ? "true" : "false");
+    b.onclick = () => {
+      set.has(i) ? set.delete(i) : set.add(i);
+      b.setAttribute("aria-pressed", set.has(i) ? "true" : "false");
+      if (OTHER_LABELS.has(label))
+        otherWrap.classList.toggle("show", set.has(i));
+    };
+    wrap.appendChild(b);
+  });
+  // восстановить видимость «Другое» при смене языка
+  const otherIdx = list.findIndex(l => OTHER_LABELS.has(l));
+  otherWrap.classList.toggle("show", set.has(otherIdx));
+}
+
+// один выбор чипами (демография)
+function chipOne(list, get, set, wrap){
+  wrap.innerHTML = "";
+  list.forEach((label, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label;
+    b.setAttribute("aria-pressed", get() === i ? "true" : "false");
+    b.onclick = () => {
+      set(get() === i ? "" : i);
+      [...wrap.children].forEach((c, j) => c.setAttribute("aria-pressed", get() === j ? "true" : "false"));
+    };
+    wrap.appendChild(b);
+  });
+}
+
+// демография появляется с паузой после согласия, а не сразу
+let demogTimer;
+function revealDemog(i){
+  clearTimeout(demogTimer);
+  const w = $("demogWrap");
+  const yes = i === 0 || i === 1;
+  if (!yes) { w.style.display = "none"; return; }
+  if (w.style.display !== "none") return;
+  demogTimer = setTimeout(() => {
+    w.style.display = "";
+    w.style.opacity = "0"; w.style.transform = "translateY(8px)";
+    w.style.transition = "opacity .28s ease-out, transform .28s ease-out";
+    requestAnimationFrame(() => { w.style.opacity = "1"; w.style.transform = "none"; });
+  }, 450);
+}
+
+function radios(list, wrap, name, onPick, picked){
+  wrap.innerHTML = "";
+  list.forEach((label, i) => {
+    const l = document.createElement("label");
+    const r = document.createElement("input");
+    r.type = "radio"; r.name = name; r.value = i;
+    r.checked = picked === i;
+    r.onchange = () => onPick(i);
+    const s = document.createElement("span");
+    s.textContent = label;
+    l.append(r, s);
+    wrap.appendChild(l);
+  });
+}
+
+function render(){
+  document.documentElement.lang = lang;
+  $("btnRu").setAttribute("aria-pressed", lang === "ru");
+  $("btnEn").setAttribute("aria-pressed", lang === "en");
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const k = el.dataset.i18n;
+    if (k === "loading") { el.textContent = eventName || T().loading; return; }
+    if (HTML_KEYS.has(k)) { el.innerHTML = T()[k]; return; }
+    el.textContent = T()[k];
+  });
+  $("evDate").textContent = cleanDate(eventDate);
+  $("respEmail").placeholder = T().contact_email;
+  $("respPhone").placeholder = T().contact_phone;
+  $("respContactName").placeholder = T().contact_name;
+  document.querySelectorAll(".tdl").forEach(a => a.href = DONATE_URL);
+  chip(T().high, high, $("chipsHigh"), $("highOtherWrap"));
+  chip(T().low,  low,  $("chipsLow"),  $("lowOtherWrap"));
+  chip(T().whycome, why, $("chipsWhy"), $("whyOtherWrap"));
+  chipOne(T().stay, () => stay, v => stay = v, $("chipsStay"));
+  chipOne(T().age, () => age, v => age = v, $("chipsAge"));
+  radios(T().consent, $("consentOpts"), "consent",
+    i => { consent = i; $("nameWrap").classList.toggle("show", i === 0); revealDemog(i); },
+    consent === "" ? -1 : consent);
+  $("nameWrap").classList.toggle("show", consent === 0);
+  revealDemog(consent === "" ? -1 : consent);
+  radios(T().contact_opts, $("contactOpts"), "contactok",
+    i => { contactOk = i; $("contactWrap").style.display = i === 0 ? "" : "none"; },
+    contactOk === "" ? -1 : contactOk);
+  $("contactWrap").style.display = contactOk === 0 ? "" : "none";
+  // кастомный вопрос ивента: текст берётся из monday как есть, без перевода
+  $("customWrap").style.display = customQ ? "" : "none";
+  $("customQ").textContent = customQ;
+  drawStars();
+}
+
+const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15.1,8.3 22,9.3 17,14.1 18.2,21 12,17.8 5.8,21 7,14.1 2,9.3 8.9,8.3"/></svg>';
+
+function drawStars(){
+  const w = $("stars"); w.innerHTML = "";
+  for (let i = 1; i <= 5; i++){
+    const b = document.createElement("button");
+    b.type = "button"; b.innerHTML = STAR;
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", rating === i ? "true" : "false");
+    b.setAttribute("aria-label", String(i));
+    b.classList.toggle("on", i <= rating);
+    b.onclick = () => { rating = i; drawStars(); $("err").classList.remove("show"); };
+    w.appendChild(b);
+  }
+}
+
+$("btnRu").onclick = () => { lang = "ru"; render(); };
+$("btnEn").onclick = () => { lang = "en"; render(); };
+
+// ===== имя ивента из monday =====
+async function loadEvent(){
+  if (!eventId) { eventName = ""; $("hero").classList.add("on"); render(); return; }
+  try{
+    const r = await fetch(`/api/event?id=${eventId}`);
+    if (r.ok){
+      const d = await r.json();
+      eventName = d.name || "";
+      eventDate = d.date || "";
+      customQ = d.custom || "";
+    }
+  }catch(e){}
+  $("hero").classList.add("on");
+  render();
+}
+
+// ===== отправка =====
+$("f").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const err = $("err");
+  if (!rating){
+    err.textContent = T().err_rating; err.classList.add("show");
+    const box = $("stars").getBoundingClientRect();
+    window.scrollTo({ top: window.scrollY + box.top - 120, behavior: "smooth" });
+    return;
+  }
+  err.classList.remove("show");
+  $("send").disabled = true;
+
+  const pick = (set, list, otherVal) => {
+    const out = [...set].map(i => STRINGS.ru[list][i] ?? "").filter(Boolean);
+    if (otherVal.trim()) out.push("Другое: " + otherVal.trim());
+    return out;
+  };
+  // метки пишем в monday по-русски независимо от языка интерфейса — одна система меток в колонках
+  const body = {
+    eventId, lang,
+    rating,
+    highlights: pick(high, "high", $("highOther").value),
+    discomfort: pick(low, "low", $("lowOther").value),
+    moment: $("moment").value.trim(),
+    why_come: pick(why, "whycome", $("whyOther").value),
+    stay: stay === "" ? "" : STRINGS.ru.stay[stay],
+    age: age === "" ? "" : STRINGS.ru.age[age],
+    consent: consent === "" ? "" : STRINGS.ru.consent[consent],
+    name: consent === 0 ? $("respName").value.trim() : "",
+    email: contactOk === 0 ? $("respEmail").value.trim() : "",
+    phone: contactOk === 0 ? $("respPhone").value.trim() : "",
+    contact_name: contactOk === 0 ? $("respContactName").value.trim() : "",
+    contact_ok: contactOk === "" ? "" : STRINGS.ru.contact_opts[contactOk],
+    donate: donate === "" ? "" : STRINGS.ru.donate[donate],
+    custom_a: customQ ? $("customA").value.trim() : "",
+    website: document.querySelector(".hp").value
+  };
+  try{
+    const r = await fetch("/api/submit", {
+      method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error();
+    $("formView").style.display = "none";
+    $("thanks").classList.add("show");
+    window.scrollTo({top:0});
+  }catch(e){
+    err.textContent = T().err_net; err.classList.add("show");
+    $("send").disabled = false;
+  }
+});
+
+render();
+loadEvent();
+</script>
+
+
+</body></html>
