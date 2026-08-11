@@ -570,23 +570,19 @@ $("f").addEventListener("submit", async ev => {
   err.classList.remove("show");
   $("send").disabled = true;
 
-  const pick = (set, list, otherVal, dict) => {
-    const out = [...set].map(i => STRINGS[dict][list][i] ?? "").filter(Boolean);
-    if (otherVal.trim()) out.push((dict === "en" ? "Other: " : "Другое: ") + otherVal.trim());
+  // метки пишем в monday по-русски независимо от языка интерфейса
+  const pick = (set, list, otherVal) => {
+    const out = [...set].map(i => STRINGS.ru[list][i] ?? "").filter(Boolean);
+    if (otherVal.trim()) out.push("Другое: " + otherVal.trim());
     return out;
   };
-  // Метки для колонок monday всегда по-русски; если форма была на английском —
-  // рядом отправляем то, что ведущий видел на экране.
-  const shown = (v) => lang === "en" ? v : undefined;
   const body = {
     isLead: 1, eventId, lang,
     headcount: Number(head),
     rating,
     comment: rating ? $("comment").value.trim() : "",
-    obstacles: pick(obstacles, "obstacles", $("obstaclesOther").value, "ru"),
-    missing: pick(missing, "missing", $("missingOther").value, "ru"),
-    obstacles_en: shown(pick(obstacles, "obstacles", $("obstaclesOther").value, "en")),
-    missing_en: shown(pick(missing, "missing", $("missingOther").value, "en")),
+    obstacles: pick(obstacles, "obstacles", $("obstaclesOther").value),
+    missing: pick(missing, "missing", $("missingOther").value),
     photos: photos.filter(p => p.status === "done").map(p => ({ token: p.token, mime: p.file.type || "", name: p.file.name || "" })),
     photo_credit: $("phCredit").value.trim(),
     website: document.querySelector(".hp").value

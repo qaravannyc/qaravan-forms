@@ -652,33 +652,34 @@ export default async function handler(req, res) {
       }
       // Фото и видео гостя уходят в альбом ИМЕННО этого события — в общей форме
       // каждое событие грузит свои файлы отдельно.
-      let photoLine = null;
+      let photoRu = null;
       const media = Array.isArray(entry.photos)
         ? entry.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20)
         : [];
       if (!noShow && media.length) {
         try {
           const done = await filePhotos(evi, media, String(b.photo_credit || "").slice(0, 120));
-          photoLine = photoResultLine(evi, done, b.photo_credit, media.length, b.lang);
+          photoRu = photoResultLine(evi, done, b.photo_credit, media.length, "ru");
         } catch (e) {
           console.error("multi photos failed:", e.message);
-          photoLine = photoFailLine(media, e.message, b.lang);
+          photoRu = photoFailLine(media, e.message, "ru");
         }
       }
+      // Подписи русские всегда — этот текст разбирает робот рассылки, см. выше.
       const t = dict(b);
       const lines = noShow
-        ? [t.mNoShow]
+        ? [M.ru.mNoShow]
         : [
-            existing ? t.mUpd : t.mNew,
-            `${t.uRating}: ${rating || "—"}`,
-            hiSeen.length ? `${t.mLiked}: ${hiSeen.join(", ")}` : null,
-            loSeen.length ? `${t.uncomfortable}: ${loSeen.join(", ")}` : null,
-            `${t.uComment}: ${comment || "—"}`,
+            existing ? M.ru.mUpd : M.ru.mNew,
+            `${M.ru.uRating}: ${rating || "—"}`,
+            hi.length ? `${M.ru.mLiked}: ${hi.join(", ")}` : null,
+            lo.length ? `${M.ru.uncomfortable}: ${lo.join(", ")}` : null,
+            `${M.ru.uComment}: ${comment || "—"}`,
             evi.custom ? `${evi.custom}\n${String(entry.custom_a || "").trim() || "—"}` : null,
-            photoLine,
-            `${t.uConsent}: ${said(b, "consent", b.consent) || "—"}${b.name ? ` (${t.uSign}: ${b.name})` : ""}`,
-            `${t.uContact}: ${said(b, "contact_ok", b.contact_ok) || "—"}${b.contact_name ? ` | ${t.uName}: ${b.contact_name}` : ""}${b.email ? ` | ${t.uEmail}: ${b.email}` : ""}${b.phone ? ` | ${t.uPhone}: ${b.phone}` : ""}`,
-            `${t.uFormLang}: ${b.lang || "ru"}`,
+            photoRu,
+            `${M.ru.uConsent}: ${b.consent || "—"}${b.name ? ` (${M.ru.uSign}: ${b.name})` : ""}`,
+            `${M.ru.uContact}: ${b.contact_ok || "—"}${b.contact_name ? ` | ${M.ru.uName}: ${b.contact_name}` : ""}${b.email ? ` | ${M.ru.uEmail}: ${b.email}` : ""}${b.phone ? ` | ${M.ru.uPhone}: ${b.phone}` : ""}`,
+            `${M.ru.uFormLang}: ${b.lang || "ru"}`,
           ];
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
         { i: String(itemId), t: lines.filter(Boolean).join("\n") });
@@ -703,7 +704,6 @@ export default async function handler(req, res) {
   }
 
   if (b.isLead) {
-    const t = dict(b);
     // Ответ ведущего не должен падать из-за колонки Attendance: её однажды
     // удалили с доски, и каждый ответ ведущего умирал с 500. Число всё равно
     // сохраняется в тексте отзыва («Сколько пришло: N») и уходит в Slack.
@@ -714,7 +714,7 @@ export default async function handler(req, res) {
         { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({ [ATTENDED_COL]: String(b.headcount) }) }
       ).catch((e) => {
         console.error("attended write failed:", e.message);
-        attendedNote = t.lAttendedFail;
+        attendedNote = M.ru.lAttendedFail;
       });
     }
     const cv = { [F.eventName]: ev?.name || "", [F.lang]: { labels: [b.lang === "en" ? "en" : "ru"] } };
@@ -728,22 +728,23 @@ export default async function handler(req, res) {
     if (ev && leadMedia.length) {
       try {
         const done = await filePhotos(ev, leadMedia, String(b.photo_credit || "").slice(0, 120));
-        leadPhotoLine = photoResultLine(ev, done, b.photo_credit, leadMedia.length, b.lang);
+        leadPhotoLine = photoResultLine(ev, done, b.photo_credit, leadMedia.length, "ru");
       } catch (e) {
-        leadPhotoLine = photoFailLine(leadMedia, e.message, b.lang);
+        leadPhotoLine = photoFailLine(leadMedia, e.message, "ru");
       }
     }
+    // Подписи русские всегда — этот текст разбирает робот рассылки, см. ниже.
     const body = [
-      `${t.lHead}: ${b.headcount}`, attendedNote, `${t.uRating}: ${b.rating || "—"}`,
-      `${t.uComment}: ${b.comment || "—"}`,
-      `${t.lObstacles}: ${(said(b, "obstacles", b.obstacles) || []).join("; ") || "—"}`,
-      `${t.lMissing}: ${(said(b, "missing", b.missing) || []).join("; ") || "—"}`,
+      `${M.ru.lHead}: ${b.headcount}`, attendedNote, `${M.ru.uRating}: ${b.rating || "—"}`,
+      `${M.ru.uComment}: ${b.comment || "—"}`,
+      `${M.ru.lObstacles}: ${(b.obstacles || []).join("; ") || "—"}`,
+      `${M.ru.lMissing}: ${(b.missing || []).join("; ") || "—"}`,
       leadPhotoLine,
     ].filter(Boolean).join("\n");
     await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
       { i: String(d.create_item.id), t: body });
-    const leadHeader = `${t.lHeader} — ${ev?.name || t.event}`;
-    await slackNotify(leadHeader, slackBlocks(leadHeader, ev, body, d.create_item.id, b.lang));
+    const leadHeader = `${M.ru.lHeader} — ${ev?.name || M.ru.event}`;
+    await slackNotify(leadHeader, slackBlocks(leadHeader, ev, body, d.create_item.id, "ru"));
     return res.end('{"ok":true}');
   }
 
@@ -782,33 +783,39 @@ export default async function handler(req, res) {
   }
 
   // Photos/videos: file the browser-uploaded bytes into the event album.
-  let photoLine = null;
+  // Формулируем дважды: по-русски — в запись на доске, на языке формы — в Slack.
+  let photoLine = null, photoRu = null;
   const media = Array.isArray(b.photos) ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20) : [];
   if (ev && media.length) {
     try {
       const done = await filePhotos(ev, media, String(b.photo_credit || "").slice(0, 120));
       photoLine = photoResultLine(ev, done, b.photo_credit, media.length, b.lang);
+      photoRu = photoResultLine(ev, done, b.photo_credit, media.length, "ru");
     } catch (e) {
       photoLine = photoFailLine(media, e.message, b.lang);
+      photoRu = photoFailLine(media, e.message, "ru");
     }
   }
 
-  // Полная запись на доске — здесь живут контакты и всё, что человек ответил,
-  // теми же словами, что он видел на экране. Вопросы, которых форма не задаёт,
-  // сюда не попадают: прочерк занимает строку и не значит ничего.
+  // Полная запись на доске — здесь живут контакты и всё, что человек ответил.
+  // Подписи и метки ВСЕГДА русские, даже когда форма была английской: этот
+  // текст читает не только человек — робот рассылки (events-robot, robot/send.mjs)
+  // разбирает его регулярками «Оценка:», «Комментарий:», «Некомфортно:», чтобы
+  // собрать дайджест ведущему. Переведёшь подписи — ответы пропадут из дайджеста.
+  // Свободный текст остаётся как написали. Языковую версию видно в Slack.
   const t = dict(b);
   const lines = [
-    updated ? t.uResent : null,
-    `${t.uRating}: ${b.rating || "—"}`,
-    `${t.liked}: ${(said(b, "highlights", b.highlights) || []).join("; ") || "—"}`,
-    `${t.uncomfortable}: ${(said(b, "discomfort", b.discomfort) || []).join("; ") || "—"}`,
-    `${t.uComment}: ${b.moment || "—"}`,
-    `${t.uCame}: ${(said(b, "why_come", b.why_come) || []).join("; ") || "—"}`,
-    `${t.uConsent}: ${said(b, "consent", b.consent) || "—"}${b.name ? ` (${t.uSign}: ${b.name})` : ""}`,
-    `${t.uContact}: ${said(b, "contact_ok", b.contact_ok) || "—"}${b.contact_name ? ` | ${t.uName}: ${b.contact_name}` : ""}${b.email ? ` | ${t.uEmail}: ${b.email}` : ""}${b.phone ? ` | ${t.uPhone}: ${b.phone}` : ""}`,
-    ev?.custom ? `${t.uOwnQ}: ${ev.custom}\n${t.uAnswer}: ${b.custom_a || "—"}` : null,
-    photoLine,
-    `${t.uFormLang}: ${b.lang || "ru"}`,
+    updated ? M.ru.uResent : null,
+    `${M.ru.uRating}: ${b.rating || "—"}`,
+    `${M.ru.liked}: ${(b.highlights || []).join("; ") || "—"}`,
+    `${M.ru.uncomfortable}: ${(b.discomfort || []).join("; ") || "—"}`,
+    `${M.ru.uComment}: ${b.moment || "—"}`,
+    `${M.ru.uCame}: ${(b.why_come || []).join("; ") || "—"}`,
+    `${M.ru.uConsent}: ${b.consent || "—"}${b.name ? ` (${M.ru.uSign}: ${b.name})` : ""}`,
+    `${M.ru.uContact}: ${b.contact_ok || "—"}${b.contact_name ? ` | ${M.ru.uName}: ${b.contact_name}` : ""}${b.email ? ` | ${M.ru.uEmail}: ${b.email}` : ""}${b.phone ? ` | ${M.ru.uPhone}: ${b.phone}` : ""}`,
+    ev?.custom ? `${M.ru.uOwnQ}: ${ev.custom}\n${M.ru.uAnswer}: ${b.custom_a || "—"}` : null,
+    photoRu,
+    `${M.ru.uFormLang}: ${b.lang || "ru"}`,
   ].filter(Boolean);
   await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
     { i: String(itemId), t: lines.join("\n") });
