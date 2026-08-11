@@ -12,7 +12,7 @@
 :root{
   --q-red:#FF3333; --q-orange:#FF9933; --q-sky:#0099CC; --q-purple:#7668AA; --q-green:#66CC66; --q-gold:#EBC53F;
   --q-ink:#333333; --q-gray:#6E6E6E; --q-line:#ECE8DE; --q-paper:#FFFDF5; --q-white:#FFFFFF;
-  --q-red-tint:#FFE4E4; --q-orange-tint:#FFEDD9; --q-sky-tint:#DDF1F8;
+  --q-red-tint:#FFE4E4; --q-orange-tint:#FFEDD9; --q-sky-tint:#DDF1F8; --q-orange-deep:#C4691A;
   --font-brand:'Montserrat','Helvetica Neue',Arial,sans-serif;
   --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-pill:999px;
   --shadow-card:0 2px 6px rgba(51,51,51,.05), 0 10px 28px rgba(51,51,51,.07);
@@ -35,19 +35,19 @@ h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-sp
 .sub{color:var(--q-gray); margin:0; text-wrap:pretty}
 
 /* прогресс: сколько событий уже позади */
-.prog{margin-top:22px; display:flex; align-items:center; gap:12px}
+.prog{margin-top:18px; display:flex; align-items:center; gap:12px}
 .prog .track{flex:1; height:6px; border-radius:var(--radius-pill); background:var(--q-line); overflow:hidden}
 .prog .track i{display:block; height:100%; width:0; background:var(--q-sky); border-radius:var(--radius-pill); transition:width .3s ease}
 .prog .lbl{font-size:13px; font-weight:700; color:var(--q-gray); white-space:nowrap}
 
-#events{display:grid; margin-top:30px}
+#events{display:grid; margin-top:26px}
 .ev{scroll-margin-top:20px}
 .ev+.ev{border-top:1px solid var(--q-line); padding-top:30px; margin-top:32px}
 .ev.enter{animation:evIn .32s ease-out both}
 @keyframes evIn{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
 /* шапка события — по центру, дата плашкой как в брендбуке */
 .ev-head{text-align:center}
-.ev .date{display:inline-block; background:var(--q-sky); color:var(--q-white); font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; padding:7px 16px; border-radius:var(--radius-pill); line-height:1.2}
+.ev .date{font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--q-gray); line-height:1.2}
 .ev h2{font-size:22px; font-weight:800; line-height:1.2; letter-spacing:-.02em; margin:12px 0 0; text-wrap:balance}
 
 /* звёзды: компактные, с живой подсветкой при наведении */
@@ -58,12 +58,12 @@ h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-sp
 .stars button.on{color:var(--q-orange); border-color:var(--q-orange); background:var(--q-orange-tint)}
 .stars button.hot{color:var(--q-orange); border-color:var(--q-orange); background:var(--q-orange-tint); transform:translateY(-2px)}
 .stars svg{width:24px; height:24px; display:block; fill:currentColor}
-.stars-word{text-align:center; margin-top:10px; font-size:15px; font-weight:800; color:var(--q-orange); min-height:22px; letter-spacing:-.01em}
+.stars-word{text-align:center; margin-top:10px; font-size:15px; font-weight:800; color:var(--q-orange-deep); min-height:22px; letter-spacing:-.01em}
 @media (max-width:380px){.stars button{width:42px; height:42px} .stars svg{width:21px; height:21px}}
 .need{margin-top:10px; font-size:14px; font-weight:700; color:var(--q-red); text-align:center}
 
 /* варианты ответов */
-.qa{margin-top:22px; text-align:center}
+.qa{margin-top:18px; text-align:center}
 .qa-q{font-size:16px; font-weight:700; line-height:1.35; text-wrap:pretty}
 .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; justify-content:center}
 .chips button{border:2px solid var(--q-line); background:var(--q-white); color:var(--q-ink); border-radius:var(--radius-pill); padding:9px 16px; font:inherit; font-size:15px; font-weight:700; cursor:pointer; transition:transform .12s ease,background .15s ease,border-color .15s ease,color .15s ease}
@@ -77,12 +77,15 @@ h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-sp
 .chips button:nth-child(6n)[aria-pressed="true"]{background:var(--q-ink); border-color:var(--q-ink)}
 .linkbtn{border:0; background:none; padding:0; font:inherit; font-size:15px; font-weight:700; color:var(--q-sky); text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:2px; cursor:pointer; transition:color .15s ease}
 .linkbtn:hover{color:var(--q-purple)}
+.linkbtn.dim{color:var(--q-gray)}
+.ta-toggle{margin-top:16px; text-align:center}
+.f-lab{display:block; font-size:13px; font-weight:700; color:var(--q-gray); margin-bottom:6px; text-align:left}
 .absent{margin-top:14px; font-size:15px; color:var(--q-gray); display:flex; gap:10px; flex-wrap:wrap; align-items:baseline; justify-content:center}
-.na-wrap{margin-top:18px; text-align:center}
+.na-wrap{margin-top:14px; text-align:center}
 .cq{margin-top:18px}
 .cq-q{display:block; font-size:16px; font-weight:700; line-height:1.35; text-wrap:pretty}
 .cq textarea{min-height:80px}
-.next{margin-top:22px; text-align:center}
+.next{margin-top:16px; text-align:center}
 .next button{border:2px solid var(--q-ink); background:var(--q-ink); color:var(--q-white); border-radius:var(--radius-pill); padding:14px 44px; font:inherit; font-size:16px; font-weight:700; cursor:pointer; transition:transform .15s ease,opacity .15s ease}
 .next button:hover{opacity:.92}
 .next button:active{transform:scale(.98)}
@@ -102,11 +105,10 @@ input.bad{border-color:var(--q-red) !important}
 .field-hint{display:none; color:var(--q-red); font-size:14px; font-weight:700; margin:8px 0 0}
 .field-hint.show{display:block}
 
-/* фото и видео к конкретному событию */
-.ph{margin-top:18px; background:var(--q-sky-tint); border-radius:var(--radius-lg); padding:18px}
-.ph .t{font-weight:700; font-size:16px; line-height:1.35}
-.ph .d{font-size:14px; color:var(--q-ink); margin-top:6px; text-wrap:pretty}
-.ph-add{margin-top:14px; border:2px dashed var(--q-sky); background:var(--q-white); border-radius:var(--radius-md); width:100%; padding:14px; font:inherit; font-size:16px; font-weight:700; color:var(--q-sky); cursor:pointer; transition:transform .15s ease}
+/* фото и видео к конкретному событию — компактно: кнопка и строка */
+.ph{margin-top:14px}
+.ph-cap{font-size:13px; color:var(--q-gray); margin:8px 0 0; text-align:center; text-wrap:pretty}
+.ph-add{border:2px dashed var(--q-sky); background:var(--q-white); border-radius:var(--radius-md); width:100%; padding:13px; font:inherit; font-size:16px; font-weight:700; color:var(--q-sky); cursor:pointer; transition:transform .15s ease}
 .ph-add:active{transform:scale(.99)}
 .ph-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px}
 .ph-item{position:relative; border-radius:var(--radius-md); overflow:hidden; background:var(--q-line); aspect-ratio:1}
@@ -189,9 +191,9 @@ footer{margin-top:44px; color:var(--q-gray); font-size:13px}
           <div class="opts" id="contactOpts"></div>
           <div id="contactWrap">
             <p class="hint" data-i18n="contact_hint"></p>
-            <input type="text" id="respContactName" maxlength="120" autocomplete="name">
-            <input type="email" id="respEmail" maxlength="200" autocomplete="email" inputmode="email">
-            <input type="tel" id="respPhone" maxlength="40" autocomplete="tel" inputmode="tel">
+            <div><label class="f-lab" for="respContactName" data-i18n="contact_name"></label><input type="text" id="respContactName" maxlength="120" autocomplete="name"></div>
+            <div><label class="f-lab" for="respEmail" data-i18n="contact_email"></label><input type="email" id="respEmail" maxlength="200" autocomplete="email" inputmode="email" placeholder="anna@example.com"></div>
+            <div><label class="f-lab" for="respPhone" data-i18n="contact_phone"></label><input type="tel" id="respPhone" maxlength="40" autocomplete="tel" inputmode="tel" placeholder="(929) 123-4567"></div>
             <p class="field-hint" id="phoneHint" data-i18n="phone_bad"></p>
           </div>
         </fieldset>
@@ -232,8 +234,11 @@ ru: {
   chips_good: ["Люди и общение", "Атмосфера", "Тема и содержание", "Организаторы"],
   chips_bad: ["Неудобное время", "Сложно добираться", "Слишком долго", "Слишком коротко", "Было сложно включиться", "Мало информации заранее"],
   prog: (a, b) => `${a} из ${b}`,
+  prog_zero: n => n === 1 ? "1 событие" : (n <= 4 ? `${n} события` : `${n} событий`),
   prog_done: "Готово",
   ev_comment_ph: "Хочешь добавить пару слов? Не обязательно",
+  add_words: "Добавить пару слов",
+  photos_short: "Нам они очень нужны — для отчётов, постов и грантов.",
   na: "Меня там не было",
   na_note: "Ок, это событие не считаем.",
   na_undo: "Вернуть",
@@ -241,8 +246,6 @@ ru: {
   next: "Дальше",
   next_last: "Готово",
   change: "изменить",
-  photos_t: "Есть фото или видео с этого события?",
-  photos_d: "Поделись, пожалуйста — нам они правда нужны. Из ваших кадров мы делаем отчёты, посты и заявки на гранты: без них у нас почти ничего не остаётся.",
   photos_add: "Добавить фото и видео",
   photos_note: "Загружая, ты разрешаешь QARAVAN использовать эти фото и видео в своих материалах и соцсетях.",
   photos_retry: "Ещё раз",
@@ -276,8 +279,11 @@ en: {
   chips_good: ["The people", "The atmosphere", "The topic & content", "The organizers"],
   chips_bad: ["Inconvenient time", "Hard to get to", "Too long", "Too short", "Hard to join in", "Not enough info beforehand"],
   prog: (a, b) => `${a} of ${b}`,
+  prog_zero: n => `${n} event${n === 1 ? "" : "s"}`,
   prog_done: "Done",
   ev_comment_ph: "Want to add a few words? Optional",
+  add_words: "Add a few words",
+  photos_short: "We really need them — for reports, posts and grants.",
   na: "I wasn't there",
   na_note: "Got it — we'll skip this one.",
   na_undo: "Undo",
@@ -285,8 +291,6 @@ en: {
   next: "Next",
   next_last: "Done",
   change: "change",
-  photos_t: "Got photos or videos from this one?",
-  photos_d: "Please share them — we really do need them. Your shots become our reports, posts and grant applications: without them we're left with almost nothing.",
   photos_add: "Add photos and videos",
   photos_note: "By uploading you allow QARAVAN to use these photos and videos in our materials and on social media.",
   photos_retry: "Try again",
@@ -568,10 +572,23 @@ function fillActive(e, host, idx){
     });
     qa.append(q, chips); host.appendChild(qa);
 
-    const ta = document.createElement("textarea");
-    ta.placeholder = T().ev_comment_ph; ta.maxLength = 2000; ta.value = e.comment || "";
-    ta.oninput = () => { e.comment = ta.value; saveDraft(); };
-    host.appendChild(ta);
+    // поле для текста свёрнуто в ссылку — пустой textarea не должен занимать экран
+    if (e.comment || e.taOpen){
+      const tb = document.createElement("div"); tb.className = "ta-block";
+      const ta = document.createElement("textarea");
+      ta.placeholder = T().ev_comment_ph; ta.maxLength = 2000; ta.value = e.comment || "";
+      ta.oninput = () => { e.comment = ta.value; saveDraft(); };
+      tb.appendChild(ta); host.appendChild(tb);
+    } else {
+      const tw = document.createElement("div"); tw.className = "ta-toggle";
+      const tl = document.createElement("button");
+      tl.type = "button"; tl.className = "linkbtn dim"; tl.textContent = T().add_words;
+      tl.onclick = () => {
+        e.taOpen = true; render();
+        setTimeout(() => document.querySelector(`[data-ev="${idx}"] .ta-block textarea`)?.focus(), 60);
+      };
+      tw.appendChild(tl); host.appendChild(tw);
+    }
 
     // отдельный вопрос про это событие — если организаторы его задали
     if (e.custom){
@@ -585,22 +602,24 @@ function fillActive(e, host, idx){
       cq.append(lab, cta); host.appendChild(cq);
     }
 
-    // фото и видео — к альбому именно этого события
+    // фото и видео — к альбому именно этого события. Компактно: кнопка и одна
+    // строка; согласие показываем, только когда файлы уже добавлены.
     const ph = document.createElement("div"); ph.className = "ph";
-    const t = document.createElement("div"); t.className = "t"; t.textContent = T().photos_t;
-    const d = document.createElement("div"); d.className = "d"; d.textContent = T().photos_d;
     const inp = document.createElement("input");
     inp.type = "file"; inp.accept = "image/*,video/*"; inp.multiple = true; inp.style.display = "none";
     const add = document.createElement("button");
-    add.type = "button"; add.className = "ph-add"; add.textContent = T().photos_add;
+    add.type = "button"; add.className = "ph-add"; add.textContent = "📷 " + T().photos_add;
     add.onclick = () => inp.click();
+    const cap = document.createElement("p"); cap.className = "ph-cap"; cap.textContent = T().photos_short;
     const grid = document.createElement("div"); grid.className = "ph-grid";
     const errEl = document.createElement("p"); errEl.className = "ph-err";
     const note = document.createElement("p"); note.className = "ph-note"; note.textContent = T().photos_note;
-    inp.onchange = () => { phAdd(e, Array.from(inp.files || []), grid, errEl); inp.value = ""; };
-    ph.append(t, d, add, inp, grid, errEl, note);
+    const syncNote = () => { note.style.display = phLive(e).length ? "" : "none"; };
+    inp.onchange = () => { phAdd(e, Array.from(inp.files || []), grid, errEl); inp.value = ""; syncNote(); };
+    ph.append(add, inp, cap, grid, errEl, note);
     // уже загруженные превью переносим в новую сетку — перерисовка их не теряет
     phLive(e).forEach(p => grid.appendChild(p.el));
+    syncNote();
     host.appendChild(ph);
   }
 
@@ -639,7 +658,7 @@ function renderEvents(){
   });
   const done = ev.filter(answered).length;
   $("progBar").style.width = (ev.length ? Math.round(done / ev.length * 100) : 0) + "%";
-  $("progLbl").textContent = done === ev.length ? T().prog_done : T().prog(done, ev.length);
+  $("progLbl").textContent = done === ev.length ? T().prog_done : (done === 0 ? T().prog_zero(ev.length) : T().prog(done, ev.length));
   $("prog").style.display = ev.length > 1 ? "" : "none";
   $("tail").classList.toggle("show", allAnswered());
 }
@@ -654,9 +673,6 @@ function render(){
     el.textContent = T()[k];
   });
   document.querySelectorAll(".tdl").forEach(a => a.href = DONATE_URL);
-  $("respEmail").placeholder = T().contact_email;
-  $("respPhone").placeholder = T().contact_phone;
-  $("respContactName").placeholder = T().contact_name;
   renderEvents();
   radios(T().consent, $("consentOpts"), "consent",
     i => { consent = i; $("nameWrap").classList.toggle("show", i === 0); },
