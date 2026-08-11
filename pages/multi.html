@@ -175,6 +175,15 @@ footer{margin-top:44px; color:var(--q-gray); font-size:13px}
           </div>
         </fieldset>
 
+        <fieldset>
+          <legend data-i18n="q_donate"></legend>
+          <div class="donate">
+            <p data-i18n="donate_1"></p>
+            <p data-i18n="donate_2" style="font-weight:400"></p>
+            <a href="#" target="_blank" rel="noopener" class="tdl" data-i18n="donate_btn"></a>
+          </div>
+        </fieldset>
+
         <div class="submit">
           <p class="err" id="err" role="alert"></p>
           <button type="submit" id="send" data-i18n="send"></button>
@@ -188,11 +197,6 @@ footer{margin-top:44px; color:var(--q-gray); font-size:13px}
     <div class="mark" aria-hidden="true"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
     <h1 data-i18n="thanks_t"></h1>
     <p class="sub" data-i18n="thanks_p"></p>
-    <div class="donate">
-      <p data-i18n="donate_1"></p>
-      <p data-i18n="donate_2" style="font-weight:400"></p>
-      <a href="#" target="_blank" rel="noopener" class="tdl" data-i18n="donate_btn"></a>
-    </div>
   </div>
 </div>
 
@@ -200,8 +204,8 @@ footer{margin-top:44px; color:var(--q-gray); font-size:13px}
 const DONATE_URL = window.__DONATE_URL__ || "https://givebutter.com/qaravan";
 const STRINGS = {
 ru: {
-  title: "Как тебе наши события?",
-  intro: "Поставь звёзды каждому. Если хочется — напиши пару слов. Показываем по одному, это быстро.",
+  title: "Как тебе события этой недели?",
+  intro: "Поставь звёзды каждому. Если хочется — напиши пару слов. Две минуты.",
   prog: (a, b) => `${a} из ${b}`,
   prog_done: "Готово",
   ev_comment_ph: "Пара слов: что понравилось, что улучшить?",
@@ -212,7 +216,6 @@ ru: {
   next: "Дальше",
   next_last: "Готово",
   change: "изменить",
-  show_all: "Показать все события сразу",
   photos_t: "Есть фото или видео с этого события?",
   photos_d: "Поделись, пожалуйста — нам они правда нужны. Из ваших кадров мы делаем отчёты, посты и заявки на гранты: без них у нас почти ничего не остаётся.",
   photos_add: "Добавить фото и видео",
@@ -234,14 +237,15 @@ ru: {
   donate_2: "Подпишись на ежемесячный донат: <b>$20 в месяц помогают нам готовить новые встречи и делают планирование более предсказуемым.</b>",
   donate_btn: "Поддержать QARAVAN",
   send: "Отправить",
-  err_rating: "Поставь оценку хотя бы одному событию — или отметь, что тебя там не было.",
+  err_rating: "Поставь звёзды каждому событию — или отметь «Меня там не было».",
   err_net: "Не отправилось. Проверь интернет и попробуй ещё раз.",
+  q_donate: "И последнее.",
   thanks_t: "Спасибо!",
-  thanks_p: "Твои слова прочитают те, кто делал эти события."
+  thanks_p: "Передадим команде."
 },
 en: {
-  title: "How were our events?",
-  intro: "Star each one. Add a few words if you like. We show them one at a time — it's quick.",
+  title: "How were this week's events?",
+  intro: "Star each one. Add a few words if you like. Two minutes.",
   prog: (a, b) => `${a} of ${b}`,
   prog_done: "Done",
   ev_comment_ph: "A few words: what was good, what could be better?",
@@ -252,7 +256,6 @@ en: {
   next: "Next",
   next_last: "Done",
   change: "change",
-  show_all: "Show all events at once",
   photos_t: "Got photos or videos from this one?",
   photos_d: "Please share them — we really do need them. Your shots become our reports, posts and grant applications: without them we're left with almost nothing.",
   photos_add: "Add photos and videos",
@@ -274,10 +277,11 @@ en: {
   donate_2: "Set up a monthly donation: <b>$20 a month helps us prepare new meetups and makes planning more predictable.</b>",
   donate_btn: "Support QARAVAN",
   send: "Send",
-  err_rating: "Rate at least one event — or mark that you weren't there.",
+  err_rating: "Add stars for each event — or mark “I wasn't there”.",
   err_net: "Didn't go through. Check your connection and try again.",
+  q_donate: "One last thing.",
   thanks_t: "Thank you!",
-  thanks_p: "The people who made these events will read your words."
+  thanks_p: "We'll pass it on to the team."
 }};
 
 const params = new URLSearchParams(location.search);
@@ -572,14 +576,6 @@ function renderEvents(){
     if (showAll || i === cursor) fillActive(e, host, i);
     else fillDone(e, host, i);
   });
-  if (!showAll && ev.length > 2 && cursor < ev.length){
-    const more = document.createElement("div");
-    more.style.marginTop = "26px";
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "linkbtn"; b.style.fontSize = "14px"; b.style.color = "var(--q-gray)"; b.textContent = T().show_all;
-    b.onclick = () => { showAll = true; render(); };
-    more.appendChild(b); box.appendChild(more);
-  }
   const done = ev.filter(answered).length;
   $("progBar").style.width = (ev.length ? Math.round(done / ev.length * 100) : 0) + "%";
   $("progLbl").textContent = done === ev.length ? T().prog_done : T().prog(done, ev.length);
