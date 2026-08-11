@@ -28,6 +28,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 .wrap{max-width:560px; margin:0 auto; padding:20px 20px 64px}
 .top{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:4px 0 32px}
 .wordmark{font-weight:900; font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap}
+a.wordmark{text-decoration:none}
 .lang{display:flex; border:1px solid var(--q-line); border-radius:var(--radius-pill); overflow:hidden; background:var(--q-white); box-shadow:var(--shadow-card)}
 .lang button{border:0; background:transparent; padding:8px 15px; font:inherit; font-size:13px; font-weight:700; color:var(--q-ink); cursor:pointer; line-height:1.2; transition:background .15s ease,color .15s ease}
 .lang button[aria-pressed="true"]{background:var(--q-ink); color:var(--q-white)}
@@ -153,7 +154,6 @@ legend+*{clear:both}
 .err.show{display:block}
 #thanks{display:none; padding-top:6vh}
 #thanks.show{display:block}
-#thanks .mark{font-weight:900; font-size:44px; letter-spacing:-.03em; line-height:1; margin-bottom:20px}
 .hp{position:absolute; left:-9999px; top:-9999px}
 footer{margin-top:44px; color:var(--q-gray); font-size:13px}
 </style>
@@ -161,7 +161,7 @@ footer{margin-top:44px; color:var(--q-gray); font-size:13px}
 <body>
 <div class="wrap">
   <div class="top">
-    <div class="wordmark" aria-label="qaravan"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
+    <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></a>
     <div class="lang" role="group" aria-label="Language">
       <button type="button" id="btnRu" aria-pressed="true">РУ</button>
       <button type="button" id="btnEn" aria-pressed="false">EN</button>
@@ -221,7 +221,6 @@ footer{margin-top:44px; color:var(--q-gray); font-size:13px}
   </div>
 
   <div id="thanks">
-    <div class="mark" aria-hidden="true"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
     <h1 data-i18n="thanks_t"></h1>
     <p class="sub" data-i18n="thanks_p"></p>
   </div>
@@ -251,10 +250,11 @@ ru: {
   next_last: "Готово",
   change: "изменить",
   photos_add: "Добавить фото и видео",
+  photos_hint: "До 20 файлов на событие, каждый до 300 МБ. Если выбрать сразу много, телефон может на пару секунд задуматься — это нормально.",
   photos_note: "Загружая, ты разрешаешь QARAVAN использовать эти фото и видео в своих материалах и соцсетях.",
   photos_retry: "Ещё раз",
   photos_err_size: "Файл больше 300 МБ — такой не загрузится.",
-  photos_err_count: "Пока можно до 10 файлов на событие.",
+  photos_err_count: "До 20 файлов на событие.",
   photos_wait: "Фото ещё загружаются — подожди пару секунд.",
   q_consent: "Время от времени нам в QARAVAN приходится объяснять людям со стороны, зачем существует наша организация и почему её работа важна. Можно ли использовать твои ответы в отчётах и заявках?",
   consent: ["Да, с именем","Да, но без имени","Лучше не надо"],
@@ -296,10 +296,11 @@ en: {
   next_last: "Done",
   change: "change",
   photos_add: "Add photos and videos",
+  photos_hint: "Up to 20 files per event, 300 MB each. Picking a lot at once can make your phone pause for a few seconds — that's normal.",
   photos_note: "By uploading you allow QARAVAN to use these photos and videos in our materials and on social media.",
   photos_retry: "Try again",
   photos_err_size: "That file is over 300 MB — it won't upload.",
-  photos_err_count: "Up to 10 files per event for now.",
+  photos_err_count: "Up to 20 files per event.",
   photos_wait: "Your files are still uploading — give it a couple of seconds.",
   q_consent: "Every now and then we at QARAVAN have to explain to people outside the community why this organization exists and why its work matters. May we use your answers in reports and applications?",
   consent: ["Yes, with my name","Yes, anonymously","Please don't"],
@@ -361,18 +362,38 @@ function loadDraft(){
 const clearDraft = () => { try{ sessionStorage.removeItem(DRAFT_KEY); }catch(x){} };
 
 // ===== фото и видео: сразу напрямую в Google Photos, к альбому своего события =====
-const PH_MAX_SIZE = 300 * 1024 * 1024, PH_MAX_COUNT = 10, PH_PARALLEL = 3;
-const phTok = {};           // eventId -> { token, exp }
+const PH_MAX_SIZE = 300 * 1024 * 1024, PH_MAX_COUNT = 20, PH_PARALLEL = 4;
+const phTok = {};           // eventId -> { token, exp, req }
 let phActive = 0;
 
 async function phGetAccess(eventId){
-  const c = phTok[eventId];
-  if (c && Date.now() < c.exp - 60000) return c.token;
-  const r = await fetch("/api/photos-token", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ eventId }) });
-  if (!r.ok) throw new Error("token");
-  const d = await r.json();
-  phTok[eventId] = { token: d.token, exp: Date.now() + (d.expiresIn || 3600) * 1000 };
-  return d.token;
+  const c = phTok[eventId] = phTok[eventId] || {};
+  if (c.token && Date.now() < c.exp - 60000) return c.token;
+  // один запрос на событие: параллельные загрузки не ходят за токеном каждая сама
+  c.req = c.req || fetch("/api/photos-token", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ eventId }) })
+    .then(async r => {
+      if (!r.ok) throw new Error("token");
+      const d = await r.json();
+      c.token = d.token; c.exp = Date.now() + (d.expiresIn || 3600) * 1000;
+      return c.token;
+    })
+    .finally(() => { c.req = null; });
+  return c.req;
+}
+
+// Миниатюра: маленькая копия вместо полноразмерного кадра. Десяток фото с
+// телефона — это сотни мегапикселей; полный декод в главном потоке подвешивает
+// страницу и съедает память. Где createImageBitmap нет — показываем оригинал.
+function phThumb(img, file, url){
+  if (typeof createImageBitmap !== "function") { img.src = url; return; }
+  createImageBitmap(file, { resizeWidth: 360, resizeQuality: "low" }).then(bmp => {
+    const c = document.createElement("canvas");
+    c.width = bmp.width; c.height = bmp.height;
+    c.getContext("2d").drawImage(bmp, 0, 0);
+    if (bmp.close) bmp.close();
+    img.src = c.toDataURL("image/jpeg", 0.72);
+    URL.revokeObjectURL(url);
+  }).catch(() => { img.src = url; });
 }
 function phPump(){
   if (phActive >= PH_PARALLEL) return;
@@ -423,7 +444,8 @@ function phAdd(e, files, grid, errEl){
     const isVideo = (f.type || "").startsWith("video/");
     el.innerHTML = (isVideo
       ? `<video muted playsinline preload="metadata" src="${url}"></video><span class="ph-badge">${lang === "ru" ? "видео" : "video"}</span>`
-      : `<img alt="" src="${url}">`) + `<div class="ph-bar"><i></i></div>`;
+      : `<img alt="">`) + `<div class="ph-bar"><i></i></div>`;
+    if (!isVideo) phThumb(el.querySelector("img"), f, url);
     const x = document.createElement("button");
     x.type = "button"; x.className = "ph-x"; x.textContent = "×"; x.setAttribute("aria-label", "remove");
     const rec = { file: f, el, status: "wait", token: "", eventId: e.id, name: f.name || "media" };
@@ -613,14 +635,16 @@ function fillActive(e, host, idx){
     inp.type = "file"; inp.accept = "image/*,video/*"; inp.multiple = true; inp.style.display = "none";
     const add = document.createElement("button");
     add.type = "button"; add.className = "ph-add"; add.textContent = "📷 " + T().photos_add;
-    add.onclick = () => inp.click();
+    // токен берём заранее, пока человек выбирает файлы — загрузка стартует сразу
+    add.onclick = () => { phGetAccess(e.id).catch(() => {}); inp.click(); };
     const ask = document.createElement("p"); ask.className = "ph-ask"; ask.textContent = T().photos_ask;
+    const lim = document.createElement("p"); lim.className = "ph-note"; lim.textContent = T().photos_hint;
     const grid = document.createElement("div"); grid.className = "ph-grid";
     const errEl = document.createElement("p"); errEl.className = "ph-err";
     const note = document.createElement("p"); note.className = "ph-note"; note.textContent = T().photos_note;
     const syncNote = () => { note.style.display = phLive(e).length ? "" : "none"; };
     inp.onchange = () => { phAdd(e, Array.from(inp.files || []), grid, errEl); inp.value = ""; syncNote(); };
-    ph.append(ask, add, inp, grid, errEl, note);
+    ph.append(ask, add, lim, inp, grid, errEl, note);
     // уже загруженные превью переносим в новую сетку — перерисовка их не теряет
     phLive(e).forEach(p => grid.appendChild(p.el));
     syncNote();

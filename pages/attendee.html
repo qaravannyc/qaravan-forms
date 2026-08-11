@@ -35,6 +35,7 @@ a:hover{color:var(--q-purple)}
 /* header */
 .top{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:4px 0 32px}
 .wordmark{font-weight:900; font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap}
+a.wordmark{text-decoration:none}
 .lang{display:flex; gap:0; border:2px solid var(--q-ink); border-radius:var(--radius-pill); overflow:hidden; background:var(--q-white)}
 .lang button{
   border:0; background:transparent; padding:8px 15px; font:inherit; font-size:13px; font-weight:700;
@@ -152,7 +153,6 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--q-sky); outline-off
 /* thanks */
 #thanks{display:none; padding-top:6vh}
 #thanks.show{display:block}
-#thanks .mark{font-weight:900; font-size:44px; letter-spacing:-.03em; line-height:1; margin-bottom:20px}
 #thanks h1{margin-top:0}
 
 
@@ -193,7 +193,7 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
 <body>
 <div class="wrap">
   <div class="top">
-    <div class="wordmark" aria-label="qaravan"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
+    <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></a>
     <div class="lang" role="group" aria-label="Language">
       <button type="button" id="btnRu" aria-pressed="true">РУ</button>
       <button type="button" id="btnEn" aria-pressed="false">EN</button>
@@ -259,10 +259,11 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
       </fieldset>
 
       <fieldset>
-        <legend><span data-i18n="q_photos"></span></legend>
+        <legend><span data-i18n="q_photos"></span><span class="hint" data-i18n="photos_hint"></span></legend>
         <input type="file" id="phInput" accept="image/*,video/*" multiple style="display:none">
         <button type="button" class="ph-add" id="phAdd"></button>
         <div class="ph-grid" id="phGrid"></div>
+        <p class="hint" id="phStatus" role="status" style="display:none; margin-top:12px"></p>
         <p class="err" id="phErr" role="alert" style="margin-top:14px"></p>
         <div id="phConsentWrap" style="display:none">
           <p class="hint" data-i18n="photos_agree" style="margin-top:16px"></p>
@@ -312,7 +313,6 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
   </div>
 
   <div id="thanks">
-    <div class="mark" aria-hidden="true"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></div>
     <h1 data-i18n="thanks_t"></h1>
     <p class="sub" data-i18n="thanks_p"></p>
     <div class="donate" id="thanksDonate">
@@ -344,13 +344,16 @@ ru: {
   q_whycome: "Я пошёл / пошла на эту встречу, потому что…",
   whycome: ["Было одиноко","Здесь мало друзей и знакомых","Интересна тема","Хотелось побыть среди своих","Хотелось говорить на русском языке","Хотелось говорить на английском языке","Искал(а) поддержку","Новые знакомства","Другое"],
   q_photos: "Есть фото или видео с события?",
+  photos_hint: "Можно до 20 файлов, каждый до 300 МБ. Если выбрать сразу много, телефон может на пару секунд задуматься — это нормально.",
   photos_add: "Выбрать фото или видео",
   photos_agree: "Загружая файлы, ты соглашаешься, что QARAVAN может использовать их в своих материалах и соцсетях.",
   photos_credit: "Как тебя подписать как автора? Можно оставить пустым.",
   photos_retry: "Ещё раз",
   photos_err_size: "Файл больше 300 МБ. Сними покороче или сожми — и попробуй снова.",
-  photos_err_count: "Не больше 10 файлов за раз.",
+  photos_err_count: "Не больше 20 файлов за раз.",
   photos_wait: "Файлы ещё загружаются — подожди пару секунд и нажми ещё раз.",
+  photos_bg: (a, b) => `Загрузилось ${a} из ${b} — загрузка идёт в фоне, можно спокойно заполнять форму дальше.`,
+  photos_done: "Все файлы загружены ✓",
   q_consent: "Время от времени нам в QARAVAN приходится объяснять людям со стороны, зачем существует наша организация и почему её работа важна. Можно ли использовать твои ответы в отчётах и заявках?",
   consent: ["Да, с именем","Да, но без имени","Лучше не надо"],
   name_hint: "Как тебя подписать?",
@@ -392,13 +395,16 @@ en: {
   q_whycome: "I came to this event because…",
   whycome: ["I was feeling lonely","I don't have many friends here","The topic interested me","I wanted to be around my people","I wanted to speak Russian","I wanted to speak English","I was looking for support","New connections","Other"],
   q_photos: "Any photos or videos from the event?",
+  photos_hint: "Up to 20 files, 300 MB each. Picking a lot at once can make your phone pause for a few seconds — that's normal.",
   photos_add: "Pick photos or videos",
   photos_agree: "By uploading, you agree that QARAVAN may use these files in its materials and social media.",
   photos_credit: "How should we credit you? You can leave this empty.",
   photos_retry: "Retry",
   photos_err_size: "That file is over 300 MB. Trim or compress it and try again.",
-  photos_err_count: "Up to 10 files at a time.",
+  photos_err_count: "Up to 20 files at a time.",
   photos_wait: "Files are still uploading — give it a few seconds and tap again.",
+  photos_bg: (a, b) => `Uploaded ${a} of ${b} — uploads run in the background, feel free to keep going.`,
+  photos_done: "All files uploaded ✓",
   q_consent: "Every now and then we at QARAVAN have to explain to people outside the community why this organization exists and why its work matters. May we use your answers in reports and applications?",
   consent: ["Yes, with my name","Yes, anonymously","Please don't"],
   name_hint: "How should we credit you?",
@@ -594,17 +600,22 @@ async function loadEvent(){
 
 
 // ===== фото и видео: сразу напрямую в Google Photos =====
-const PH_MAX_SIZE = 300 * 1024 * 1024, PH_MAX_COUNT = 10, PH_PARALLEL = 3;
+const PH_MAX_SIZE = 300 * 1024 * 1024, PH_MAX_COUNT = 20, PH_PARALLEL = 4;
 const photos = []; // {file, el, status: "wait"|"up"|"done"|"fail", token}
-let phAccess = null, phAccessExp = 0, phActive = 0;
+let phAccess = null, phAccessExp = 0, phAccessReq = null, phActive = 0;
 
 async function phGetAccess(){
   if (phAccess && Date.now() < phAccessExp - 60000) return phAccess;
-  const r = await fetch("/api/photos-token", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ eventId }) });
-  if (!r.ok) throw new Error("token");
-  const d = await r.json();
-  phAccess = d.token; phAccessExp = Date.now() + (d.expiresIn || 3600) * 1000;
-  return phAccess;
+  // один запрос на всех: параллельные загрузки не должны ходить за токеном каждая сама
+  phAccessReq = phAccessReq || fetch("/api/photos-token", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ eventId }) })
+    .then(async r => {
+      if (!r.ok) throw new Error("token");
+      const d = await r.json();
+      phAccess = d.token; phAccessExp = Date.now() + (d.expiresIn || 3600) * 1000;
+      return phAccess;
+    })
+    .finally(() => { phAccessReq = null; });
+  return phAccessReq;
 }
 
 function phPump(){
@@ -612,8 +623,23 @@ function phPump(){
   const next = photos.find(p => p.status === "wait");
   if (!next) return;
   phActive++;
-  phSend(next).finally(() => { phActive--; phPump(); });
+  phSend(next).finally(() => { phActive--; phSync(); phPump(); });
   phPump();
+}
+
+// Миниатюра: маленькая копия вместо полноразмерного кадра. Десяток фото с
+// телефона — это сотни мегапикселей; полный декод в главном потоке подвешивает
+// страницу и съедает память. Где createImageBitmap нет — показываем оригинал.
+function phThumb(img, file, url){
+  if (typeof createImageBitmap !== "function") { img.src = url; return; }
+  createImageBitmap(file, { resizeWidth: 360, resizeQuality: "low" }).then(bmp => {
+    const c = document.createElement("canvas");
+    c.width = bmp.width; c.height = bmp.height;
+    c.getContext("2d").drawImage(bmp, 0, 0);
+    if (bmp.close) bmp.close();
+    img.src = c.toDataURL("image/jpeg", 0.72);
+    URL.revokeObjectURL(url);
+  }).catch(() => { img.src = url; });
 }
 
 async function phSend(p){
@@ -657,8 +683,9 @@ function phAddFiles(files){
     const isVideo = (f.type || "").startsWith("video/");
     el.innerHTML = (isVideo
       ? `<video muted playsinline preload="metadata" src="${url}"></video><span class="ph-badge">видео</span>`
-      : `<img alt="" src="${url}">`)
+      : `<img alt="">`)
       + `<div class="ph-bar"><i></i></div>`;
+    if (!isVideo) phThumb(el.querySelector("img"), f, url);
     const x = document.createElement("button");
     x.type = "button"; x.className = "ph-x"; x.textContent = "×"; x.setAttribute("aria-label", "remove");
     const rec = { file: f, el, status: "wait", token: "" };
@@ -672,8 +699,14 @@ function phAddFiles(files){
 }
 
 function phSync(){
-  const has = photos.some(p => p.status !== "removed");
-  $("phConsentWrap").style.display = has ? "" : "none";
+  const live = photos.filter(p => p.status !== "removed");
+  $("phConsentWrap").style.display = live.length ? "" : "none";
+  // счётчик под сеткой: видно, что загрузка идёт сама и ждать её не нужно
+  const st = $("phStatus");
+  if (!live.length) { st.style.display = "none"; return; }
+  const done = live.filter(p => p.status === "done").length;
+  st.style.display = "";
+  st.textContent = done === live.length ? T().photos_done : T().photos_bg(done, live.length);
 }
 
 
@@ -778,7 +811,8 @@ $("f").addEventListener("submit", async ev => {
   }
 });
 
-$("phAdd").onclick = () => $("phInput").click();
+// токен берём заранее, пока человек выбирает файлы — загрузка стартует сразу
+$("phAdd").onclick = () => { phGetAccess().catch(() => {}); $("phInput").click(); };
 $("phInput").onchange = e => { phAddFiles([...e.target.files]); e.target.value = ""; };
 
 render();
