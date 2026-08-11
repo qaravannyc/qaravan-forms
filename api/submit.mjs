@@ -94,7 +94,8 @@ async function getEvent(id) {
   const item = d.items?.[0];
   if (!item || String(item.board.id) !== EVENTS_BOARD) return null;
   const cols = Object.fromEntries(item.column_values.map((c) => [c.id, c.text || ""]));
-  const albumLink = urlFrom(cols[ALBUM_LINK_COL]);
+  // /u/7/ в пути — номер аккаунта владельца в его браузере; чужим мешает.
+  const albumLink = urlFrom(cols[ALBUM_LINK_COL]).replace(/photos\.google\.com\/u\/\d+\//, "photos.google.com/");
   return {
     id: item.id, name: item.name,
     custom: (cols[CUSTOM_COL] || "").trim(),
@@ -178,7 +179,7 @@ async function filePhotos(ev, photos, credit) {
     await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`, {
       i: String(ev.id),
       t: `Гости начали присылать фото к «${ev.name}» — фотоальбом создан: ${ownerUrl}\n` +
-         `Один раз, под info@qaravan.org: открыть альбом → «Поделиться» → создать ссылку → вставить её в колонку «Photo album». После этого робот сам переключит «Album status» на «✅ Shared by link» и будет добавлять ссылку в сообщения о новых отзывах.` +
+         `Один раз, под info@qaravan.org: открыть альбом → «Поделиться» → создать ссылку → открыть расшаренный альбом и скопировать ссылку ИЗ АДРЕСНОЙ СТРОКИ браузера (photos.google.com/share/…?key=…, не короткую photos.app.goo.gl) → вставить её в колонку «Photo album». После этого робот сам переключит «Album status» на «✅ Shared by link» и будет добавлять ссылку в сообщения о новых отзывах.` +
          (staleShare
            ? `\n\n⚠️ В колонке «Photo album» лежала публичная ссылка (${staleShare}), но id того альбома роботу неизвестен, класть файлы туда он не может. Новые фото ушли в НОВЫЙ альбом, колонка перезаписана. Если альбом должен быть один — перенеси в новый альбом фото из старого руками (выделить → добавить в альбом) и включи новому доступ по ссылке.`
            : ""),
