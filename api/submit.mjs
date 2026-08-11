@@ -278,6 +278,12 @@ export default async function handler(req, res) {
       const cv = { [F.eventName]: evi.name, [F.lang]: { labels: [b.lang === "en" ? "en" : "ru"] }, [F.eventRel]: { item_ids: [Number(evi.id)] } };
       if (rKey) cv[RESPONDENT_COL] = rKey;
       if (!noShow && rating >= 1 && rating <= 5) cv[F.rating] = { rating };
+      // варианты ответов из общей формы: хорошее и то, что стоит поправить
+      const tags = Array.isArray(entry.tags) ? entry.tags.map(String) : [];
+      const hi = tags.filter((t) => CANON.highlights.includes(t));
+      const lo = tags.filter((t) => CANON.discomfort.includes(t));
+      if (!noShow && hi.length) cv[F.highlights] = { labels: hi };
+      if (!noShow && lo.length) cv[F.discomfort] = { labels: lo };
       if (!noShow && b.consent) cv[F.consent] = { labels: [b.consent] };
       if (!noShow && b.name) cv[F.quoteName] = String(b.name).slice(0, 120);
       // отдельный вопрос этого события: сохраняем и сам вопрос, и ответ
@@ -319,6 +325,8 @@ export default async function handler(req, res) {
         : [
             existing ? "ОБНОВЛЁННЫЙ ОТВЕТ (общая форма недели)" : "Ответ из общей формы недели",
             `Оценка: ${rating || "—"}`,
+            hi.length ? `Запомнилось: ${hi.join(", ")}` : null,
+            lo.length ? `Некомфортно: ${lo.join(", ")}` : null,
             `Комментарий: ${comment || "—"}`,
             evi.custom ? `${evi.custom}\n${String(entry.custom_a || "").trim() || "—"}` : null,
             photoLine,

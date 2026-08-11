@@ -45,23 +45,45 @@ h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-sp
 .ev+.ev{border-top:1px solid var(--q-line); padding-top:30px; margin-top:32px}
 .ev.enter{animation:evIn .32s ease-out both}
 @keyframes evIn{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
-.ev .date{font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--q-sky)}
-.ev h2{font-size:20px; font-weight:800; line-height:1.25; letter-spacing:-.01em; margin:6px 0 0; text-wrap:balance}
-.stars{display:flex; gap:8px; margin-top:18px}
-.stars button{width:56px; height:56px; border-radius:var(--radius-lg); border:2px solid var(--q-line); background:var(--q-white); color:#D8D3C6; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; transition:transform .15s ease,border-color .15s ease,background .15s ease,color .15s ease}
-.stars button:active{transform:scale(.95)}
+/* шапка события — по центру, дата плашкой как в брендбуке */
+.ev-head{text-align:center}
+.ev .date{display:inline-block; background:var(--q-sky); color:var(--q-white); font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; padding:7px 16px; border-radius:var(--radius-pill); line-height:1.2}
+.ev h2{font-size:22px; font-weight:800; line-height:1.2; letter-spacing:-.02em; margin:12px 0 0; text-wrap:balance}
+
+/* звёзды: компактные, с живой подсветкой при наведении */
+.stars{display:flex; gap:6px; margin-top:20px; justify-content:center}
+.stars button{width:46px; height:46px; border-radius:var(--radius-md); border:2px solid var(--q-line); background:var(--q-white); color:#DAD5C8; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; transition:transform .12s cubic-bezier(.2,.8,.3,1.4),border-color .12s ease,background .12s ease,color .12s ease}
+.stars button:hover{transform:translateY(-2px)}
+.stars button:active{transform:scale(.92)}
 .stars button.on{color:var(--q-orange); border-color:var(--q-orange); background:var(--q-orange-tint)}
-.stars svg{width:26px; height:26px; display:block; fill:currentColor}
-@media (max-width:380px){.stars{gap:6px} .stars button{width:52px; height:52px}}
-.need{margin-top:10px; font-size:14px; font-weight:700; color:var(--q-red)}
+.stars button.hot{color:var(--q-orange); border-color:var(--q-orange); background:var(--q-orange-tint); transform:translateY(-2px)}
+.stars svg{width:24px; height:24px; display:block; fill:currentColor}
+.stars-word{text-align:center; margin-top:10px; font-size:15px; font-weight:800; color:var(--q-orange); min-height:22px; letter-spacing:-.01em}
+@media (max-width:380px){.stars button{width:42px; height:42px} .stars svg{width:21px; height:21px}}
+.need{margin-top:10px; font-size:14px; font-weight:700; color:var(--q-red); text-align:center}
+
+/* варианты ответов */
+.qa{margin-top:22px; text-align:center}
+.qa-q{font-size:16px; font-weight:700; line-height:1.35; text-wrap:pretty}
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; justify-content:center}
+.chips button{border:2px solid var(--q-line); background:var(--q-white); color:var(--q-ink); border-radius:var(--radius-pill); padding:9px 16px; font:inherit; font-size:15px; font-weight:700; cursor:pointer; transition:transform .12s ease,background .15s ease,border-color .15s ease,color .15s ease}
+.chips button:active{transform:scale(.97)}
+.chips button[aria-pressed="true"]{color:var(--q-white); background:var(--q-sky); border-color:var(--q-sky)}
+.chips button:nth-child(6n+1)[aria-pressed="true"]{background:var(--q-red); border-color:var(--q-red)}
+.chips button:nth-child(6n+2)[aria-pressed="true"]{background:var(--q-orange); border-color:var(--q-orange)}
+.chips button:nth-child(6n+3)[aria-pressed="true"]{background:var(--q-green); border-color:var(--q-green)}
+.chips button:nth-child(6n+4)[aria-pressed="true"]{background:var(--q-purple); border-color:var(--q-purple)}
+.chips button:nth-child(6n+5)[aria-pressed="true"]{background:var(--q-sky); border-color:var(--q-sky)}
+.chips button:nth-child(6n)[aria-pressed="true"]{background:var(--q-ink); border-color:var(--q-ink)}
 .linkbtn{border:0; background:none; padding:0; font:inherit; font-size:15px; font-weight:700; color:var(--q-sky); text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:2px; cursor:pointer; transition:color .15s ease}
 .linkbtn:hover{color:var(--q-purple)}
-.absent{margin-top:14px; font-size:15px; color:var(--q-gray); display:flex; gap:10px; flex-wrap:wrap; align-items:baseline}
+.absent{margin-top:14px; font-size:15px; color:var(--q-gray); display:flex; gap:10px; flex-wrap:wrap; align-items:baseline; justify-content:center}
+.na-wrap{margin-top:18px; text-align:center}
 .cq{margin-top:18px}
 .cq-q{display:block; font-size:16px; font-weight:700; line-height:1.35; text-wrap:pretty}
 .cq textarea{min-height:80px}
-.next{margin-top:20px}
-.next button{border:2px solid var(--q-ink); background:var(--q-ink); color:var(--q-white); border-radius:var(--radius-pill); padding:13px 30px; font:inherit; font-size:16px; font-weight:700; cursor:pointer; transition:transform .15s ease,opacity .15s ease}
+.next{margin-top:22px; text-align:center}
+.next button{border:2px solid var(--q-ink); background:var(--q-ink); color:var(--q-white); border-radius:var(--radius-pill); padding:14px 44px; font:inherit; font-size:16px; font-weight:700; cursor:pointer; transition:transform .15s ease,opacity .15s ease}
 .next button:hover{opacity:.92}
 .next button:active{transform:scale(.98)}
 
@@ -142,7 +164,6 @@ footer{margin-top:44px; color:var(--q-gray); font-size:13px}
 
   <div id="formView">
     <h1 data-i18n="title"></h1>
-    <p class="sub" data-i18n="intro"></p>
 
     <div class="prog" id="prog">
       <div class="track"><i id="progBar"></i></div>
@@ -205,10 +226,14 @@ const DONATE_URL = window.__DONATE_URL__ || "https://givebutter.com/qaravan";
 const STRINGS = {
 ru: {
   title: "Как тебе события этой недели?",
-  intro: "Поставь звёзды каждому. Если хочется — напиши пару слов. Две минуты.",
+  stars_words: ["Плохо", "Так себе", "Нормально", "Хорошо", "Отлично!"],
+  q_good: "Что было лучше всего?",
+  q_bad: "Что стоит поправить?",
+  chips_good: ["Люди и общение", "Атмосфера", "Тема и содержание", "Организаторы"],
+  chips_bad: ["Неудобное время", "Сложно добираться", "Слишком долго", "Слишком коротко", "Было сложно включиться", "Мало информации заранее"],
   prog: (a, b) => `${a} из ${b}`,
   prog_done: "Готово",
-  ev_comment_ph: "Пара слов: что понравилось, что улучшить?",
+  ev_comment_ph: "Хочешь добавить пару слов? Не обязательно",
   na: "Меня там не было",
   na_note: "Ок, это событие не считаем.",
   na_undo: "Вернуть",
@@ -245,10 +270,14 @@ ru: {
 },
 en: {
   title: "How were this week's events?",
-  intro: "Star each one. Add a few words if you like. Two minutes.",
+  stars_words: ["Bad", "Meh", "Okay", "Good", "Great!"],
+  q_good: "What was best about it?",
+  q_bad: "What should we fix?",
+  chips_good: ["The people", "The atmosphere", "The topic & content", "The organizers"],
+  chips_bad: ["Inconvenient time", "Hard to get to", "Too long", "Too short", "Hard to join in", "Not enough info beforehand"],
   prog: (a, b) => `${a} of ${b}`,
   prog_done: "Done",
-  ev_comment_ph: "A few words: what was good, what could be better?",
+  ev_comment_ph: "Want to add a few words? Optional",
   na: "I wasn't there",
   na_note: "Got it — we'll skip this one.",
   na_undo: "Undo",
@@ -289,7 +318,7 @@ const ids = ((window.__EVENTS__ || "") || params.get("e") || "").split(",").map(
 const pTok = ((window.__P__ || "") || params.get("p") || "").replace(/[^0-9a-zA-Z.]/g, "").slice(0, 80);
 let lang = params.get("lang") === "en" ? "en" : "ru";
 let consent = "", contactOk = "", showAll = false, cursor = 0, needStarsAt = null;
-const ev = ids.map(id => ({ id, name: "", date: "", rating: 0, na: false, comment: "", custom: "", customA: "", photos: [] }));
+const ev = ids.map(id => ({ id, name: "", date: "", rating: 0, na: false, comment: "", tags: [], custom: "", customA: "", photos: [] }));
 
 const $ = id => document.getElementById(id);
 const T = () => STRINGS[lang];
@@ -303,7 +332,7 @@ function saveDraft(){
   try{
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
       lang, consent, contactOk,
-      ev: ev.map(e => ({ rating: e.rating, na: e.na, comment: e.comment, customA: e.customA })),
+      ev: ev.map(e => ({ rating: e.rating, na: e.na, comment: e.comment, tags: e.tags, customA: e.customA })),
       name: $("respName").value, cname: $("respContactName").value,
       email: $("respEmail").value, phone: $("respPhone").value,
     }));
@@ -316,7 +345,7 @@ function loadDraft(){
     lang = d.lang === "en" ? "en" : "ru";
     consent = d.consent === "" ? "" : Number(d.consent);
     contactOk = d.contactOk === "" ? "" : Number(d.contactOk);
-    d.ev.forEach((x, i) => { ev[i].rating = Number(x.rating) || 0; ev[i].na = !!x.na; ev[i].comment = String(x.comment || ""); ev[i].customA = String(x.customA || ""); });
+    d.ev.forEach((x, i) => { ev[i].rating = Number(x.rating) || 0; ev[i].na = !!x.na; ev[i].comment = String(x.comment || ""); ev[i].tags = Array.isArray(x.tags) ? x.tags : []; ev[i].customA = String(x.customA || ""); });
     $("respName").value = d.name || ""; $("respContactName").value = d.cname || "";
     $("respEmail").value = d.email || ""; $("respPhone").value = d.phone || "";
   }catch(x){}
@@ -469,9 +498,11 @@ function fillDone(e, host, idx){
 
 function fillActive(e, host, idx){
   host.className = "ev";
-  const date = document.createElement("div"); date.className = "date"; date.textContent = e.date;
+  const head = document.createElement("div"); head.className = "ev-head";
+  if (e.date){ const date = document.createElement("div"); date.className = "date"; date.textContent = e.date; head.appendChild(date); }
   const h = document.createElement("h2"); h.textContent = e.name || "Событие QARAVAN";
-  host.append(date, h);
+  head.appendChild(h);
+  host.appendChild(head);
 
   if (e.na){
     const box = document.createElement("div"); box.className = "absent";
@@ -494,12 +525,19 @@ function fillActive(e, host, idx){
     b.setAttribute("aria-label", lang === "ru" ? i + " из 5" : i + " of 5");
     b.classList.toggle("on", i <= e.rating);
     b.onclick = () => {
-      e.rating = i; needStarsAt = null; $("err").classList.remove("show");
+      e.rating = i; e.tags = []; needStarsAt = null; $("err").classList.remove("show");
       saveDraft(); render();
     };
+    // подсветка «до курсора» — оценка видна ещё до клика
+    b.onmouseenter = () => stars.querySelectorAll("button").forEach((x, j) => x.classList.toggle("hot", j < i));
+    b.onmouseleave = () => stars.querySelectorAll("button").forEach(x => x.classList.remove("hot"));
     stars.appendChild(b);
   }
   host.appendChild(stars);
+
+  const word = document.createElement("div"); word.className = "stars-word";
+  word.textContent = e.rating ? T().stars_words[e.rating - 1] : "";
+  host.appendChild(word);
 
   if (needStarsAt === idx){
     const n = document.createElement("div"); n.className = "need"; n.textContent = T().need_stars;
@@ -507,6 +545,29 @@ function fillActive(e, host, idx){
   }
 
   if (e.rating){
+    // варианты ответов: что именно было хорошо — или что поправить.
+    // Набор зависит от оценки, чтобы не спрашивать про плохое у довольных.
+    const good = e.rating >= 4;
+    const list = good ? T().chips_good : T().chips_bad;
+    const qa = document.createElement("div"); qa.className = "qa";
+    const q = document.createElement("div"); q.className = "qa-q"; q.textContent = good ? T().q_good : T().q_bad;
+    const chips = document.createElement("div"); chips.className = "chips";
+    list.forEach(label => {
+      const c = document.createElement("button");
+      c.type = "button"; c.textContent = label;
+      const on = (e.tags || []).includes(label);
+      c.setAttribute("aria-pressed", String(on));
+      c.onclick = () => {
+        e.tags = e.tags || [];
+        const at = e.tags.indexOf(label);
+        if (at === -1) e.tags.push(label); else e.tags.splice(at, 1);
+        c.setAttribute("aria-pressed", String(at === -1));
+        saveDraft();
+      };
+      chips.appendChild(c);
+    });
+    qa.append(q, chips); host.appendChild(qa);
+
     const ta = document.createElement("textarea");
     ta.placeholder = T().ev_comment_ph; ta.maxLength = 2000; ta.value = e.comment || "";
     ta.oninput = () => { e.comment = ta.value; saveDraft(); };
@@ -543,7 +604,7 @@ function fillActive(e, host, idx){
     host.appendChild(ph);
   }
 
-  const naWrap = document.createElement("div"); naWrap.style.marginTop = "16px";
+  const naWrap = document.createElement("div"); naWrap.className = "na-wrap";
   const na = document.createElement("button");
   na.type = "button"; na.className = "linkbtn"; na.textContent = T().na;
   na.onclick = () => {
@@ -655,6 +716,7 @@ $("f").addEventListener("submit", async x => {
     multi: 1, p: pTok, lang,
     events: ev.map(e => ({
       id: e.id, rating: e.rating || 0, comment: (e.comment || "").trim(), no_show: !!e.na,
+      tags: e.na ? [] : (e.tags || []),
       custom_a: e.custom ? (e.customA || "").trim() : "",
       photos: phLive(e).filter(p => p.status === "done" && p.token).map(p => ({ token: p.token, name: p.name })),
     })),
