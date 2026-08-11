@@ -35,7 +35,7 @@ h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-sp
 .sub{color:var(--q-gray); margin:0; text-wrap:pretty}
 
 /* прогресс: сколько событий уже позади */
-.prog{margin-top:18px; display:flex; align-items:center; gap:12px}
+.prog{margin-top:16px; display:flex; align-items:center; gap:12px}
 .prog .track{flex:1; height:6px; border-radius:var(--radius-pill); background:var(--q-line); overflow:hidden}
 .prog .track i{display:block; height:100%; width:0; background:var(--q-sky); border-radius:var(--radius-pill); transition:width .3s ease}
 .prog .lbl{font-size:13px; font-weight:700; color:var(--q-gray); white-space:nowrap}
@@ -51,19 +51,19 @@ h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-sp
 .ev h2{font-size:22px; font-weight:800; line-height:1.2; letter-spacing:-.02em; margin:12px 0 0; text-wrap:balance}
 
 /* звёзды: компактные, с живой подсветкой при наведении */
-.stars{display:flex; gap:6px; margin-top:20px; justify-content:center}
+.stars{display:flex; gap:6px; margin-top:16px; justify-content:center}
 .stars button{width:46px; height:46px; border-radius:var(--radius-md); border:2px solid var(--q-line); background:var(--q-white); color:#DAD5C8; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; transition:transform .12s cubic-bezier(.2,.8,.3,1.4),border-color .12s ease,background .12s ease,color .12s ease}
 .stars button:hover{transform:translateY(-2px)}
 .stars button:active{transform:scale(.92)}
 .stars button.on{color:var(--q-orange); border-color:var(--q-orange); background:var(--q-orange-tint)}
 .stars button.hot{color:var(--q-orange); border-color:var(--q-orange); background:var(--q-orange-tint); transform:translateY(-2px)}
 .stars svg{width:24px; height:24px; display:block; fill:currentColor}
-.stars-word{text-align:center; margin-top:10px; font-size:15px; font-weight:800; color:var(--q-orange-deep); min-height:22px; letter-spacing:-.01em}
+.stars-word{text-align:center; margin-top:8px; font-size:15px; font-weight:800; color:var(--q-orange-deep); min-height:22px; letter-spacing:-.01em}
 @media (max-width:380px){.stars button{width:42px; height:42px} .stars svg{width:21px; height:21px}}
 .need{margin-top:10px; font-size:14px; font-weight:700; color:var(--q-red); text-align:center}
 
 /* варианты ответов */
-.qa{margin-top:18px; text-align:center}
+.qa{margin-top:16px; text-align:center}
 .qa-q{font-size:16px; font-weight:700; line-height:1.35; text-wrap:pretty}
 .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; justify-content:center}
 .chips button{border:2px solid var(--q-line); background:var(--q-white); color:var(--q-ink); border-radius:var(--radius-pill); padding:9px 16px; font:inherit; font-size:15px; font-weight:700; cursor:pointer; transition:transform .12s ease,background .15s ease,border-color .15s ease,color .15s ease}
@@ -78,14 +78,14 @@ h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-sp
 .linkbtn{border:0; background:none; padding:0; font:inherit; font-size:15px; font-weight:700; color:var(--q-sky); text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:2px; cursor:pointer; transition:color .15s ease}
 .linkbtn:hover{color:var(--q-purple)}
 .linkbtn.dim{color:var(--q-gray)}
-.ta-toggle{margin-top:16px; text-align:center}
+.ta-toggle{margin-top:14px; text-align:center}
 .f-lab{display:block; font-size:13px; font-weight:700; color:var(--q-gray); margin-bottom:6px; text-align:left}
 .absent{margin-top:14px; font-size:15px; color:var(--q-gray); display:flex; gap:10px; flex-wrap:wrap; align-items:baseline; justify-content:center}
-.na-wrap{margin-top:14px; text-align:center}
+.na-wrap{margin-top:12px; text-align:center}
 .cq{margin-top:18px}
 .cq-q{display:block; font-size:16px; font-weight:700; line-height:1.35; text-wrap:pretty}
 .cq textarea{min-height:80px}
-.next{margin-top:16px; text-align:center}
+.next{margin-top:12px; text-align:center}
 .next button{border:2px solid var(--q-ink); background:var(--q-ink); color:var(--q-white); border-radius:var(--radius-pill); padding:14px 44px; font:inherit; font-size:16px; font-weight:700; cursor:pointer; transition:transform .15s ease,opacity .15s ease}
 .next button:hover{opacity:.92}
 .next button:active{transform:scale(.98)}
@@ -106,8 +106,12 @@ input.bad{border-color:var(--q-red) !important}
 .field-hint.show{display:block}
 
 /* фото и видео к конкретному событию — компактно: кнопка и строка */
-.ph{margin-top:14px}
-.ph-cap{font-size:13px; color:var(--q-gray); margin:8px 0 0; text-align:center; text-wrap:pretty}
+.ph{margin-top:16px; text-align:left}
+/* Многострочный текст по центру не выравнивают — рваные края мешают читать.
+   Центр — только коротким симметричным элементам (звёзды, кнопки, подпись
+   оценки). Просьба — обычным левым текстом НАД кнопкой: сначала зачем,
+   потом действие. */
+.ph-ask{font-size:14px; line-height:1.5; color:var(--q-ink); margin:0 0 10px; text-align:left; text-wrap:pretty}
 .ph-add{border:2px dashed var(--q-sky); background:var(--q-white); border-radius:var(--radius-md); width:100%; padding:13px; font:inherit; font-size:16px; font-weight:700; color:var(--q-sky); cursor:pointer; transition:transform .15s ease}
 .ph-add:active{transform:scale(.99)}
 .ph-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px}
@@ -238,7 +242,7 @@ ru: {
   prog_done: "Готово",
   ev_comment_ph: "Хочешь добавить пару слов? Не обязательно",
   add_words: "Добавить пару слов",
-  photos_short: "Нам они очень нужны — для отчётов, постов и грантов.",
+  photos_ask: "Ваши фотографии и видео нам очень нужны — это помогает нам привлекать новых людей и убедительно рассказывать окружающим о важности нашей миссии.",
   na: "Меня там не было",
   na_note: "Ок, это событие не считаем.",
   na_undo: "Вернуть",
@@ -283,7 +287,7 @@ en: {
   prog_done: "Done",
   ev_comment_ph: "Want to add a few words? Optional",
   add_words: "Add a few words",
-  photos_short: "We really need them — for reports, posts and grants.",
+  photos_ask: "We really need your photos and videos — they help us bring in new people and make a convincing case for why our mission matters.",
   na: "I wasn't there",
   na_note: "Got it — we'll skip this one.",
   na_undo: "Undo",
@@ -610,13 +614,13 @@ function fillActive(e, host, idx){
     const add = document.createElement("button");
     add.type = "button"; add.className = "ph-add"; add.textContent = "📷 " + T().photos_add;
     add.onclick = () => inp.click();
-    const cap = document.createElement("p"); cap.className = "ph-cap"; cap.textContent = T().photos_short;
+    const ask = document.createElement("p"); ask.className = "ph-ask"; ask.textContent = T().photos_ask;
     const grid = document.createElement("div"); grid.className = "ph-grid";
     const errEl = document.createElement("p"); errEl.className = "ph-err";
     const note = document.createElement("p"); note.className = "ph-note"; note.textContent = T().photos_note;
     const syncNote = () => { note.style.display = phLive(e).length ? "" : "none"; };
     inp.onchange = () => { phAdd(e, Array.from(inp.files || []), grid, errEl); inp.value = ""; syncNote(); };
-    ph.append(add, inp, cap, grid, errEl, note);
+    ph.append(ask, add, inp, grid, errEl, note);
     // уже загруженные превью переносим в новую сетку — перерисовка их не теряет
     phLive(e).forEach(p => grid.appendChild(p.el));
     syncNote();
