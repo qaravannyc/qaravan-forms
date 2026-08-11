@@ -1,7 +1,7 @@
 // POST /api/slack-approve — the Slack app's interactivity endpoint.
 // Handles three things for messages in #event-feedback:
-//   • «Одобрить» button → flips the event's status to "Digest approved";
-//     the send robot emails the lead on its next run.
+//   • «Одобрить» button → flips the event's status to "Digest approved" and
+//     запускает робота рассылки сразу, не дожидаясь вечернего прогона.
 //   • «Редактировать» button → opens a Slack modal with the digest text.
 //   • Modal submit → saves the edited text into the event's «Дайджест для
 //     ведущего» column (that exact text goes into the email) and updates the
@@ -35,6 +35,39 @@ async function slack(method, payload) {
   const j = await r.json();
   if (!j.ok) console.error(`slack ${method}: ${j.error}`);
   return j;
+}
+
+// «Одобрить» больше не ждёт вечернего прогона: дёргаем workflow_dispatch у
+// робота рассылки (events-robot, .github/workflows/robots.yml), и письмо уходит
+// через минуту-две — GitHub поднимает раннер и сначала гоняет тесты, которые
+// стоят там защитой от двойных писем. Запускается весь прогон рассылки, а не
+// только этот дайджест: робот идемпотентный, статусы и дедуп держат от повторов.
+// Токена нет или GitHub отказал — молчать нельзя: «одобрено, но не отправлено»
+// хуже, чем честное «уйдёт в 17:00».
+const DISPATCH = "https://api.github.com/repos/qaravannyc/events-robot/actions/workflows/robots.yml/dispatches";
+
+async function runSendRobot() {
+  const tok = process.env.GH_DISPATCH_TOKEN;
+  if (!tok) return { ok: false, why: "GH_DISPATCH_TOKEN не задан" };
+  let r;
+  try {
+    r = await fetch(DISPATCH, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tok}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ref: "main", inputs: { job: "send" } }),
+    });
+  } catch (e) { return { ok: false, why: `сеть: ${e.message}` }; }
+  if (r.status === 204) return { ok: true };
+  const hint = r.status === 403 ? " — организация не одобрила токен или у него нет Actions: Read and write"
+    : r.status === 404 ? " — токен не видит репозиторий (Resource owner не qaravannyc?)"
+    : r.status === 401 ? " — токен истёк или отозван"
+    : "";
+  return { ok: false, why: `GitHub ответил ${r.status}${hint}` };
 }
 
 async function getEventRow(eventId) {
@@ -167,13 +200,16 @@ export default async function handler(req, res) {
         `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v,create_labels_if_missing:true){id} }`,
         { b: EVENTS_BOARD, i: eventId, v: JSON.stringify({ [STATUS_COL]: { label: "Digest approved" } }) }
       );
+      const run = await runSendRobot();
       if (payload.response_url) {
         await fetch(payload.response_url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             replace_original: true,
-            text: `✅ Дайджест одобрен (@${who}). Письмо уйдёт ведущему при следующем прогоне робота — ежедневно в 17:00 по Нью-Йорку.`,
+            text: run.ok
+              ? `✅ Дайджест одобрен (@${who}). Робот запущен — письмо уйдёт ведущему через минуту-две.`
+              : `✅ Дайджест одобрен (@${who}), но робота запустить не удалось: ${run.why}. Письмо уйдёт при вечернем прогоне — ежедневно в 17:00 по Нью-Йорку.`,
           }),
         }).catch(() => {});
       }
