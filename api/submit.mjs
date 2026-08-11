@@ -13,14 +13,18 @@
 const MONDAY = "https://api.monday.com/v2";
 const EVENTS_BOARD = "4774572020";
 const FEEDBACK_BOARD = "18423848983";
-const ATTENDED_COL = "numbers";
-// Два поля про альбом на календаре. Служебный id — чтобы фото всех гостей
-// ложились в ОДИН альбом события (прежняя колонка text_mm636xn была удалена с
-// доски, из-за чего каждый отзыв заводил новый альбом). Публичную ссылку Google
-// с марта 2025 не даёт включать через API (scope photoslibrary.sharing убран) —
-// её один раз вставляет человек, робот просит об этом карточкой в Slack.
+// Колонку Attendance (numbers) Эзра удалил при чистке доски (Aug 11, 2026) —
+// число участников от ведущего идёт сразу в дашбордную «⚙️ 2026 attendance».
+const ATTENDED_COL = "numeric_mm64dp6";
+// Три поля про альбом на календаре. Альбомы создаёт робот (events-robot,
+// robot/albums.mjs) заранее; здесь альбом заводится только как запасной путь —
+// если фото пришли раньше, чем робот успел. Служебный id — чтобы фото всех
+// гостей ложились в ОДИН альбом события. Публичную ссылку Google с марта 2025
+// не даёт включать через API (albums.share убран) — её один раз вставляет
+// человек, просьба об этом уходит апдейтом на строку события в monday.
 const ALBUM_COL = "text_mm64mt8q";       // «⚙️ Photos album id» — робот, не трогать руками
-const ALBUM_LINK_COL = "link_mm64zqrk";  // «Photos album» — публичная ссылка, вставляет человек
+const ALBUM_LINK_COL = "link_mm64zqrk";  // «Photo album» — публичная ссылка, вставляет человек
+const ALBUM_STATUS_COL = "color_mm6470za"; // «Album status» — 🔴 NO ALBUM / ⚠️ OPEN ACCESS / ✅ Shared by link
 const CUSTOM_COL = "long_text_mm64tyb5"; // «Свой вопрос гостям» — доп. вопрос про это событие
 const RESPONDENT_COL = "text_mm63r903"; // eventId:attendeeId, on the feedback board
 import { createHmac } from "node:crypto";
@@ -77,9 +81,10 @@ function ruDate(text) {
 
 // monday link columns return "label - url" as text; keep only the url
 const urlFrom = (t) => (String(t || "").match(/https?:\/\/\S+/) || [""])[0];
-// Публичная ссылка на альбом (photos.app.goo.gl/… или …/share/…) против
-// владельческой (…/lr/album/<id>, открывается только под info@qaravan.org).
-const isShareUrl = (u) => /photos\.app\.goo\.gl|photos\.google\.com\/share\//.test(u);
+// Публичная ссылка на альбом (photos.app.goo.gl/… или …/share/…, бывает с
+// /u/N/ в пути) против владельческой (…/lr/album/<id>, открывается только
+// под info@qaravan.org).
+const isShareUrl = (u) => /photos\.app\.goo\.gl|photos\.google\.com\/(?:u\/\d+\/)?share\//.test(u);
 
 async function getEvent(id) {
   if (!id) return null;
@@ -93,9 +98,9 @@ async function getEvent(id) {
   return {
     id: item.id, name: item.name,
     custom: (cols[CUSTOM_COL] || "").trim(),
-    // id из служебной колонки; для событий, где в «Photos album» лежит старая
+    // id из служебной колонки; для событий, где в «Photos album» лежит
     // владельческая ссылка, id достаём из неё — альбом уже есть, новый не нужен
-    albumId: (cols[ALBUM_COL] || "").trim() || (albumLink.match(/photos\.google\.com\/lr\/album\/([\w-]+)/) || [])[1] || "",
+    albumId: (cols[ALBUM_COL] || "").trim() || (albumLink.match(/photos\.google\.com\/(?:u\/\d+\/)?lr\/album\/([\w-]+)/) || [])[1] || "",
     albumShareUrl: isShareUrl(albumLink) ? albumLink : "",
     date: ruDate(cols.date4),
     location: (cols.location || "").trim(),
@@ -167,20 +172,17 @@ async function filePhotos(ev, photos, credit) {
     if (!a.id) throw new Error("album create: " + JSON.stringify(a).slice(0, 200));
     albumId = a.id;
     // Открыть альбом «всем, у кого есть ссылка» через API нельзя (Google убрал
-    // albums.share в марте 2025) — просим человека сделать это один раз.
+    // albums.share в марте 2025) — просим человека сделать это один раз,
+    // апдейтом на строке события (просьбы в Slack Эзра отменил, Aug 2026).
     const ownerUrl = a.productUrl || `https://photos.google.com/lr/album/${albumId}`;
-    await slackNotify(`Новый фотоальбом — нужно один раз включить доступ по ссылке (${ev.name})`, [
-      { type: "header", text: { type: "plain_text", text: `Новый фотоальбом — ${ev.name}`.slice(0, 150), emoji: true } },
-      { type: "section", text: { type: "mrkdwn", text: (
-        `Гости начали присылать фото и видео к «${ev.name}». Альбом создан, но Google не даёт роботам открывать доступ по ссылке — это один раз делает человек:\n` +
-        `1. Открой альбом под *info@qaravan.org*: <${ownerUrl}|альбом в Google Photos>\n` +
-        `2. Нажми «Поделиться» и создай ссылку\n` +
-        `3. Вставь её в колонку «Photos album» — <https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${ev.id}|строка события>\n` +
-        `Дальше эта ссылка сама появится в сообщениях о новых отзывах.` +
-        (staleShare
-          ? `\n\n⚠️ В колонке «Photos album» лежала публичная ссылка (${staleShare}), но id того альбома роботу неизвестен, класть файлы туда он не может. Новые фото ушли в НОВЫЙ альбом, колонка перезаписана. Если альбом должен быть один — перенеси в новый альбом фото из старого руками (выделить → добавить в альбом) и включи новому доступ по ссылке.`
-          : "")).slice(0, 2900) } },
-    ]);
+    await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`, {
+      i: String(ev.id),
+      t: `Гости начали присылать фото к «${ev.name}» — фотоальбом создан: ${ownerUrl}\n` +
+         `Один раз, под info@qaravan.org: открыть альбом → «Поделиться» → создать ссылку → вставить её в колонку «Photo album». После этого робот сам переключит «Album status» на «✅ Shared by link» и будет добавлять ссылку в сообщения о новых отзывах.` +
+         (staleShare
+           ? `\n\n⚠️ В колонке «Photo album» лежала публичная ссылка (${staleShare}), но id того альбома роботу неизвестен, класть файлы туда он не может. Новые фото ушли в НОВЫЙ альбом, колонка перезаписана. Если альбом должен быть один — перенеси в новый альбом фото из старого руками (выделить → добавить в альбом) и включи новому доступ по ссылке.`
+           : ""),
+    }).catch((e) => console.error("album update note failed:", e.message));
     // Album "description": Google Photos albums have no description field, so
     // the event info goes in as a text enrichment pinned to the top.
     const info = [
@@ -198,12 +200,14 @@ async function filePhotos(ev, photos, credit) {
     // Кэш в две колонки: id — служебный, ссылка — владельческая с пометкой,
     // из неё id тоже восстанавливается (…/lr/album/<id>), если запись id упала.
     // Устаревшую публичную ссылку (см. staleShare выше) перезаписываем: она
-    // ведёт в альбом, куда новые фото уже не попадут.
+    // ведёт в альбом, куда новые фото уже не попадут. «Album status» покажет
+    // на доске, что доступ ещё не открыт.
     await monday(
-      `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v){id} }`,
+      `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v,create_labels_if_missing:true){id} }`,
       { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({
         [ALBUM_COL]: albumId,
-        [ALBUM_LINK_COL]: { url: `https://photos.google.com/lr/album/${albumId}`, text: "не публичная — включи доступ по ссылке (шаги в Slack)" },
+        [ALBUM_LINK_COL]: { url: ownerUrl, text: "не публичная — включи доступ по ссылке" },
+        [ALBUM_STATUS_COL]: { label: "⚠️ OPEN ACCESS" },
       }) }
     ).catch((e) => console.error("album cache write failed:", e.message)); // filing photos matters more than caching the album id
     // Сообщения ниже по коду должны вести в ЭТОТ альбом, а не в старый по ссылке
