@@ -406,10 +406,18 @@ export default async function handler(req, res) {
   }
 
   if (b.isLead) {
+    // Ответ ведущего не должен падать из-за колонки Attendance: её однажды
+    // удалили с доски, и каждый ответ ведущего умирал с 500. Число всё равно
+    // сохраняется в тексте отзыва («Сколько пришло: N») и уходит в Slack.
+    let attendedNote = null;
     if (ev && Number.isFinite(b.headcount)) {
       await monday(
         `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v){id} }`,
-        { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({ [ATTENDED_COL]: String(b.headcount) }) });
+        { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({ [ATTENDED_COL]: String(b.headcount) }) }
+      ).catch((e) => {
+        console.error("attended write failed:", e.message);
+        attendedNote = "⚠️ Число участников НЕ записалось в колонку Attendance (колонка удалена с доски?) — только в текст этого отзыва.";
+      });
     }
     const cv = { [F.eventName]: ev?.name || "", [F.lang]: { labels: [b.lang === "en" ? "en" : "ru"] } };
     if (ev) cv[F.eventRel] = { item_ids: [Number(ev.id)] };
@@ -430,7 +438,7 @@ export default async function handler(req, res) {
       }
     }
     const body = [
-      `Сколько пришло: ${b.headcount}`, `Оценка: ${b.rating || "—"}`,
+      `Сколько пришло: ${b.headcount}`, attendedNote, `Оценка: ${b.rating || "—"}`,
       `Комментарий: ${b.comment || "—"}`,
       `Мешало: ${(b.obstacles || []).join("; ") || "—"}`,
       `Не хватило от QARAVAN: ${(b.missing || []).join("; ") || "—"}`,
