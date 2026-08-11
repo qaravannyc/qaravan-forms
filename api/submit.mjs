@@ -15,6 +15,7 @@ const EVENTS_BOARD = "4774572020";
 const FEEDBACK_BOARD = "18423848983";
 const ATTENDED_COL = "numbers";
 const ALBUM_COL = "text_mm636xn";      // Photos album id, on the events board
+const CUSTOM_COL = "long_text_mm64tyb5"; // «Свой вопрос гостям» — доп. вопрос про это событие
 const RESPONDENT_COL = "text_mm63r903"; // eventId:attendeeId, on the feedback board
 import { createHmac } from "node:crypto";
 
@@ -71,14 +72,14 @@ function ruDate(text) {
 async function getEvent(id) {
   if (!id) return null;
   const d = await monday(
-    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["long_text_custom","${ALBUM_COL}","date4","location","text_mm5qsspp","text_mm5b1czz","link"]) { id text } } }`,
+    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["${CUSTOM_COL}","${ALBUM_COL}","date4","location","text_mm5qsspp","text_mm5b1czz","link"]) { id text } } }`,
     { ids: [String(id)] });
   const item = d.items?.[0];
   if (!item || String(item.board.id) !== EVENTS_BOARD) return null;
   const cols = Object.fromEntries(item.column_values.map((c) => [c.id, c.text || ""]));
   return {
     id: item.id, name: item.name,
-    custom: (cols.long_text_custom || "").trim(),
+    custom: (cols[CUSTOM_COL] || "").trim(),
     albumId: (cols[ALBUM_COL] || "").trim(),
     date: ruDate(cols.date4),
     location: (cols.location || "").trim(),
@@ -279,6 +280,9 @@ export default async function handler(req, res) {
       if (!noShow && rating >= 1 && rating <= 5) cv[F.rating] = { rating };
       if (!noShow && b.consent) cv[F.consent] = { labels: [b.consent] };
       if (!noShow && b.name) cv[F.quoteName] = String(b.name).slice(0, 120);
+      // отдельный вопрос этого события: сохраняем и сам вопрос, и ответ
+      if (!noShow && evi.custom) cv[F.customQ] = evi.custom.slice(0, 250);
+      if (!noShow && entry.custom_a) cv[F.customA] = { text: String(entry.custom_a).slice(0, 4000) };
       const who = b.name || b.contact_name || "аноним";
       const itemName = noShow ? `No show — ${evi.name}${attendeeId ? "" : " — аноним"}` : `${evi.name} — ${who}`;
       const existing = rKey ? await findByRespondentKey(rKey) : null;
@@ -316,6 +320,7 @@ export default async function handler(req, res) {
             existing ? "ОБНОВЛЁННЫЙ ОТВЕТ (общая форма недели)" : "Ответ из общей формы недели",
             `Оценка: ${rating || "—"}`,
             `Комментарий: ${comment || "—"}`,
+            evi.custom ? `${evi.custom}\n${String(entry.custom_a || "").trim() || "—"}` : null,
             photoLine,
             `Согласие на цитаты: ${b.consent || "—"}${b.name ? ` (подпись: ${b.name})` : ""}`,
             `Связь: ${b.contact_ok || "—"}${b.contact_name ? ` | Имя: ${b.contact_name}` : ""}${b.email ? ` | Почта: ${b.email}` : ""}${b.phone ? ` | Телефон: ${b.phone}` : ""}`,

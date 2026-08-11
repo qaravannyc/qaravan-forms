@@ -3,7 +3,9 @@
 const MONDAY = "https://api.monday.com/v2";
 const EVENTS_BOARD = "4774572020";
 const DATE_COL = "date4";
-const CUSTOM_COL = "long_text_custom"; // "Custom questions" column; absent = default questions
+// «Свой вопрос гостям» на календаре: один дополнительный вопрос про конкретное
+// событие. Пусто — форма показывает обычный набор вопросов.
+const CUSTOM_COL = "long_text_mm64tyb5";
 
 const MONTHS_RU = ["января", "февраля", "марта", "апреля", "мая", "июня",
   "июля", "августа", "сентября", "октября", "ноября", "декабря"];

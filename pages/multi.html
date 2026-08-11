@@ -57,6 +57,9 @@ h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-sp
 .linkbtn{border:0; background:none; padding:0; font:inherit; font-size:15px; font-weight:700; color:var(--q-sky); text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:2px; cursor:pointer; transition:color .15s ease}
 .linkbtn:hover{color:var(--q-purple)}
 .absent{margin-top:14px; font-size:15px; color:var(--q-gray); display:flex; gap:10px; flex-wrap:wrap; align-items:baseline}
+.cq{margin-top:18px}
+.cq-q{display:block; font-size:16px; font-weight:700; line-height:1.35; text-wrap:pretty}
+.cq textarea{min-height:80px}
 .next{margin-top:20px}
 .next button{border:2px solid var(--q-ink); background:var(--q-ink); color:var(--q-white); border-radius:var(--radius-pill); padding:13px 30px; font:inherit; font-size:16px; font-weight:700; cursor:pointer; transition:transform .15s ease,opacity .15s ease}
 .next button:hover{opacity:.92}
@@ -282,7 +285,7 @@ const ids = ((window.__EVENTS__ || "") || params.get("e") || "").split(",").map(
 const pTok = ((window.__P__ || "") || params.get("p") || "").replace(/[^0-9a-zA-Z.]/g, "").slice(0, 80);
 let lang = params.get("lang") === "en" ? "en" : "ru";
 let consent = "", contactOk = "", showAll = false, cursor = 0, needStarsAt = null;
-const ev = ids.map(id => ({ id, name: "", date: "", rating: 0, na: false, comment: "", photos: [] }));
+const ev = ids.map(id => ({ id, name: "", date: "", rating: 0, na: false, comment: "", custom: "", customA: "", photos: [] }));
 
 const $ = id => document.getElementById(id);
 const T = () => STRINGS[lang];
@@ -296,7 +299,7 @@ function saveDraft(){
   try{
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
       lang, consent, contactOk,
-      ev: ev.map(e => ({ rating: e.rating, na: e.na, comment: e.comment })),
+      ev: ev.map(e => ({ rating: e.rating, na: e.na, comment: e.comment, customA: e.customA })),
       name: $("respName").value, cname: $("respContactName").value,
       email: $("respEmail").value, phone: $("respPhone").value,
     }));
@@ -309,7 +312,7 @@ function loadDraft(){
     lang = d.lang === "en" ? "en" : "ru";
     consent = d.consent === "" ? "" : Number(d.consent);
     contactOk = d.contactOk === "" ? "" : Number(d.contactOk);
-    d.ev.forEach((x, i) => { ev[i].rating = Number(x.rating) || 0; ev[i].na = !!x.na; ev[i].comment = String(x.comment || ""); });
+    d.ev.forEach((x, i) => { ev[i].rating = Number(x.rating) || 0; ev[i].na = !!x.na; ev[i].comment = String(x.comment || ""); ev[i].customA = String(x.customA || ""); });
     $("respName").value = d.name || ""; $("respContactName").value = d.cname || "";
     $("respEmail").value = d.email || ""; $("respPhone").value = d.phone || "";
   }catch(x){}
@@ -505,6 +508,18 @@ function fillActive(e, host, idx){
     ta.oninput = () => { e.comment = ta.value; saveDraft(); };
     host.appendChild(ta);
 
+    // отдельный вопрос про это событие — если организаторы его задали
+    if (e.custom){
+      const cq = document.createElement("div"); cq.className = "cq";
+      const lab = document.createElement("label");
+      lab.className = "cq-q"; lab.textContent = e.custom;
+      lab.setAttribute("for", "cq-" + e.id);
+      const cta = document.createElement("textarea");
+      cta.id = "cq-" + e.id; cta.maxLength = 4000; cta.value = e.customA || "";
+      cta.oninput = () => { e.customA = cta.value; saveDraft(); };
+      cq.append(lab, cta); host.appendChild(cq);
+    }
+
     // фото и видео — к альбому именно этого события
     const ph = document.createElement("div"); ph.className = "ph";
     const t = document.createElement("div"); t.className = "t"; t.textContent = T().photos_t;
@@ -611,7 +626,7 @@ async function loadEvents(){
   await Promise.all(ev.map(async e => {
     try{
       const r = await fetch(`/api/event?id=${e.id}`);
-      if (r.ok){ const d = await r.json(); e.name = d.name || ""; e.date = d.date || ""; }
+      if (r.ok){ const d = await r.json(); e.name = d.name || ""; e.date = d.date || ""; e.custom = (d.custom || "").trim(); }
     }catch(x){}
   }));
   render();
@@ -644,6 +659,7 @@ $("f").addEventListener("submit", async x => {
     multi: 1, p: pTok, lang,
     events: ev.map(e => ({
       id: e.id, rating: e.rating || 0, comment: (e.comment || "").trim(), no_show: !!e.na,
+      custom_a: e.custom ? (e.customA || "").trim() : "",
       photos: phLive(e).filter(p => p.status === "done" && p.token).map(p => ({ token: p.token, name: p.name })),
     })),
     photo_credit: credit,
