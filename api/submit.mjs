@@ -14,7 +14,13 @@ const MONDAY = "https://api.monday.com/v2";
 const EVENTS_BOARD = "4774572020";
 const FEEDBACK_BOARD = "18423848983";
 const ATTENDED_COL = "numbers";
-const ALBUM_COL = "text_mm636xn";      // Photos album id, on the events board
+// Два поля про альбом на календаре. Служебный id — чтобы фото всех гостей
+// ложились в ОДИН альбом события (прежняя колонка text_mm636xn была удалена с
+// доски, из-за чего каждый отзыв заводил новый альбом). Публичную ссылку Google
+// с марта 2025 не даёт включать через API (scope photoslibrary.sharing убран) —
+// её один раз вставляет человек, робот просит об этом карточкой в Slack.
+const ALBUM_COL = "text_mm64mt8q";       // «⚙️ Photos album id» — робот, не трогать руками
+const ALBUM_LINK_COL = "link_mm64zqrk";  // «Photos album» — публичная ссылка, вставляет человек
 const CUSTOM_COL = "long_text_mm64tyb5"; // «Свой вопрос гостям» — доп. вопрос про это событие
 const RESPONDENT_COL = "text_mm63r903"; // eventId:attendeeId, on the feedback board
 import { createHmac } from "node:crypto";
@@ -69,18 +75,28 @@ function ruDate(text) {
   return `${Number(d)} ${MONTHS_RU[Number(mo) - 1]} ${y}${t}`;
 }
 
+// monday link columns return "label - url" as text; keep only the url
+const urlFrom = (t) => (String(t || "").match(/https?:\/\/\S+/) || [""])[0];
+// Публичная ссылка на альбом (photos.app.goo.gl/… или …/share/…) против
+// владельческой (…/lr/album/<id>, открывается только под info@qaravan.org).
+const isShareUrl = (u) => /photos\.app\.goo\.gl|photos\.google\.com\/share\//.test(u);
+
 async function getEvent(id) {
   if (!id) return null;
   const d = await monday(
-    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["${CUSTOM_COL}","${ALBUM_COL}","date4","location","text_mm5qsspp","text_mm5b1czz","link"]) { id text } } }`,
+    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["${CUSTOM_COL}","${ALBUM_COL}","${ALBUM_LINK_COL}","date4","location","text_mm5qsspp","text_mm5b1czz","link"]) { id text } } }`,
     { ids: [String(id)] });
   const item = d.items?.[0];
   if (!item || String(item.board.id) !== EVENTS_BOARD) return null;
   const cols = Object.fromEntries(item.column_values.map((c) => [c.id, c.text || ""]));
+  const albumLink = urlFrom(cols[ALBUM_LINK_COL]);
   return {
     id: item.id, name: item.name,
     custom: (cols[CUSTOM_COL] || "").trim(),
-    albumId: (cols[ALBUM_COL] || "").trim(),
+    // id из служебной колонки; для событий, где в «Photos album» лежит старая
+    // владельческая ссылка, id достаём из неё — альбом уже есть, новый не нужен
+    albumId: (cols[ALBUM_COL] || "").trim() || (albumLink.match(/photos\.google\.com\/lr\/album\/([\w-]+)/) || [])[1] || "",
+    albumShareUrl: isShareUrl(albumLink) ? albumLink : "",
     date: ruDate(cols.date4),
     location: (cols.location || "").trim(),
     ruName: (cols.text_mm5qsspp || "").trim(),
@@ -146,6 +162,18 @@ async function filePhotos(ev, photos, credit) {
     }).then((r) => r.json());
     if (!a.id) throw new Error("album create: " + JSON.stringify(a).slice(0, 200));
     albumId = a.id;
+    // Открыть альбом «всем, у кого есть ссылка» через API нельзя (Google убрал
+    // albums.share в марте 2025) — просим человека сделать это один раз.
+    const ownerUrl = a.productUrl || `https://photos.google.com/lr/album/${albumId}`;
+    await slackNotify(`Новый фотоальбом — нужно один раз включить доступ по ссылке (${ev.name})`, [
+      { type: "header", text: { type: "plain_text", text: `Новый фотоальбом — ${ev.name}`.slice(0, 150), emoji: true } },
+      { type: "section", text: { type: "mrkdwn", text: (
+        `Гости начали присылать фото и видео к «${ev.name}». Альбом создан, но Google не даёт роботам открывать доступ по ссылке — это один раз делает человек:\n` +
+        `1. Открой альбом под *info@qaravan.org*: <${ownerUrl}|альбом в Google Photos>\n` +
+        `2. Нажми «Поделиться» и создай ссылку\n` +
+        `3. Вставь её в колонку «Photos album» — <https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${ev.id}|строка события>\n` +
+        `Дальше эта ссылка сама появится в сообщениях о новых отзывах.`).slice(0, 2900) } },
+    ]);
     // Album "description": Google Photos albums have no description field, so
     // the event info goes in as a text enrichment pinned to the top.
     const info = [
@@ -206,8 +234,18 @@ async function slackNotify(text, blocks) {
 const slackCtx = (ev) => [ev?.date, ev?.location, ev?.lead ? `Ведущие: ${ev.lead}` : ""].filter(Boolean).join(" — ") || "событие с календаря QARAVAN";
 const slackLinks = (ev, itemId) => [
   ev?.partiful ? `<${ev.partiful}|Регистрация на Partiful>` : "",
+  ev?.albumShareUrl ? `<${ev.albumShareUrl}|Фотоальбом события>` : "",
   `<https://qaravan.monday.com/boards/${FEEDBACK_BOARD}/pulses/${itemId}|Открыть отзыв на доске>`,
 ].filter(Boolean).join("     ");
+
+// Строка про альбом — и в запись на доске, и в Slack (обычный URL кликается в
+// обоих). Пока доступ по ссылке не включён, честно говорим, что ссылка
+// владельческая — иначе люди тычут в неё и видят «Can't access photo».
+const albumRefText = (ev, albumId) => {
+  if (ev?.albumShareUrl) return `\nАльбом события: ${ev.albumShareUrl}`;
+  const id = albumId || ev?.albumId;
+  return id ? `\nАльбом события (доступ по ссылке ещё не включён — открывается только под info@qaravan.org): https://photos.google.com/lr/album/${id}` : "";
+};
 
 function slackBlocks(header, ev, bodyText, itemId) {
   return [
@@ -314,7 +352,7 @@ export default async function handler(req, res) {
         try {
           const done = await filePhotos(evi, media, String(b.photo_credit || "").slice(0, 120));
           photoLine = `Фото/видео: ${done.created} шт. в альбоме события (согласие подтверждено при загрузке)` +
-            (b.photo_credit ? `, автор: ${b.photo_credit}` : "");
+            (b.photo_credit ? `, автор: ${b.photo_credit}` : "") + albumRefText(evi, done.albumId);
         } catch (e) {
           console.error("multi photos failed:", e.message);
           photoLine = `Фото/видео: не удалось положить в альбом (${String(e.message).slice(0, 120)})`;
@@ -337,7 +375,8 @@ export default async function handler(req, res) {
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
         { i: String(itemId), t: lines.filter(Boolean).join("\n") });
       const stars = noShow ? "не был(а)" : (rating ? "★".repeat(rating) + "☆".repeat(5 - rating) : "без оценки");
-      summary.push(`*${evi.name}* — ${stars}${media.length ? ` · 📷 ${media.length}` : ""}${comment ? `\n${comment}` : ""}`);
+      const albumRef = evi.albumShareUrl ? ` · <${evi.albumShareUrl}|альбом>` : "";
+      summary.push(`*${evi.name}* — ${stars}${media.length ? ` · 📷 ${media.length}${albumRef}` : ""}${comment ? `\n${comment}` : ""}`);
     }
     if (summary.length) {
       const who = b.name || b.contact_name || "аноним";
@@ -368,7 +407,7 @@ export default async function handler(req, res) {
         const done = await filePhotos(ev, leadMedia, String(b.photo_credit || "").slice(0, 120));
         leadPhotoLine = `Фото/видео: ${done.created} шт. в альбоме события (согласие на использование подтверждено при загрузке)` +
           (b.photo_credit ? `, автор: ${b.photo_credit}` : "") +
-          (done.errors.length ? ` — не приняты Google: ${done.errors.length}` : "");
+          (done.errors.length ? ` — не приняты Google: ${done.errors.length}` : "") + albumRefText(ev, done.albumId);
       } catch (e) {
         leadPhotoLine = `Фото/видео: загружены (${leadMedia.length} шт.), но разложить в альбом не вышло — ${e.message}`;
       }
@@ -430,7 +469,7 @@ export default async function handler(req, res) {
       const done = await filePhotos(ev, media, String(b.photo_credit || "").slice(0, 120));
       photoLine = `Фото/видео: ${done.created} шт. в альбоме события (согласие на использование подтверждено при загрузке)` +
         (b.photo_credit ? `, автор: ${b.photo_credit}` : "") +
-        (done.errors.length ? ` — не приняты Google: ${done.errors.length}` : "");
+        (done.errors.length ? ` — не приняты Google: ${done.errors.length}` : "") + albumRefText(ev, done.albumId);
     } catch (e) {
       photoLine = `Фото/видео: загружены (${media.length} шт.), но разложить в альбом не вышло — ${e.message}`;
     }
