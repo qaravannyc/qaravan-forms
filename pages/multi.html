@@ -261,7 +261,7 @@ ru: {
   name_hint: "Как тебя подписать?",
   q_contact: "Контакты",
   contact_hint: "Как к тебе обращаться и куда написать? Достаточно почты или телефона.",
-  contact_opts: ["Можно написать мне по поводу этого отзыва","Оставлю отзыв анонимно — не пишите мне"],
+  contact_opts: ["Можно написать мне по поводу этого отзыва","Не пишите мне — отвечать не нужно"],
   contact_name: "Имя", contact_email: "Почта", contact_phone: "Телефон",
   err_contact: "Оставь почту или телефон — иначе мы не сможем ответить.",
   phone_bad: "Проверь номер — похоже, в нём опечатка.",
@@ -307,7 +307,7 @@ en: {
   name_hint: "How should we credit you?",
   q_contact: "Want us to be able to reply?",
   contact_hint: "What should we call you, and where do we write? Email or phone is enough.",
-  contact_opts: ["You can write to me about this feedback","I'm leaving this anonymously — please don't write to me"],
+  contact_opts: ["You can write to me about this feedback","No need to reply — please don't write to me"],
   contact_name: "Name", contact_email: "Email", contact_phone: "Phone",
   err_contact: "Leave an email or a phone number — otherwise we can't reply.",
   phone_bad: "Double-check the number — it looks like a typo.",
@@ -578,19 +578,24 @@ function fillActive(e, host, idx){
     // варианты ответов: что именно было хорошо — или что поправить.
     // Набор зависит от оценки, чтобы не спрашивать про плохое у довольных.
     const good = e.rating >= 4;
-    const list = good ? T().chips_good : T().chips_bad;
+    const key = good ? "chips_good" : "chips_bad";
+    const list = T()[key];
+    // На кнопке — язык интерфейса, в e.tags — всегда русская метка: колонки на
+    // доске живут в одной системе меток, и выбор не теряется при смене языка.
+    const canon = STRINGS.ru[key];
     const qa = document.createElement("div"); qa.className = "qa";
     const q = document.createElement("div"); q.className = "qa-q"; q.textContent = good ? T().q_good : T().q_bad;
     const chips = document.createElement("div"); chips.className = "chips";
-    list.forEach(label => {
+    list.forEach((label, i) => {
+      const tag = canon[i];
       const c = document.createElement("button");
       c.type = "button"; c.textContent = label;
-      const on = (e.tags || []).includes(label);
+      const on = (e.tags || []).includes(tag);
       c.setAttribute("aria-pressed", String(on));
       c.onclick = () => {
         e.tags = e.tags || [];
-        const at = e.tags.indexOf(label);
-        if (at === -1) e.tags.push(label); else e.tags.splice(at, 1);
+        const at = e.tags.indexOf(tag);
+        if (at === -1) e.tags.push(tag); else e.tags.splice(at, 1);
         c.setAttribute("aria-pressed", String(at === -1));
         saveDraft();
       };
@@ -756,18 +761,32 @@ $("f").addEventListener("submit", async x => {
   err.classList.remove("show");
   $("send").disabled = true;
   const credit = (consent === 0 ? $("respName").value.trim() : "") || (contactOk === 0 ? $("respContactName").value.trim() : "");
+  // Если форма была на английском — рядом с русскими метками отправляем то, что
+  // человек видел на экране: из этого собирается сообщение в Slack.
+  const shown = (v) => lang === "en" ? v : undefined;
+  // Порядок сохраняем один в один с e.tags — по индексу их сопоставляет сервер.
+  const tagsEn = (e) => {
+    const key = e.rating >= 4 ? "chips_good" : "chips_bad";
+    return (e.tags || []).map(t => {
+      const i = STRINGS.ru[key].indexOf(t);
+      return i === -1 ? t : STRINGS.en[key][i];
+    });
+  };
   const body = {
     multi: 1, p: pTok, lang,
     events: ev.map(e => ({
       id: e.id, rating: e.rating || 0, comment: (e.comment || "").trim(), no_show: !!e.na,
       tags: e.na ? [] : (e.tags || []),
+      tags_en: e.na ? undefined : shown(tagsEn(e)),
       custom_a: e.custom ? (e.customA || "").trim() : "",
       photos: phLive(e).filter(p => p.status === "done" && p.token).map(p => ({ token: p.token, name: p.name })),
     })),
     photo_credit: credit,
     consent: consent === "" ? "" : STRINGS.ru.consent[consent],
+    consent_en: consent === "" ? undefined : shown(STRINGS.en.consent[consent]),
     name: consent === 0 ? $("respName").value.trim() : "",
     contact_ok: contactOk === "" ? "" : STRINGS.ru.contact_opts[contactOk],
+    contact_ok_en: contactOk === "" ? undefined : shown(STRINGS.en.contact_opts[contactOk]),
     contact_name: contactOk === 0 ? $("respContactName").value.trim() : "",
     email: contactOk === 0 ? em.value.trim() : "",
     phone: contactOk === 0 ? ph.value.trim() : "",

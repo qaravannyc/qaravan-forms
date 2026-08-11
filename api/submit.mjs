@@ -41,7 +41,6 @@ const F = {
   whyCome: "long_text_mm5nmf9c",
   consent: "dropdown_mm5n87fa",
   quoteName: "text_mm5nfa8j",
-  donate: "dropdown_mm5n3djq",
   customQ: "text_mm5nqcrp",
   customA: "long_text_mm5n767f",
 };
@@ -104,6 +103,7 @@ async function getEvent(id) {
     albumId: (cols[ALBUM_COL] || "").trim() || (albumLink.match(/photos\.google\.com\/(?:u\/\d+\/)?lr\/album\/([\w-]+)/) || [])[1] || "",
     albumShareUrl: isShareUrl(albumLink) ? albumLink : "",
     date: ruDate(cols.date4),
+    dateRaw: cols.date4 || "",
     location: (cols.location || "").trim(),
     ruName: (cols.text_mm5qsspp || "").trim(),
     lead: (cols.text_mm5b1czz || "").trim(),
@@ -315,51 +315,246 @@ async function slackNotify(text, blocks) {
   } catch (e) { console.error("slack notify failed:", e.message); }
 }
 
-const slackCtx = (ev) => [ev?.date, ev?.location, ev?.lead ? `Ведущие: ${ev.lead}` : ""].filter(Boolean).join(" — ") || "событие с календаря QARAVAN";
-const slackLinks = (ev, itemId) => [
-  ev?.partiful ? `<${ev.partiful}|Регистрация на Partiful>` : "",
-  ev?.albumShareUrl ? `<${ev.albumShareUrl}|Фотоальбом события>` : "",
-  `<https://qaravan.monday.com/boards/${FEEDBACK_BOARD}/pulses/${itemId}|Открыть отзыв на доске>`,
-].filter(Boolean).join("     ");
+const MONTHS_EN = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+function enDate(text) {
+  const m = (text || "").match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2}))?/);
+  if (!m) return "";
+  const [, y, mo, d, hh, mm] = m;
+  let t = "";
+  if (hh !== undefined) { const h = Number(hh); t = `, ${h % 12 || 12}:${mm} ${h < 12 ? "AM" : "PM"}`; }
+  return `${MONTHS_EN[Number(mo) - 1]} ${Number(d)}, ${y}${t}`;
+}
+
+const C = {
+  ru: { hosts: "Ведущие", fallback: "событие с календаря QARAVAN", reg: "Регистрация на Partiful", album: "Фотоальбом события", board: "Открыть отзыв на доске" },
+  en: { hosts: "Hosts", fallback: "event from the QARAVAN calendar", reg: "Partiful registration", album: "Event photo album", board: "Open the feedback on the board" },
+};
+const cdict = (lang) => (lang === "en" ? C.en : C.ru);
+
+const slackCtx = (ev, lang) => {
+  const t = cdict(lang);
+  const d = lang === "en" ? enDate(ev?.dateRaw) || ev?.date : ev?.date;
+  return [d, ev?.location, ev?.lead ? `${t.hosts}: ${ev.lead}` : ""].filter(Boolean).join(" — ") || t.fallback;
+};
+const slackLinks = (ev, itemId, lang) => {
+  const t = cdict(lang);
+  return [
+    ev?.partiful ? `<${ev.partiful}|${t.reg}>` : "",
+    ev?.albumShareUrl ? `<${ev.albumShareUrl}|${t.album}>` : "",
+    `<https://qaravan.monday.com/boards/${FEEDBACK_BOARD}/pulses/${itemId}|${t.board}>`,
+  ].filter(Boolean).join("     ");
+};
 
 // Строка про альбом — и в запись на доске, и в Slack (обычный URL кликается в
 // обоих). Пока доступ по ссылке не включён, честно говорим, что ссылка
 // владельческая — иначе люди тычут в неё и видят «Can't access photo».
-const albumRefText = (ev, albumId) => {
-  if (ev?.albumShareUrl) return `\nАльбом события: ${ev.albumShareUrl}`;
+const P = {
+  ru: {
+    album: "Альбом события", noShare: "доступ по ссылке ещё не включён — открывается только под info@qaravan.org",
+    inAlbum: (n) => `${n} шт. в альбоме события`,
+    inLibrary: (n) => `${n} шт. в общей библиотеке Google Photos (в альбом не пустил Google — разложи руками)`,
+    head: (w) => `Фото/видео: ${w}`, consentOk: "согласие на использование подтверждено при загрузке",
+    author: (c) => `, автор: ${c}`,
+    noneTaken: (n) => `Фото/видео: прислано ${n} шт., но Google не принял ни одного`,
+    failed: (n, e) => `⚠️ Фото/видео: прислано ${n} шт., сохранить не удалось — ${e}`,
+    tokens: "Токены загрузки (живут ~сутки):",
+    lost: (n) => `⚠️ НЕ СОХРАНИЛОСЬ: ${n} шт. Токены загрузки (живут ~сутки, по ним файл можно достать):`,
+    gReply: "Ответ Google", rescue: "Запасной альбом",
+  },
+  en: {
+    album: "Event album", noShare: "link sharing isn’t on yet — opens only as info@qaravan.org",
+    inAlbum: (n) => `${n} in the event album`,
+    inLibrary: (n) => `${n} in the shared Google Photos library (Google refused the album — file them by hand)`,
+    head: (w) => `Photos/videos: ${w}`, consentOk: "consent to use confirmed at upload",
+    author: (c) => `, credit: ${c}`,
+    noneTaken: (n) => `Photos/videos: ${n} sent, Google accepted none`,
+    failed: (n, e) => `⚠️ Photos/videos: ${n} sent, saving failed — ${e}`,
+    tokens: "Upload tokens (valid ~24h):",
+    lost: (n) => `⚠️ NOT SAVED: ${n}. Upload tokens (valid ~24h, the file can still be pulled with them):`,
+    gReply: "Google’s reply", rescue: "Fallback album",
+  },
+};
+const pdict = (lang) => (lang === "en" ? P.en : P.ru);
+
+const albumRefText = (ev, albumId, lang) => {
+  const t = pdict(lang);
+  if (ev?.albumShareUrl) return `\n${t.album}: ${ev.albumShareUrl}`;
   const id = albumId || ev?.albumId;
-  return id ? `\nАльбом события (доступ по ссылке ещё не включён — открывается только под info@qaravan.org): https://photos.google.com/lr/album/${id}` : "";
+  return id ? `\n${t.album} (${t.noShare}): https://photos.google.com/lr/album/${id}` : "";
 };
 
 // Одна строка-отчёт о фото для всех трёх форм. Говорит правду о том, где
 // файлы оказались, и никогда не молчит о потерянных: если что-то не легло
 // вообще никуда, рядом остаются upload-токены — по ним файл ещё сутки
 // достаётся вручную.
-function photoResultLine(ev, done, credit, sent) {
+function photoResultLine(ev, done, credit, sent, lang) {
+  const t = pdict(lang);
   const where = [];
-  if (done.created) where.push(`${done.created} шт. в альбоме события`);
-  if (done.toLibrary) where.push(`${done.toLibrary} шт. в общей библиотеке Google Photos (в альбом не пустил Google — разложи руками)`);
+  if (done.created) where.push(t.inAlbum(done.created));
+  if (done.toLibrary) where.push(t.inLibrary(done.toLibrary));
   const head = where.length
-    ? `Фото/видео: ${where.join(", ")} (согласие на использование подтверждено при загрузке)${credit ? `, автор: ${credit}` : ""}`
-    : `Фото/видео: прислано ${sent} шт., но Google не принял ни одного`;
+    ? `${t.head(where.join(", "))} (${t.consentOk})${credit ? t.author(credit) : ""}`
+    : t.noneTaken(sent);
   const lostLine = done.lost?.length
-    ? `\n⚠️ НЕ СОХРАНИЛОСЬ: ${done.lost.length} шт. Токены загрузки (живут ~сутки, по ним файл можно достать):\n` +
-      done.lost.map((l) => `${l.name}: ${l.token}`).join("\n")
+    ? `\n${t.lost(done.lost.length)}\n` + done.lost.map((l) => `${l.name}: ${l.token}`).join("\n")
     : "";
-  const errLine = done.errors?.length ? `\nОтвет Google: ${done.errors.slice(0, 3).join(" | ").slice(0, 400)}` : "";
+  const errLine = done.errors?.length ? `\n${t.gReply}: ${done.errors.slice(0, 3).join(" | ").slice(0, 400)}` : "";
   const rescue = done.rescueAlbumId
-    ? `\nЗапасной альбом: https://photos.google.com/lr/album/${done.rescueAlbumId}`
+    ? `\n${t.rescue}: https://photos.google.com/lr/album/${done.rescueAlbumId}`
     : "";
-  return head + albumRefText(ev, done.albumId) + rescue + errLine + lostLine;
+  return head + albumRefText(ev, done.albumId, lang) + rescue + errLine + lostLine;
 }
 
-function slackBlocks(header, ev, bodyText, itemId) {
+// Если filePhotos упал целиком — рядом с отзывом остаются upload-токены, по ним
+// файл ещё сутки достаётся руками. Одна формулировка на все три формы.
+const photoFailLine = (media, err, lang) => {
+  const t = pdict(lang);
+  return `${t.failed(media.length, String(err).slice(0, 200))}\n${t.tokens}\n` +
+    media.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
+};
+
+// Общая рамка сообщения: заголовок, строка про событие, тело, ссылки внизу.
+// Тело передаёт вызывающий — у отзыва гостя оно из нескольких блоков, у отзыва
+// ведущего это по-прежнему один текст.
+function slackFrame(header, ev, bodyBlocks, itemId, tail = "", lang) {
   return [
     { type: "header", text: { type: "plain_text", text: header.slice(0, 150), emoji: true } },
-    { type: "context", elements: [{ type: "mrkdwn", text: slackCtx(ev).slice(0, 250) }] },
-    { type: "section", text: { type: "mrkdwn", text: bodyText.slice(0, 2900) } },
-    { type: "context", elements: [{ type: "mrkdwn", text: slackLinks(ev, itemId) }] },
+    { type: "context", elements: [{ type: "mrkdwn", text: slackCtx(ev, lang).slice(0, 250) }] },
+    ...bodyBlocks,
+    // Ссылки не режем: в них живут длинные URL, обрезка ломает разметку.
+    { type: "context", elements: [{ type: "mrkdwn", text: slackLinks(ev, itemId, lang) + tail }] },
   ];
+}
+
+function slackBlocks(header, ev, bodyText, itemId, lang) {
+  return slackFrame(header, ev, [{ type: "section", text: { type: "mrkdwn", text: bodyText.slice(0, 2900) } }], itemId, "", lang);
+}
+
+// Сообщение целиком на языке формы: заполнил человек по-английски — читаем
+// по-английски, ровно теми словами, что он видел на экране. Метки в колонках
+// monday при этом остаются русскими, их присылают отдельным полем.
+const M = {
+  ru: {
+    newFb: "Новый отзыв", updFb: "Обновлённый отзыв", noRating: "без оценки",
+    event: "событие", anon: "аноним",
+    resent: "🔁 _Отзыв прислали заново — колонки перезаписаны, прежний текст остался в истории на доске._",
+    noComment: "_Комментарий не оставили._",
+    liked: "Понравилось", uncomfortable: "Некомфортно", came: "Пришли за",
+    quoteWith: (n) => `🗣 *Можно цитировать* — подпись «${n}»`,
+    quoteAnon: "🗣 *Можно цитировать* — без имени",
+    quoteNo: "🚫 *Цитировать нельзя*",
+    canWrite: (c) => `✉️ *Можно написать* — ${c}`,
+    noReply: "🔇 *Отвечать не нужно*",
+    yes: /^Да/,
+    // подписи строк в записи на доске
+    uResent: "ОБНОВЛЁННЫЙ ОТВЕТ — человек отправил форму ещё раз, колонки перезаписаны, прежний текст остался в истории выше",
+    uRating: "Оценка", uComment: "Комментарий", uCame: "Пришёл/пришла потому что",
+    uConsent: "Согласие на цитаты", uSign: "подпись", uContact: "Связь",
+    uName: "Имя", uEmail: "Почта", uPhone: "Телефон",
+    uOwnQ: "Свой вопрос", uAnswer: "Ответ", uFormLang: "Язык формы",
+    // общая форма недели
+    mNoShow: "Отметил(а) в общей форме: не был(а) на событии",
+    mUpd: "ОБНОВЛЁННЫЙ ОТВЕТ (общая форма недели)",
+    mNew: "Ответ из общей формы недели",
+    mLiked: "Запомнилось", didntAttend: "не был(а)", mAlbum: "альбом",
+    mHeader: (n) => `Новый отзыв — общая форма недели (${n} соб.)`,
+    // форма ведущего
+    lHeader: "Отзыв ведущего", lHead: "Сколько пришло",
+    lObstacles: "Мешало", lMissing: "Не хватило от QARAVAN",
+    lAttendedFail: "⚠️ Число участников НЕ записалось в колонку Attendance (колонка удалена с доски?) — только в текст этого отзыва.",
+    nsTitle: "«Меня там не было»", nsMark: "Отметил(а) в форме: не был(а) на событии", nsAnon: "аноним",
+  },
+  en: {
+    newFb: "New feedback", updFb: "Updated feedback", noRating: "no rating",
+    event: "event", anon: "anonymous",
+    resent: "🔁 _Feedback was submitted again — columns overwritten, the earlier text is still in the board history._",
+    noComment: "_No comment left._",
+    liked: "Liked", uncomfortable: "Uncomfortable", came: "Came for",
+    quoteWith: (n) => `🗣 *May be quoted* — signed “${n}”`,
+    quoteAnon: "🗣 *May be quoted* — without a name",
+    quoteNo: "🚫 *Do not quote*",
+    canWrite: (c) => `✉️ *Can be contacted* — ${c}`,
+    noReply: "🔇 *No reply needed*",
+    yes: /^Yes/,
+    // row labels in the board record
+    uResent: "RESUBMITTED — the form was sent again, columns overwritten, the earlier text is in the history above",
+    uRating: "Rating", uComment: "Comment", uCame: "Came because",
+    uConsent: "Quote consent", uSign: "signed", uContact: "Contact",
+    uName: "Name", uEmail: "Email", uPhone: "Phone",
+    uOwnQ: "Event question", uAnswer: "Answer", uFormLang: "Form language",
+    // combined weekly form
+    mNoShow: "Marked in the combined form: didn’t attend",
+    mUpd: "RESUBMITTED (combined weekly form)",
+    mNew: "Response from the combined weekly form",
+    mLiked: "Stood out", didntAttend: "didn’t attend", mAlbum: "album",
+    mHeader: (n) => `New feedback — combined weekly form (${n} event${n === 1 ? "" : "s"})`,
+    // host form
+    lHeader: "Host feedback", lHead: "Headcount",
+    lObstacles: "Got in the way", lMissing: "Needed more of from QARAVAN",
+    lAttendedFail: "⚠️ The headcount did NOT reach the Attendance column (column removed from the board?) — it is only in the text of this feedback.",
+    nsTitle: "“I wasn’t there”", nsMark: "Marked in the form: didn’t attend", nsAnon: "anonymous",
+  },
+};
+const dict = (b) => (b?.lang === "en" ? M.en : M.ru);
+// Ответ на языке формы, если он пришёл; иначе — русская метка.
+const said = (b, key, fallback) => {
+  const v = b?.[`${key}_en`];
+  return b?.lang === "en" && v !== undefined && v !== "" ? v : fallback;
+};
+
+// Что с этим отзывом можно делать. Две разные вещи, которые раньше стояли
+// соседними строками и читались как противоречие: цитировать — про публикацию,
+// писать — про ответ человеку. Контакты есть или нет — по ним и судим,
+// а не по тому, какую галочку нажали.
+const quoteLine = (b) => {
+  if (!b.consent) return null;
+  const t = dict(b);
+  if (!t.yes.test(said(b, "consent", b.consent))) return t.quoteNo;
+  return b.name ? t.quoteWith(b.name) : t.quoteAnon;
+};
+const replyLine = (b) => {
+  if (!b.contact_ok) return null;
+  const t = dict(b);
+  const c = [b.contact_name, b.email, b.phone].filter(Boolean).join(" · ");
+  return c ? t.canWrite(c) : t.noReply;
+};
+
+// Отзыв гостя. Первым идёт то, что человек написал сам — это единственное, что
+// читают глазами; чипсы уходят в две колонки, а вопросы без ответа не
+// печатаются вовсе: строка «—» занимает столько же места, сколько ответ,
+// но не говорит ничего.
+function feedbackBlocks(ev, itemId, b, { stars, updated, photoLine }) {
+  const t = dict(b);
+  const body = [];
+  if (updated) body.push({ type: "section", text: { type: "mrkdwn", text: t.resent } });
+
+  const moment = String(b.moment || "").trim();
+  body.push({
+    type: "section",
+    text: { type: "mrkdwn", text: moment ? `>${moment.replace(/\n/g, "\n>")}`.slice(0, 2900) : t.noComment },
+  });
+
+  const hi = said(b, "highlights", b.highlights) || [];
+  const lo = said(b, "discomfort", b.discomfort) || [];
+  const why = said(b, "why_come", b.why_come) || [];
+  const fields = [
+    hi.length ? `*${t.liked}*\n${hi.join(", ")}` : null,
+    lo.length ? `*${t.uncomfortable}*\n${lo.join(", ")}` : null,
+    why.length ? `*${t.came}*\n${why.join(", ")}` : null,
+    ev?.custom && b.custom_a ? `*${ev.custom}*\n${b.custom_a}` : null,
+  ].filter(Boolean).map((x) => ({ type: "mrkdwn", text: x.slice(0, 1900) }));
+  if (fields.length) body.push({ type: "divider" }, { type: "section", fields: fields.slice(0, 10) });
+
+  const status = [quoteLine(b), replyLine(b)].filter(Boolean);
+  if (status.length) body.push({ type: "divider" }, { type: "section", text: { type: "mrkdwn", text: status.join("\n") } });
+
+  // Про фото говорим отдельным блоком: когда Google что-то не принял, здесь
+  // лежат предупреждения и токены — их нельзя ужимать в общую строку.
+  if (photoLine) body.push({ type: "section", text: { type: "mrkdwn", text: `📷 ${photoLine}`.slice(0, 2900) } });
+
+  const header = `${stars}  ${ev?.name || t.event}`;
+  return slackFrame(header, ev, body, itemId, `     ${b.lang === "en" ? "en" : "ru"}`, b.lang);
 }
 
 const split = (arr) => ({
@@ -384,11 +579,12 @@ export default async function handler(req, res) {
   // respondent key, так что настоящий ответ позже займёт ту же строку.
   if (b.no_show) {
     if (!ev) { res.statusCode = 404; return res.end("{}"); }
+    const t = dict(b);
     const rKey = respondentKey(ev.id, b.p);
     const existing = rKey ? await findByRespondentKey(rKey) : null;
     if (existing) {
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
-        { i: String(existing), t: "Отметил(а) в форме: не был(а) на событии" });
+        { i: String(existing), t: t.nsMark });
     } else {
       const cv = { [F.eventName]: ev.name, [F.eventRel]: { item_ids: [Number(ev.id)] } };
       if (rKey) cv[RESPONDENT_COL] = rKey;
@@ -396,10 +592,10 @@ export default async function handler(req, res) {
         `mutation ($b: ID!, $n: String!, $v: JSON!) { create_item(board_id:$b,item_name:$n,column_values:$v,create_labels_if_missing:true){id} }`,
         { b: FEEDBACK_BOARD, n: `No show — ${ev.name} — ${rKey ? "по личной ссылке" : "аноним"}`, v: JSON.stringify(cv) });
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
-        { i: String(c.create_item.id), t: "Отметил(а) в форме: не был(а) на событии" });
+        { i: String(c.create_item.id), t: t.nsMark });
     }
-    await slackNotify(`«Меня там не было» — ${ev.name}`, [
-      { type: "section", text: { type: "mrkdwn", text: `*«Меня там не было»* — ${ev.name}\n${slackCtx(ev)}${rKey ? "" : " — аноним"}` } },
+    await slackNotify(`${t.nsTitle} — ${ev.name}`, [
+      { type: "section", text: { type: "mrkdwn", text: `*${t.nsTitle}* — ${ev.name}\n${slackCtx(ev, b.lang)}${rKey ? "" : ` — ${t.nsAnon}`}` } },
     ]);
     return res.end('{"ok":true}');
   }
@@ -424,8 +620,14 @@ export default async function handler(req, res) {
       if (!noShow && rating >= 1 && rating <= 5) cv[F.rating] = { rating };
       // варианты ответов из общей формы: хорошее и то, что стоит поправить
       const tags = Array.isArray(entry.tags) ? entry.tags.map(String) : [];
-      const hi = tags.filter((t) => CANON.highlights.includes(t));
-      const lo = tags.filter((t) => CANON.discomfort.includes(t));
+      const hi = tags.filter((x) => CANON.highlights.includes(x));
+      const lo = tags.filter((x) => CANON.discomfort.includes(x));
+      // Метка на языке формы лежит в tags_en под тем же индексом.
+      const seen = (x) => {
+        const i = tags.indexOf(x);
+        return (b.lang === "en" && Array.isArray(entry.tags_en) && entry.tags_en[i]) || x;
+      };
+      const hiSeen = hi.map(seen), loSeen = lo.map(seen);
       if (!noShow && hi.length) cv[F.highlights] = { labels: hi };
       if (!noShow && lo.length) cv[F.discomfort] = { labels: lo };
       if (!noShow && b.consent) cv[F.consent] = { labels: [b.consent] };
@@ -457,44 +659,51 @@ export default async function handler(req, res) {
       if (!noShow && media.length) {
         try {
           const done = await filePhotos(evi, media, String(b.photo_credit || "").slice(0, 120));
-          photoLine = photoResultLine(evi, done, b.photo_credit, media.length);
+          photoLine = photoResultLine(evi, done, b.photo_credit, media.length, b.lang);
         } catch (e) {
           console.error("multi photos failed:", e.message);
-          photoLine = `⚠️ Фото/видео: прислано ${media.length} шт., сохранить не удалось — ${String(e.message).slice(0, 200)}\n` +
-            `Токены загрузки (живут ~сутки):\n` + media.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
+          photoLine = photoFailLine(media, e.message, b.lang);
         }
       }
+      const t = dict(b);
       const lines = noShow
-        ? ["Отметил(а) в общей форме: не был(а) на событии"]
+        ? [t.mNoShow]
         : [
-            existing ? "ОБНОВЛЁННЫЙ ОТВЕТ (общая форма недели)" : "Ответ из общей формы недели",
-            `Оценка: ${rating || "—"}`,
-            hi.length ? `Запомнилось: ${hi.join(", ")}` : null,
-            lo.length ? `Некомфортно: ${lo.join(", ")}` : null,
-            `Комментарий: ${comment || "—"}`,
+            existing ? t.mUpd : t.mNew,
+            `${t.uRating}: ${rating || "—"}`,
+            hiSeen.length ? `${t.mLiked}: ${hiSeen.join(", ")}` : null,
+            loSeen.length ? `${t.uncomfortable}: ${loSeen.join(", ")}` : null,
+            `${t.uComment}: ${comment || "—"}`,
             evi.custom ? `${evi.custom}\n${String(entry.custom_a || "").trim() || "—"}` : null,
             photoLine,
-            `Согласие на цитаты: ${b.consent || "—"}${b.name ? ` (подпись: ${b.name})` : ""}`,
-            `Связь: ${b.contact_ok || "—"}${b.contact_name ? ` | Имя: ${b.contact_name}` : ""}${b.email ? ` | Почта: ${b.email}` : ""}${b.phone ? ` | Телефон: ${b.phone}` : ""}`,
-            `Язык формы: ${b.lang || "ru"}`,
+            `${t.uConsent}: ${said(b, "consent", b.consent) || "—"}${b.name ? ` (${t.uSign}: ${b.name})` : ""}`,
+            `${t.uContact}: ${said(b, "contact_ok", b.contact_ok) || "—"}${b.contact_name ? ` | ${t.uName}: ${b.contact_name}` : ""}${b.email ? ` | ${t.uEmail}: ${b.email}` : ""}${b.phone ? ` | ${t.uPhone}: ${b.phone}` : ""}`,
+            `${t.uFormLang}: ${b.lang || "ru"}`,
           ];
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
         { i: String(itemId), t: lines.filter(Boolean).join("\n") });
-      const stars = noShow ? "не был(а)" : (rating ? "★".repeat(rating) + "☆".repeat(5 - rating) : "без оценки");
-      const albumRef = evi.albumShareUrl ? ` · <${evi.albumShareUrl}|альбом>` : "";
+      const stars = noShow ? t.didntAttend : (rating ? "★".repeat(rating) + "☆".repeat(5 - rating) : t.noRating);
+      const albumRef = evi.albumShareUrl ? ` · <${evi.albumShareUrl}|${t.mAlbum}>` : "";
       summary.push(`*${evi.name}* — ${stars}${media.length ? ` · 📷 ${media.length}${albumRef}` : ""}${comment ? `\n${comment}` : ""}`);
     }
     if (summary.length) {
-      const who = b.name || b.contact_name || "аноним";
-      await slackNotify(`Новый отзыв (общая форма, ${processed} соб.) — ${who}`, [
-        { type: "header", text: { type: "plain_text", text: `Новый отзыв — общая форма недели (${processed} соб.)`.slice(0, 150), emoji: true } },
+      const t = dict(b);
+      const who = b.name || b.contact_name || t.anon;
+      // Согласие и контакт — про человека, а не про событие, поэтому одной
+      // строкой в конце, а не под каждым событием.
+      const status = [quoteLine(b), replyLine(b)].filter(Boolean);
+      await slackNotify(`${t.mHeader(processed)} — ${who}`, [
+        { type: "header", text: { type: "plain_text", text: t.mHeader(processed).slice(0, 150), emoji: true } },
         { type: "section", text: { type: "mrkdwn", text: summary.join("\n\n").slice(0, 2900) } },
+        ...(status.length ? [{ type: "divider" }, { type: "section", text: { type: "mrkdwn", text: status.join("\n") } }] : []),
+        { type: "context", elements: [{ type: "mrkdwn", text: `${t.uFormLang}: ${b.lang === "en" ? "en" : "ru"}` }] },
       ]);
     }
     return res.end(JSON.stringify({ ok: true, processed }));
   }
 
   if (b.isLead) {
+    const t = dict(b);
     // Ответ ведущего не должен падать из-за колонки Attendance: её однажды
     // удалили с доски, и каждый ответ ведущего умирал с 500. Число всё равно
     // сохраняется в тексте отзыва («Сколько пришло: N») и уходит в Slack.
@@ -505,7 +714,7 @@ export default async function handler(req, res) {
         { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({ [ATTENDED_COL]: String(b.headcount) }) }
       ).catch((e) => {
         console.error("attended write failed:", e.message);
-        attendedNote = "⚠️ Число участников НЕ записалось в колонку Attendance (колонка удалена с доски?) — только в текст этого отзыва.";
+        attendedNote = t.lAttendedFail;
       });
     }
     const cv = { [F.eventName]: ev?.name || "", [F.lang]: { labels: [b.lang === "en" ? "en" : "ru"] } };
@@ -519,23 +728,22 @@ export default async function handler(req, res) {
     if (ev && leadMedia.length) {
       try {
         const done = await filePhotos(ev, leadMedia, String(b.photo_credit || "").slice(0, 120));
-        leadPhotoLine = photoResultLine(ev, done, b.photo_credit, leadMedia.length);
+        leadPhotoLine = photoResultLine(ev, done, b.photo_credit, leadMedia.length, b.lang);
       } catch (e) {
-        leadPhotoLine = `⚠️ Фото/видео: прислано ${leadMedia.length} шт., сохранить не удалось — ${String(e.message).slice(0, 200)}\n` +
-          `Токены загрузки (живут ~сутки):\n` + leadMedia.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
+        leadPhotoLine = photoFailLine(leadMedia, e.message, b.lang);
       }
     }
     const body = [
-      `Сколько пришло: ${b.headcount}`, attendedNote, `Оценка: ${b.rating || "—"}`,
-      `Комментарий: ${b.comment || "—"}`,
-      `Мешало: ${(b.obstacles || []).join("; ") || "—"}`,
-      `Не хватило от QARAVAN: ${(b.missing || []).join("; ") || "—"}`,
+      `${t.lHead}: ${b.headcount}`, attendedNote, `${t.uRating}: ${b.rating || "—"}`,
+      `${t.uComment}: ${b.comment || "—"}`,
+      `${t.lObstacles}: ${(said(b, "obstacles", b.obstacles) || []).join("; ") || "—"}`,
+      `${t.lMissing}: ${(said(b, "missing", b.missing) || []).join("; ") || "—"}`,
       leadPhotoLine,
     ].filter(Boolean).join("\n");
     await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
       { i: String(d.create_item.id), t: body });
-    await slackNotify(`Отзыв ведущего — ${ev?.name || "событие"}`,
-      slackBlocks(`Отзыв ведущего — ${ev?.name || "событие"}`, ev, body, d.create_item.id));
+    const leadHeader = `${t.lHeader} — ${ev?.name || t.event}`;
+    await slackNotify(leadHeader, slackBlocks(leadHeader, ev, body, d.create_item.id, b.lang));
     return res.end('{"ok":true}');
   }
 
@@ -555,7 +763,6 @@ export default async function handler(req, res) {
   if (Array.isArray(b.why_come) && b.why_come.length) cv[F.whyCome] = { text: b.why_come.join("; ").slice(0, 4000) };
   if (b.consent) cv[F.consent] = { labels: [b.consent] };
   if (b.name) cv[F.quoteName] = String(b.name).slice(0, 120);
-  if (b.donate) cv[F.donate] = { labels: [b.donate] };
   if (ev?.custom) cv[F.customQ] = ev.custom.slice(0, 250);
   if (b.custom_a) cv[F.customA] = { text: String(b.custom_a).slice(0, 4000) };
 
@@ -580,36 +787,35 @@ export default async function handler(req, res) {
   if (ev && media.length) {
     try {
       const done = await filePhotos(ev, media, String(b.photo_credit || "").slice(0, 120));
-      photoLine = photoResultLine(ev, done, b.photo_credit, media.length);
+      photoLine = photoResultLine(ev, done, b.photo_credit, media.length, b.lang);
     } catch (e) {
-      photoLine = `⚠️ Фото/видео: прислано ${media.length} шт., сохранить не удалось — ${String(e.message).slice(0, 200)}\n` +
-        `Токены загрузки (живут ~сутки):\n` + media.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
+      photoLine = photoFailLine(media, e.message, b.lang);
     }
   }
 
-  // The full submission, verbatim — contacts and demographics live here.
+  // Полная запись на доске — здесь живут контакты и всё, что человек ответил,
+  // теми же словами, что он видел на экране. Вопросы, которых форма не задаёт,
+  // сюда не попадают: прочерк занимает строку и не значит ничего.
+  const t = dict(b);
   const lines = [
-    updated ? "ОБНОВЛЁННЫЙ ОТВЕТ — человек отправил форму ещё раз, колонки перезаписаны, прежний текст остался в истории выше" : null,
-    `Оценка: ${b.rating || "—"}`,
-    `Понравилось: ${(b.highlights || []).join("; ") || "—"}`,
-    `Некомфортно: ${(b.discomfort || []).join("; ") || "—"}`,
-    `Момент: ${b.moment || "—"}`,
-    `Пришёл/пришла потому что: ${(b.why_come || []).join("; ") || "—"}`,
-    `В стране: ${b.stay || "—"} | Возраст: ${b.age || "—"}`,
-    `Согласие на цитаты: ${b.consent || "—"}${b.name ? ` (подпись: ${b.name})` : ""}`,
-    `Связь: ${b.contact_ok || "—"}${b.contact_name ? ` | Имя: ${b.contact_name}` : ""}${b.email ? ` | Почта: ${b.email}` : ""}${b.phone ? ` | Телефон: ${b.phone}` : ""}`,
-    `Донат: ${b.donate || "—"}`,
-    ev?.custom ? `Свой вопрос: ${ev.custom}\nОтвет: ${b.custom_a || "—"}` : null,
+    updated ? t.uResent : null,
+    `${t.uRating}: ${b.rating || "—"}`,
+    `${t.liked}: ${(said(b, "highlights", b.highlights) || []).join("; ") || "—"}`,
+    `${t.uncomfortable}: ${(said(b, "discomfort", b.discomfort) || []).join("; ") || "—"}`,
+    `${t.uComment}: ${b.moment || "—"}`,
+    `${t.uCame}: ${(said(b, "why_come", b.why_come) || []).join("; ") || "—"}`,
+    `${t.uConsent}: ${said(b, "consent", b.consent) || "—"}${b.name ? ` (${t.uSign}: ${b.name})` : ""}`,
+    `${t.uContact}: ${said(b, "contact_ok", b.contact_ok) || "—"}${b.contact_name ? ` | ${t.uName}: ${b.contact_name}` : ""}${b.email ? ` | ${t.uEmail}: ${b.email}` : ""}${b.phone ? ` | ${t.uPhone}: ${b.phone}` : ""}`,
+    ev?.custom ? `${t.uOwnQ}: ${ev.custom}\n${t.uAnswer}: ${b.custom_a || "—"}` : null,
     photoLine,
-    `Язык формы: ${b.lang || "ru"}`,
+    `${t.uFormLang}: ${b.lang || "ru"}`,
   ].filter(Boolean);
   await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
     { i: String(itemId), t: lines.join("\n") });
 
-  const stars = b.rating >= 1 && b.rating <= 5 ? "★".repeat(b.rating) + "☆".repeat(5 - b.rating) : "без оценки";
-  const header = `${updated ? "Обновлённый отзыв" : "Новый отзыв"} — ${ev?.name || "событие"}`;
-  await slackNotify(`${header} (${stars})`,
-    slackBlocks(`${header}`, ev, `*${stars}*\n${lines.join("\n")}`, itemId));
+  const stars = b.rating >= 1 && b.rating <= 5 ? "★".repeat(b.rating) + "☆".repeat(5 - b.rating) : t.noRating;
+  await slackNotify(`${updated ? t.updFb : t.newFb} — ${ev?.name || t.event} (${stars})`,
+    feedbackBlocks(ev, itemId, b, { stars, updated, photoLine }));
 
   res.end(JSON.stringify({ ok: true, updated }));
 }

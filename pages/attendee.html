@@ -358,7 +358,7 @@ ru: {
   consent: ["Да, с именем","Да, но без имени","Лучше не надо"],
   name_hint: "Как тебя подписать?",
   q_contact: "Контакты",
-  contact_opts: ["Можно написать мне по поводу этого отзыва","Оставлю отзыв анонимно — не пишите мне"],
+  contact_opts: ["Можно написать мне по поводу этого отзыва","Не пишите мне — отвечать не нужно"],
   contact_name: "Имя",
   contact_email: "Почта",
   contact_phone: "Телефон",
@@ -409,7 +409,7 @@ en: {
   consent: ["Yes, with my name","Yes, anonymously","Please don't"],
   name_hint: "How should we credit you?",
   q_contact: "Contact",
-  contact_opts: ["You can write to me about this feedback","I'm leaving this anonymously — please don't write to me"],
+  contact_opts: ["You can write to me about this feedback","No need to reply — please don't write to me"],
   contact_name: "Name",
   contact_email: "Email",
   contact_phone: "Phone",
@@ -769,27 +769,34 @@ $("f").addEventListener("submit", async ev => {
   err.classList.remove("show");
   $("send").disabled = true;
 
-  const pick = (set, list, otherVal) => {
-    const out = [...set].map(i => STRINGS.ru[list][i] ?? "").filter(Boolean);
-    if (otherVal.trim()) out.push("Другое: " + otherVal.trim());
+  // Метки для колонок monday всегда по-русски — одна система меток на доске
+  // независимо от языка интерфейса. А рядом, если форма была на английском,
+  // отправляем ровно то, что человек видел на экране: из этого собирается
+  // сообщение в Slack на языке формы.
+  const pick = (set, list, otherVal, dict) => {
+    const out = [...set].map(i => STRINGS[dict][list][i] ?? "").filter(Boolean);
+    if (otherVal.trim()) out.push((dict === "en" ? "Other: " : "Другое: ") + otherVal.trim());
     return out;
   };
-  // метки пишем в monday по-русски независимо от языка интерфейса — одна система меток в колонках
+  const shown = (v) => lang === "en" ? v : undefined;
   const body = {
     eventId, lang,
     rating,
-    highlights: pick(high, "high", $("highOther").value),
-    discomfort: pick(low, "low", $("lowOther").value),
+    highlights: pick(high, "high", $("highOther").value, "ru"),
+    discomfort: pick(low, "low", $("lowOther").value, "ru"),
     moment: $("moment").value.trim(),
-    why_come: pick(why, "whycome", $("whyOther").value),
-    stay: "",
-    age: "",
+    why_come: pick(why, "whycome", $("whyOther").value, "ru"),
+    highlights_en: shown(pick(high, "high", $("highOther").value, "en")),
+    discomfort_en: shown(pick(low, "low", $("lowOther").value, "en")),
+    why_come_en: shown(pick(why, "whycome", $("whyOther").value, "en")),
     consent: consent === "" ? "" : STRINGS.ru.consent[consent],
+    consent_en: consent === "" ? undefined : shown(STRINGS.en.consent[consent]),
     name: consent === 0 ? $("respName").value.trim() : "",
     email: contactOk === 0 ? $("respEmail").value.trim() : "",
     phone: contactOk === 0 ? $("respPhone").value.trim() : "",
     contact_name: contactOk === 0 ? $("respContactName").value.trim() : "",
     contact_ok: contactOk === "" ? "" : STRINGS.ru.contact_opts[contactOk],
+    contact_ok_en: contactOk === "" ? undefined : shown(STRINGS.en.contact_opts[contactOk]),
     custom_a: customQ ? $("customA").value.trim() : "",
     photos: photos.filter(p => p.status === "done").map(p => ({ token: p.token, mime: p.file.type || "", name: p.file.name || "" })),
     photo_credit: $("phCredit").value.trim(),
