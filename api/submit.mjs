@@ -216,28 +216,90 @@ async function filePhotos(ev, photos, credit) {
     ev.albumShareUrl = "";
   }
   const description = credit ? `Автор: ${credit}` : "";
-  let created = 0;
-  const errors = [];
-  for (let i = 0; i < photos.length; i += 50) {
-    const batch = photos.slice(i, i + 50);
-    const r = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        albumId,
+
+  // Один заход batchCreate. Возвращает, что легло, что не легло и почему.
+  // Без albumId Google кладёт файлы прямо в библиотеку аккаунта — это всегда
+  // работает, пока жив upload-токен, и служит нам страховкой.
+  async function tryCreate(items, intoAlbum) {
+    const okItems = [], failedItems = [], why = [];
+    for (let i = 0; i < items.length; i += 50) {
+      const batch = items.slice(i, i + 50);
+      const body = {
         newMediaItems: batch.map((ph) => ({
           description,
           simpleMediaItem: { uploadToken: ph.token, fileName: String(ph.name || "media").slice(0, 120) },
         })),
-      }),
-    }).then((x) => x.json());
-    for (const it of r.newMediaItemResults || []) {
-      if (it.mediaItem) created++;
-      else errors.push(it.status?.message || "unknown");
+      };
+      if (intoAlbum) body.albumId = intoAlbum;
+      let r;
+      try {
+        r = await fetch("https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }).then((x) => x.json());
+      } catch (e) {
+        failedItems.push(...batch); why.push(`сеть: ${e.message}`); continue;
+      }
+      const results = r.newMediaItemResults;
+      if (!Array.isArray(results) || !results.length) {
+        // весь запрос отвергнут целиком — обычно проблема в альбоме, не в файлах
+        failedItems.push(...batch);
+        why.push(r?.error?.message || JSON.stringify(r).slice(0, 200));
+        continue;
+      }
+      results.forEach((res, j) => {
+        if (res.mediaItem) okItems.push(batch[j]);
+        else { failedItems.push(batch[j]); why.push(res.status?.message || "unknown"); }
+      });
     }
-    if (!r.newMediaItemResults) errors.push(JSON.stringify(r).slice(0, 200));
+    return { okItems, failedItems, why };
   }
-  return { created, errors, albumId };
+
+  // Лестница спасения: альбом события → библиотека без альбома → новый альбом.
+  // Ни один файл гостя не должен потеряться из-за проблем с альбомом.
+  const errors = [];
+  let created = 0, toLibrary = 0, rescueAlbumId = null;
+  let left = photos;
+
+  if (albumId && left.length) {
+    const a = await tryCreate(left, albumId);
+    created += a.okItems.length;
+    left = a.failedItems;
+    if (a.why.length) errors.push(...a.why.map((w) => `альбом: ${w}`));
+  }
+
+  if (left.length) {
+    // без альбома — лишь бы файлы оказались в аккаунте
+    const b = await tryCreate(left, null);
+    toLibrary += b.okItems.length;
+    left = b.failedItems;
+    if (b.why.length) errors.push(...b.why.map((w) => `библиотека: ${w}`));
+  }
+
+  if (left.length) {
+    // последняя попытка: свежий альбом, созданный прямо сейчас этим же приложением
+    try {
+      const a = await fetch("https://photoslibrary.googleapis.com/v1/albums", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ album: { title: `${ev.name} — QARAVAN (спасённые файлы)` } }),
+      }).then((r) => r.json());
+      if (a.id) {
+        const c = await tryCreate(left, a.id);
+        if (c.okItems.length) { rescueAlbumId = a.id; created += c.okItems.length; }
+        left = c.failedItems;
+        if (c.why.length) errors.push(...c.why.map((w) => `запасной альбом: ${w}`));
+      } else {
+        errors.push(`запасной альбом не создался: ${JSON.stringify(a).slice(0, 150)}`);
+      }
+    } catch (e) { errors.push(`запасной альбом: ${e.message}`); }
+  }
+
+  // Токены того, что не легло никуда: они живут около суток, по ним файл ещё
+  // можно достать вручную. Пишем их рядом с отзывом, чтобы не терять концы.
+  const lost = left.map((ph) => ({ name: ph.name || "media", token: String(ph.token).slice(0, 400) }));
+  return { created, toLibrary, rescueAlbumId, errors, lost, albumId };
 }
 
 // ---------- Slack: every submission lands in #event-feedback ----------
@@ -268,6 +330,28 @@ const albumRefText = (ev, albumId) => {
   const id = albumId || ev?.albumId;
   return id ? `\nАльбом события (доступ по ссылке ещё не включён — открывается только под info@qaravan.org): https://photos.google.com/lr/album/${id}` : "";
 };
+
+// Одна строка-отчёт о фото для всех трёх форм. Говорит правду о том, где
+// файлы оказались, и никогда не молчит о потерянных: если что-то не легло
+// вообще никуда, рядом остаются upload-токены — по ним файл ещё сутки
+// достаётся вручную.
+function photoResultLine(ev, done, credit, sent) {
+  const where = [];
+  if (done.created) where.push(`${done.created} шт. в альбоме события`);
+  if (done.toLibrary) where.push(`${done.toLibrary} шт. в общей библиотеке Google Photos (в альбом не пустил Google — разложи руками)`);
+  const head = where.length
+    ? `Фото/видео: ${where.join(", ")} (согласие на использование подтверждено при загрузке)${credit ? `, автор: ${credit}` : ""}`
+    : `Фото/видео: прислано ${sent} шт., но Google не принял ни одного`;
+  const lostLine = done.lost?.length
+    ? `\n⚠️ НЕ СОХРАНИЛОСЬ: ${done.lost.length} шт. Токены загрузки (живут ~сутки, по ним файл можно достать):\n` +
+      done.lost.map((l) => `${l.name}: ${l.token}`).join("\n")
+    : "";
+  const errLine = done.errors?.length ? `\nОтвет Google: ${done.errors.slice(0, 3).join(" | ").slice(0, 400)}` : "";
+  const rescue = done.rescueAlbumId
+    ? `\nЗапасной альбом: https://photos.google.com/lr/album/${done.rescueAlbumId}`
+    : "";
+  return head + albumRefText(ev, done.albumId) + rescue + errLine + lostLine;
+}
 
 function slackBlocks(header, ev, bodyText, itemId) {
   return [
@@ -373,11 +457,11 @@ export default async function handler(req, res) {
       if (!noShow && media.length) {
         try {
           const done = await filePhotos(evi, media, String(b.photo_credit || "").slice(0, 120));
-          photoLine = `Фото/видео: ${done.created} шт. в альбоме события (согласие подтверждено при загрузке)` +
-            (b.photo_credit ? `, автор: ${b.photo_credit}` : "") + albumRefText(evi, done.albumId);
+          photoLine = photoResultLine(evi, done, b.photo_credit, media.length);
         } catch (e) {
           console.error("multi photos failed:", e.message);
-          photoLine = `Фото/видео: не удалось положить в альбом (${String(e.message).slice(0, 120)})`;
+          photoLine = `⚠️ Фото/видео: прислано ${media.length} шт., сохранить не удалось — ${String(e.message).slice(0, 200)}\n` +
+            `Токены загрузки (живут ~сутки):\n` + media.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
         }
       }
       const lines = noShow
@@ -435,11 +519,10 @@ export default async function handler(req, res) {
     if (ev && leadMedia.length) {
       try {
         const done = await filePhotos(ev, leadMedia, String(b.photo_credit || "").slice(0, 120));
-        leadPhotoLine = `Фото/видео: ${done.created} шт. в альбоме события (согласие на использование подтверждено при загрузке)` +
-          (b.photo_credit ? `, автор: ${b.photo_credit}` : "") +
-          (done.errors.length ? ` — не приняты Google: ${done.errors.length}` : "") + albumRefText(ev, done.albumId);
+        leadPhotoLine = photoResultLine(ev, done, b.photo_credit, leadMedia.length);
       } catch (e) {
-        leadPhotoLine = `Фото/видео: загружены (${leadMedia.length} шт.), но разложить в альбом не вышло — ${e.message}`;
+        leadPhotoLine = `⚠️ Фото/видео: прислано ${leadMedia.length} шт., сохранить не удалось — ${String(e.message).slice(0, 200)}\n` +
+          `Токены загрузки (живут ~сутки):\n` + leadMedia.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
       }
     }
     const body = [
@@ -497,11 +580,10 @@ export default async function handler(req, res) {
   if (ev && media.length) {
     try {
       const done = await filePhotos(ev, media, String(b.photo_credit || "").slice(0, 120));
-      photoLine = `Фото/видео: ${done.created} шт. в альбоме события (согласие на использование подтверждено при загрузке)` +
-        (b.photo_credit ? `, автор: ${b.photo_credit}` : "") +
-        (done.errors.length ? ` — не приняты Google: ${done.errors.length}` : "") + albumRefText(ev, done.albumId);
+      photoLine = photoResultLine(ev, done, b.photo_credit, media.length);
     } catch (e) {
-      photoLine = `Фото/видео: загружены (${media.length} шт.), но разложить в альбом не вышло — ${e.message}`;
+      photoLine = `⚠️ Фото/видео: прислано ${media.length} шт., сохранить не удалось — ${String(e.message).slice(0, 200)}\n` +
+        `Токены загрузки (живут ~сутки):\n` + media.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
     }
   }
 
