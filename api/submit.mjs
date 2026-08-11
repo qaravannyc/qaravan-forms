@@ -294,12 +294,29 @@ export default async function handler(req, res) {
           { b: FEEDBACK_BOARD, n: itemName, v: JSON.stringify(cv) });
         itemId = d.create_item.id;
       }
+      // Фото и видео гостя уходят в альбом ИМЕННО этого события — в общей форме
+      // каждое событие грузит свои файлы отдельно.
+      let photoLine = null;
+      const media = Array.isArray(entry.photos)
+        ? entry.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20)
+        : [];
+      if (!noShow && media.length) {
+        try {
+          const done = await filePhotos(evi, media, String(b.photo_credit || "").slice(0, 120));
+          photoLine = `Фото/видео: ${done.created} шт. в альбоме события (согласие подтверждено при загрузке)` +
+            (b.photo_credit ? `, автор: ${b.photo_credit}` : "");
+        } catch (e) {
+          console.error("multi photos failed:", e.message);
+          photoLine = `Фото/видео: не удалось положить в альбом (${String(e.message).slice(0, 120)})`;
+        }
+      }
       const lines = noShow
         ? ["Отметил(а) в общей форме: не был(а) на событии"]
         : [
             existing ? "ОБНОВЛЁННЫЙ ОТВЕТ (общая форма недели)" : "Ответ из общей формы недели",
             `Оценка: ${rating || "—"}`,
             `Комментарий: ${comment || "—"}`,
+            photoLine,
             `Согласие на цитаты: ${b.consent || "—"}${b.name ? ` (подпись: ${b.name})` : ""}`,
             `Связь: ${b.contact_ok || "—"}${b.contact_name ? ` | Имя: ${b.contact_name}` : ""}${b.email ? ` | Почта: ${b.email}` : ""}${b.phone ? ` | Телефон: ${b.phone}` : ""}`,
             `Язык формы: ${b.lang || "ru"}`,
@@ -307,7 +324,7 @@ export default async function handler(req, res) {
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
         { i: String(itemId), t: lines.filter(Boolean).join("\n") });
       const stars = noShow ? "не был(а)" : (rating ? "★".repeat(rating) + "☆".repeat(5 - rating) : "без оценки");
-      summary.push(`*${evi.name}* — ${stars}${comment ? `\n${comment}` : ""}`);
+      summary.push(`*${evi.name}* — ${stars}${media.length ? ` · 📷 ${media.length}` : ""}${comment ? `\n${comment}` : ""}`);
     }
     if (summary.length) {
       const who = b.name || b.contact_name || "аноним";
