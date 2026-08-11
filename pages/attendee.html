@@ -748,6 +748,21 @@ function wireContactValidation(){
 wireContactValidation();
 
 // ===== отправка =====
+
+// Если Google Photos не принял файл, сервер вернёт его в списке rescue —
+// дошлём сами байты нам же, чтобы ничего не пропало.
+async function rescueFiles(list, eventIdFallback){
+  if (!Array.isArray(list) || !list.length) return;
+  const MAX = 4 * 1024 * 1024;   // предел тела запроса у хостинга
+  for (const item of list) {
+    const p = photos.find(x => x.status !== "removed" && (x.file.name || "") === item.name);
+    if (!p || !p.file || p.file.size > MAX) continue;
+    try {
+      await fetch(`/api/rescue-file?event=${encodeURIComponent(item.eventId || eventIdFallback)}&name=${encodeURIComponent(item.name)}`,
+        { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: p.file });
+    } catch (e) {}
+  }
+}
 $("f").addEventListener("submit", async ev => {
   ev.preventDefault();
   const err = $("err");
@@ -802,6 +817,8 @@ $("f").addEventListener("submit", async ev => {
       body: JSON.stringify(body)
     });
     if (!r.ok) throw new Error();
+    const data = await r.json().catch(() => ({}));
+    await rescueFiles(data.rescue, eventId);
     $("formView").style.display = "none";
     $("thanks").classList.add("show");
     window.scrollTo({top:0});

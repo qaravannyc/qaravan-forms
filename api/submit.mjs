@@ -409,6 +409,7 @@ export default async function handler(req, res) {
     const attendeeId = multiAttendee(b.p);
     const entries = Array.isArray(b.events) ? b.events.slice(0, 10) : [];
     const summary = [];
+    const rescue = [];   // файлы, которые Google не взял никуда — форма дошлёт их нам
     let processed = 0;
     for (const entry of entries) {
       const evi = await getEvent(entry.id).catch(() => null);
@@ -458,10 +459,12 @@ export default async function handler(req, res) {
         try {
           const done = await filePhotos(evi, media, String(b.photo_credit || "").slice(0, 120));
           photoLine = photoResultLine(evi, done, b.photo_credit, media.length);
+          for (const l of done.lost || []) rescue.push({ eventId: String(evi.id), name: l.name });
         } catch (e) {
           console.error("multi photos failed:", e.message);
           photoLine = `⚠️ Фото/видео: прислано ${media.length} шт., сохранить не удалось — ${String(e.message).slice(0, 200)}\n` +
             `Токены загрузки (живут ~сутки):\n` + media.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
+          for (const m of media) rescue.push({ eventId: String(evi.id), name: m.name || "media" });
         }
       }
       const lines = noShow
@@ -491,7 +494,7 @@ export default async function handler(req, res) {
         { type: "section", text: { type: "mrkdwn", text: summary.join("\n\n").slice(0, 2900) } },
       ]);
     }
-    return res.end(JSON.stringify({ ok: true, processed }));
+    return res.end(JSON.stringify({ ok: true, processed, rescue }));
   }
 
   if (b.isLead) {
@@ -576,14 +579,17 @@ export default async function handler(req, res) {
 
   // Photos/videos: file the browser-uploaded bytes into the event album.
   let photoLine = null;
+  const rescue = [];   // файлы, которые Google не взял никуда — форма дошлёт их нам
   const media = Array.isArray(b.photos) ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20) : [];
   if (ev && media.length) {
     try {
       const done = await filePhotos(ev, media, String(b.photo_credit || "").slice(0, 120));
       photoLine = photoResultLine(ev, done, b.photo_credit, media.length);
+      for (const l of done.lost || []) rescue.push({ eventId: String(ev.id), name: l.name });
     } catch (e) {
       photoLine = `⚠️ Фото/видео: прислано ${media.length} шт., сохранить не удалось — ${String(e.message).slice(0, 200)}\n` +
         `Токены загрузки (живут ~сутки):\n` + media.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
+      for (const m of media) rescue.push({ eventId: String(ev.id), name: m.name || "media" });
     }
   }
 
@@ -611,5 +617,5 @@ export default async function handler(req, res) {
   await slackNotify(`${header} (${stars})`,
     slackBlocks(`${header}`, ev, `*${stars}*\n${lines.join("\n")}`, itemId));
 
-  res.end(JSON.stringify({ ok: true, updated }));
+  res.end(JSON.stringify({ ok: true, updated, rescue }));
 }

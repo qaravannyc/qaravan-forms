@@ -776,6 +776,17 @@ $("f").addEventListener("submit", async x => {
   try{
     const r = await fetch("/api/submit", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error();
+    // Что Google не принял — дошлём сами байты нам же, чтобы не пропало
+    const data = await r.json().catch(() => ({}));
+    for (const item of (Array.isArray(data.rescue) ? data.rescue : [])) {
+      const e = ev.find(x => String(x.id) === String(item.eventId));
+      const p = e && phLive(e).find(x => (x.name || "media") === item.name);
+      if (!p || !p.file || p.file.size > 4 * 1024 * 1024) continue;
+      try {
+        await fetch(`/api/rescue-file?event=${encodeURIComponent(item.eventId)}&name=${encodeURIComponent(item.name)}`,
+          { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: p.file });
+      } catch (x) {}
+    }
     clearDraft();
     $("formView").style.display = "none";
     $("thanks").classList.add("show");
