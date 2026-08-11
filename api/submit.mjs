@@ -155,6 +155,10 @@ async function filePhotos(ev, photos, credit) {
   const token = await googleToken();
   let albumId = ev.albumId;
   if (!albumId) {
+    // Публичная ссылка на строке есть, а id альбома нет: по публичной ссылке
+    // id не восстановить (в ней share-токен, а методы sharing из API убраны),
+    // так что файлы лягут в новый альбом — и об этом надо честно сказать.
+    const staleShare = ev.albumShareUrl;
     const a = await fetch("https://photoslibrary.googleapis.com/v1/albums", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -172,7 +176,10 @@ async function filePhotos(ev, photos, credit) {
         `1. Открой альбом под *info@qaravan.org*: <${ownerUrl}|альбом в Google Photos>\n` +
         `2. Нажми «Поделиться» и создай ссылку\n` +
         `3. Вставь её в колонку «Photos album» — <https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${ev.id}|строка события>\n` +
-        `Дальше эта ссылка сама появится в сообщениях о новых отзывах.`).slice(0, 2900) } },
+        `Дальше эта ссылка сама появится в сообщениях о новых отзывах.` +
+        (staleShare
+          ? `\n\n⚠️ В колонке «Photos album» лежала публичная ссылка (${staleShare}), но id того альбома роботу неизвестен, класть файлы туда он не может. Новые фото ушли в НОВЫЙ альбом, колонка перезаписана. Если альбом должен быть один — перенеси в новый альбом фото из старого руками (выделить → добавить в альбом) и включи новому доступ по ссылке.`
+          : "")).slice(0, 2900) } },
     ]);
     // Album "description": Google Photos albums have no description field, so
     // the event info goes in as a text enrichment pinned to the top.
@@ -188,10 +195,20 @@ async function filePhotos(ev, photos, credit) {
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ newEnrichmentItem: { textEnrichment: { text: info.slice(0, 1000) } }, albumPosition: { position: "FIRST_IN_ALBUM" } }),
     }).catch((e) => console.error("album enrichment failed:", e.message));
+    // Кэш в две колонки: id — служебный, ссылка — владельческая с пометкой,
+    // из неё id тоже восстанавливается (…/lr/album/<id>), если запись id упала.
+    // Устаревшую публичную ссылку (см. staleShare выше) перезаписываем: она
+    // ведёт в альбом, куда новые фото уже не попадут.
     await monday(
       `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v){id} }`,
-      { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({ [ALBUM_COL]: albumId }) }
-    ).catch(() => {}); // filing photos matters more than caching the album id
+      { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({
+        [ALBUM_COL]: albumId,
+        [ALBUM_LINK_COL]: { url: `https://photos.google.com/lr/album/${albumId}`, text: "не публичная — включи доступ по ссылке (шаги в Slack)" },
+      }) }
+    ).catch((e) => console.error("album cache write failed:", e.message)); // filing photos matters more than caching the album id
+    // Сообщения ниже по коду должны вести в ЭТОТ альбом, а не в старый по ссылке
+    ev.albumId = albumId;
+    ev.albumShareUrl = "";
   }
   const description = credit ? `Автор: ${credit}` : "";
   let created = 0;
