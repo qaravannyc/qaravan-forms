@@ -200,6 +200,9 @@ export default async function handler(req, res) {
         `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v,create_labels_if_missing:true){id} }`,
         { b: EVENTS_BOARD, i: eventId, v: JSON.stringify({ [STATUS_COL]: { label: "Digest approved" } }) }
       );
+      // Название события — в текст подтверждения: три безымянных «✅ одобрен»
+      // подряд невозможно отличить друг от друга, и непонятно, что именно ушло.
+      const evName = (await getEventRow(eventId).catch(() => null))?.name || `событие ${eventId}`;
       const run = await runSendRobot();
       if (payload.response_url) {
         await fetch(payload.response_url, {
@@ -208,8 +211,8 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             replace_original: true,
             text: run.ok
-              ? `✅ Дайджест одобрен (@${who}). Робот запущен — письмо уйдёт ведущему через минуту-две.`
-              : `✅ Дайджест одобрен (@${who}), но робота запустить не удалось: ${run.why}. Письмо уйдёт при вечернем прогоне — ежедневно в 17:00 по Нью-Йорку.`,
+              ? `✅ Дайджест по «${evName}» одобрен (@${who}). Робот запущен — письмо уйдёт ведущему через минуту-две.`
+              : `✅ Дайджест по «${evName}» одобрен (@${who}), но робота запустить не удалось: ${run.why}. Письмо уйдёт при вечернем прогоне — ежедневно в 17:00 по Нью-Йорку.`,
           }),
         }).catch(() => {});
       }
