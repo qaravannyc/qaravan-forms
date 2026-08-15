@@ -229,10 +229,9 @@ async function filePhotos(ev, photos, credit) {
     // status». Единственное исключение: в колонке лежала СТАРАЯ публичная ссылка,
     // а файлы легли в новый альбом — про такое расхождение молчать нельзя.
     if (staleShare) {
-      await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`, {
-        i: String(ev.id),
-        t: `⚠️ В колонке «Photo album» лежала публичная ссылка (${staleShare}), но id того альбома роботу неизвестен — новые фото гостей ушли в НОВЫЙ альбом, колонка перезаписана. Если альбом должен быть один — перенеси фото из старого руками и включи новому доступ по ссылке.`,
-      }).catch((e) => console.error("album update note failed:", e.message));
+      await slackNotify(`⚠️ Альбомы разъехались — ${ev.name}`, [
+        { type: "section", text: { type: "mrkdwn", text: `⚠️ *«${ev.name}»*: в колонке «Photo album» лежала публичная ссылка (${staleShare}), но id того альбома роботу неизвестен — новые фото ушли в НОВЫЙ альбом, колонка перезаписана. Если альбом должен быть один — перенеси фото из старого руками и включи новому доступ по ссылке. <https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${ev.id}|Строка события>`.slice(0, 2900) } },
+      ]);
     }
     // Album "description": Google Photos albums have no description field, so
     // the event info goes in as a text enrichment pinned to the top.
@@ -497,9 +496,7 @@ export default async function handler(req, res) {
         `Токены загрузки (живут ~сутки):\n` + media.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
       for (const m of media) rescue.push({ eventId: String(ev.id), name: m.name || "media" });
     }
-    const noteBody = `Фото со страницы загрузки (${media.length} шт.)${credit ? ` — автор: ${credit}` : ""}\n${photoLine}`;
-    await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
-      { i: String(ev.id), t: noteBody }).catch((e) => console.error("photos-only update failed:", e.message));
+    // Квитанция уходит только в Slack-тред события — апдейты-комментарии на строках убраны (15.08.2026).
     await slackNotify(`📷 Фото с события — ${ev.name} (${media.length} шт.)`, [
       { type: "section", text: { type: "mrkdwn", text: `📷 *Фото: ${media.length} шт.*${credit ? ` — автор: ${credit}` : ""}\n${photoLine}`.slice(0, 2900) } },
     ], await eventThread(ev));
