@@ -327,6 +327,14 @@ const ids = ((window.__EVENTS__ || "") || params.get("e") || "").split(",").map(
 const pTok = ((window.__P__ || "") || params.get("p") || "").replace(/[^0-9a-zA-Z.]/g, "").slice(0, 80);
 let lang = params.get("lang") === "en" ? "en" : "ru";
 let consent = "", contactOk = "", showAll = false, cursor = 0, needStarsAt = null;
+
+// Первая строка — русский вопрос, вторая — английский. Пустых строк не считаем.
+function customByLang(text, lng){
+  const lines = String(text || "").split(/\n+/).map(t => t.trim()).filter(Boolean);
+  if (!lines.length) return "";
+  return lng === "en" && lines[1] ? lines.slice(1).join(" ") : lines[0];
+}
+
 const ev = ids.map(id => ({ id, name: "", date: "", rating: 0, na: false, comment: "", tags: [], custom: "", customA: "", photos: [] }));
 
 const $ = id => document.getElementById(id);
@@ -624,7 +632,7 @@ function fillActive(e, host, idx){
     if (e.custom){
       const cq = document.createElement("div"); cq.className = "cq";
       const lab = document.createElement("label");
-      lab.className = "cq-q"; lab.textContent = e.custom;
+      lab.className = "cq-q"; lab.textContent = customByLang(e.custom, lang);
       lab.setAttribute("for", "cq-" + e.id);
       const cta = document.createElement("textarea");
       cta.id = "cq-" + e.id; cta.maxLength = 4000; cta.value = e.customA || "";

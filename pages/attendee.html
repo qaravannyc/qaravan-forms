@@ -443,6 +443,14 @@ const pTok = ((window.__P__ || "") || params.get("p") || "").replace(/[^0-9a-zA-
 let eventName = "", eventDate = "", eventDateEn = "", customQ = "";
 
 const $ = id => document.getElementById(id);
+
+// Первая строка — русский вопрос, вторая — английский. Пустых строк не считаем.
+function customByLang(text, lng){
+  const lines = String(text || "").split(/\n+/).map(t => t.trim()).filter(Boolean);
+  if (!lines.length) return "";
+  return lng === "en" && lines[1] ? lines.slice(1).join(" ") : lines[0];
+}
+
 // эти строки содержат <b> — рендерятся как HTML
 const HTML_KEYS = new Set(["donate_1", "donate_2"]);
 const T = () => STRINGS[lang];
@@ -516,9 +524,10 @@ function render(){
     i => { contactOk = i; $("contactWrap").style.display = i === 0 ? "" : "none"; },
     contactOk === "" ? -1 : contactOk);
   $("contactWrap").style.display = contactOk === 0 ? "" : "none";
-  // кастомный вопрос ивента: текст берётся из monday как есть, без перевода
+  // Свой вопрос события: первая строка — по-русски, вторая — по-английски.
+  // Одна строка — показываем её на обоих языках.
   $("customWrap").style.display = customQ ? "" : "none";
-  $("customQ").textContent = customQ;
+  $("customQ").textContent = customByLang(customQ, lang);
   drawStars();
 }
 
