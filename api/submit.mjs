@@ -176,14 +176,15 @@ async function filePhotos(ev, photos, credit) {
     // albums.share в марте 2025) — просим человека сделать это один раз,
     // апдейтом на строке события (просьбы в Slack Эзра отменил, Aug 2026).
     const ownerUrl = a.productUrl || `https://photos.google.com/lr/album/${albumId}`;
-    await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`, {
-      i: String(ev.id),
-      t: `Гости начали присылать фото к «${ev.name}» — фотоальбом создан: ${ownerUrl}\n` +
-         `Один раз, под info@qaravan.org: открыть альбом → «Поделиться» → создать ссылку → открыть расшаренный альбом и скопировать ссылку ИЗ АДРЕСНОЙ СТРОКИ браузера (photos.google.com/share/…?key=…, не короткую photos.app.goo.gl) → вставить её в колонку «Photo album». После этого робот сам переключит «Album status» на «✅ Shared by link» и будет добавлять ссылку в сообщения о новых отзывах.` +
-         (staleShare
-           ? `\n\n⚠️ В колонке «Photo album» лежала публичная ссылка (${staleShare}), но id того альбома роботу неизвестен, класть файлы туда он не может. Новые фото ушли в НОВЫЙ альбом, колонка перезаписана. Если альбом должен быть один — перенеси в новый альбом фото из старого руками (выделить → добавить в альбом) и включи новому доступ по ссылке.`
-           : ""),
-    }).catch((e) => console.error("album update note failed:", e.message));
+    // Инструкцию-апдейт больше не постим (15.08.2026) — сигнал даёт чип «Album
+    // status». Единственное исключение: в колонке лежала СТАРАЯ публичная ссылка,
+    // а файлы легли в новый альбом — про такое расхождение молчать нельзя.
+    if (staleShare) {
+      await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`, {
+        i: String(ev.id),
+        t: `⚠️ В колонке «Photo album» лежала публичная ссылка (${staleShare}), но id того альбома роботу неизвестен — новые фото гостей ушли в НОВЫЙ альбом, колонка перезаписана. Если альбом должен быть один — перенеси фото из старого руками и включи новому доступ по ссылке.`,
+      }).catch((e) => console.error("album update note failed:", e.message));
+    }
     // Album "description": Google Photos albums have no description field, so
     // the event info goes in as a text enrichment pinned to the top.
     const info = [

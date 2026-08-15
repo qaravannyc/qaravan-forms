@@ -91,12 +91,8 @@ async function createAndRecord(ev) {
       [ALBUM_STATUS_COL]: { label: ST_OPEN },
       [ALBUM_SYNC_COL]: infoFingerprint(info),
     }) });
-  await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`, {
-    i: String(ev.id),
-    t: `Фотоальбом события создан: ${ownerUrl}\n` +
-       `Один раз, под info@qaravan.org: открыть альбом → «Поделиться» → создать ссылку → открыть расшаренный альбом и скопировать ссылку ИЗ АДРЕСНОЙ СТРОКИ браузера (photos.google.com/share/…?key=…, не короткую photos.app.goo.gl) → вставить её в колонку «Photo album».\n` +
-       `После этого робот сам переключит «Album status» на «✅ Shared by link» и будет добавлять ссылку в сообщения о новых отзывах. Фото гостей лягут в этот альбом автоматически.`,
-  }).catch((e) => console.error("album update note failed:", e.message));
+  // Инструкцию-апдейт больше не постим (15.08.2026): сигнал — чип «Album status»,
+  // как открыть доступ — в описании колонки «Photo album».
   return ownerUrl;
 }
 
@@ -128,10 +124,7 @@ export default async function handler(req, res) {
       // Кнопка. Реагируем только на реальное состояние чипа на доске.
       if (ev.trigger !== TRIGGER_LABEL) return res.end('{"ok":true}');
       if (ev.albumId) {
-        await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`, {
-          i: String(ev.id),
-          t: `Альбом у события уже есть${ev.albumLink ? `: ${ev.albumLink}` : ""} — новый не создавал.`,
-        }).catch(() => {});
+        // Альбом уже есть — молча сбрасываем чип; ссылку видно в колонке «Photo album».
       } else {
         await createAndRecord(ev);
       }
