@@ -338,7 +338,7 @@ const eventId = ((window.__EVENT_ID__ || "") || params.get("event") || "").repla
 let lang = params.get("lang") === "en" ? "en" : "ru";
 let rating = 0;
 let obstacles = new Set(), missing = new Set();
-let eventName = "", eventDate = "";
+let eventName = "", eventDate = "", eventDateEn = "";
 
 const $ = id => document.getElementById(id);
 const T = () => STRINGS[lang];
@@ -383,7 +383,7 @@ function render(){
     }
     el.textContent = T()[k];
   });
-  $("evDate").textContent = cleanDate(eventDate);
+  $("evDate").textContent = cleanDate(lang === "en" ? (eventDateEn || eventDate) : eventDate);
   chip(T().obstacles, obstacles, $("chipsObstacles"), $("obstaclesOtherWrap"));
   chip(T().missing, missing, $("chipsMissing"), $("missingOtherWrap"));
   $("phAdd").textContent = T().photos_add;
@@ -435,6 +435,7 @@ async function loadEvent(){
       const d = await r.json();
       eventName = d.name || "";
       eventDate = d.date || "";
+      eventDateEn = d.dateEn || "";
     }
   }catch(e){}
   $("hero").classList.add("on");

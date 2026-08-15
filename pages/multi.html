@@ -234,8 +234,8 @@ ru: {
   stars_words: ["Плохо", "Так себе", "Нормально", "Хорошо", "Отлично!"],
   q_good: "Что было лучше всего?",
   q_bad: "Что стоит поправить?",
-  chips_good: ["Люди и общение", "Атмосфера", "Тема и содержание", "Организаторы"],
-  chips_bad: ["Неудобное время", "Сложно добираться", "Слишком долго", "Слишком коротко", "Было сложно включиться", "Мало информации заранее"],
+  chips_good: ["Люди и общение", "Новые знакомства", "Атмосфера", "Тема и содержание", "Ведущие и организация"],
+  chips_bad: ["Неудобное время", "Сложно добираться", "Слишком долго", "Слишком коротко", "Было сложно включиться", "Слишком много людей", "Мало информации заранее"],
   prog: (a, b) => `${a} из ${b}`,
   prog_zero: n => n === 1 ? "1 событие" : (n <= 4 ? `${n} события` : `${n} событий`),
   prog_done: "Готово",
@@ -280,8 +280,8 @@ en: {
   stars_words: ["Bad", "Meh", "Okay", "Good", "Great!"],
   q_good: "What was best about it?",
   q_bad: "What should we fix?",
-  chips_good: ["The people", "The atmosphere", "The topic & content", "The organizers"],
-  chips_bad: ["Inconvenient time", "Hard to get to", "Too long", "Too short", "Hard to join in", "Not enough info beforehand"],
+  chips_good: ["The people", "New connections", "The atmosphere", "The topic & content", "The hosts & organization"],
+  chips_bad: ["Inconvenient time", "Hard to get to", "Too long", "Too short", "Hard to join in", "Too crowded", "Not enough info beforehand"],
   prog: (a, b) => `${a} of ${b}`,
   prog_zero: n => `${n} event${n === 1 ? "" : "s"}`,
   prog_done: "Done",
@@ -529,7 +529,7 @@ function fillDone(e, host, idx){
 function fillActive(e, host, idx){
   host.className = "ev";
   const head = document.createElement("div"); head.className = "ev-head";
-  if (e.date){ const date = document.createElement("div"); date.className = "date"; date.textContent = e.date; head.appendChild(date); }
+  if (e.date){ const date = document.createElement("div"); date.className = "date"; date.textContent = lang === "en" ? (e.dateEn || e.date) : e.date; head.appendChild(date); }
   const h = document.createElement("h2"); h.textContent = e.name || "Событие QARAVAN";
   head.appendChild(h);
   host.appendChild(head);
@@ -582,15 +582,19 @@ function fillActive(e, host, idx){
     const qa = document.createElement("div"); qa.className = "qa";
     const q = document.createElement("div"); q.className = "qa-q"; q.textContent = good ? T().q_good : T().q_bad;
     const chips = document.createElement("div"); chips.className = "chips";
-    list.forEach(label => {
+    // Значения всегда русские (по индексу): сервер сверяет метки с русским
+    // каноном, и выбор в английском интерфейсе иначе терялся молча.
+    const ruList = good ? STRINGS.ru.chips_good : STRINGS.ru.chips_bad;
+    list.forEach((label, li) => {
+      const value = ruList[li] || label;
       const c = document.createElement("button");
       c.type = "button"; c.textContent = label;
-      const on = (e.tags || []).includes(label);
+      const on = (e.tags || []).includes(value);
       c.setAttribute("aria-pressed", String(on));
       c.onclick = () => {
         e.tags = e.tags || [];
-        const at = e.tags.indexOf(label);
-        if (at === -1) e.tags.push(label); else e.tags.splice(at, 1);
+        const at = e.tags.indexOf(value);
+        if (at === -1) e.tags.push(value); else e.tags.splice(at, 1);
         c.setAttribute("aria-pressed", String(at === -1));
         saveDraft();
       };
@@ -727,7 +731,7 @@ async function loadEvents(){
   await Promise.all(ev.map(async e => {
     try{
       const r = await fetch(`/api/event?id=${e.id}`);
-      if (r.ok){ const d = await r.json(); e.name = d.name || ""; e.date = d.date || ""; e.custom = (d.custom || "").trim(); }
+      if (r.ok){ const d = await r.json(); e.name = d.name || ""; e.date = d.date || ""; e.dateEn = d.dateEn || ""; e.custom = (d.custom || "").trim(); }
     }catch(x){}
   }));
   render();

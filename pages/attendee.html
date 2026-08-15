@@ -335,9 +335,9 @@ ru: {
   multi_none: "Можно несколько, можно ничего.",
   q_rating: "Как тебе в целом?",
   q_high: "Что понравилось больше всего?",
-  high: ["Люди и общение","Атмосфера","Тема и содержание","Организаторы","Другое"],
+  high: ["Люди и общение","Новые знакомства","Атмосфера","Тема и содержание","Ведущие и организация","Место и площадка","Еда и угощения","Польза и новые знания","Другое"],
   q_low: "Что было некомфортно?",
-  low: ["Неудобное время","Сложно добираться","Слишком долго","Слишком коротко","Было сложно включиться","Мало информации заранее","Другое","Всё было ок"],
+  low: ["Неудобное время","Сложно добираться","Неудобное место или помещение","Слишком долго","Слишком коротко","Было сложно включиться","Слишком много людей","Языковой барьер","Мало информации заранее","Дорого вышло","Другое","Всё было ок"],
   q_moment_good: "Что организаторам удалось особенно хорошо — и почему для тебя это было важно?",
   q_moment_bad: "Что пошло не так — и что нам стоит поменять в следующий раз?",
   moment_hint: "Твой ответ прочитают те, кто готовил и вёл событие.",
@@ -386,9 +386,9 @@ en: {
   multi_none: "Pick any, or none.",
   q_rating: "How was it overall?",
   q_high: "What did you like most?",
-  high: ["The people","The atmosphere","The topic & content","The organizers","Something else"],
+  high: ["The people","New connections","The atmosphere","The topic & content","The hosts & organization","The venue & location","The food & treats","Learned something useful","Something else"],
   q_low: "Anything uncomfortable?",
-  low: ["Inconvenient time","Hard to get to","Too long","Too short","Hard to join in","Not enough info beforehand","Other","All good"],
+  low: ["Inconvenient time","Hard to get to","Uncomfortable venue","Too long","Too short","Hard to join in","Too crowded","Language barrier","Not enough info beforehand","Too pricey","Other","All good"],
   q_moment_good: "What did the organizers do especially well — and why did it matter to you?",
   q_moment_bad: "What went wrong — and what should we change next time?",
   moment_hint: "The people who prepared and ran this event will read your answer.",
@@ -440,7 +440,7 @@ let rating = 0;
 let high = new Set(), low = new Set(), why = new Set();
 let consent = "", contactOk = "";
 const pTok = ((window.__P__ || "") || params.get("p") || "").replace(/[^0-9a-zA-Z.]/g, "").slice(0, 80);
-let eventName = "", eventDate = "", customQ = "";
+let eventName = "", eventDate = "", eventDateEn = "", customQ = "";
 
 const $ = id => document.getElementById(id);
 // эти строки содержат <b> — рендерятся как HTML
@@ -498,7 +498,7 @@ function render(){
     if (HTML_KEYS.has(k)) { el.innerHTML = T()[k]; return; }
     el.textContent = T()[k];
   });
-  $("evDate").textContent = cleanDate(eventDate);
+  $("evDate").textContent = cleanDate(lang === "en" ? (eventDateEn || eventDate) : eventDate);
   $("respEmail").placeholder = T().contact_email;
   $("respPhone").placeholder = T().contact_phone;
   $("respContactName").placeholder = T().contact_name;
@@ -591,6 +591,7 @@ async function loadEvent(){
       const d = await r.json();
       eventName = d.name || "";
       eventDate = d.date || "";
+      eventDateEn = d.dateEn || "";
       customQ = d.custom || "";
     }
   }catch(e){}

@@ -9,6 +9,8 @@ const CUSTOM_COL = "long_text_mm64tyb5";
 
 const MONTHS_RU = ["января", "февраля", "марта", "апреля", "мая", "июня",
   "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+const MONTHS_EN = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
 
 function ruDate(text) {
   // monday gives "2026-08-09 18:00" (or just the date); time shown as AM/PM
@@ -21,6 +23,19 @@ function ruDate(text) {
     t = `, ${h % 12 || 12}:${mm} ${h < 12 ? "AM" : "PM"}`;
   }
   return `${Number(d)} ${MONTHS_RU[Number(mo) - 1]} ${y}${t}`;
+}
+
+// Та же дата по-английски — страница выбирает по языку интерфейса.
+function enDate(text) {
+  const m = (text || "").match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2}))?/);
+  if (!m) return "";
+  const [, y, mo, d, hh, mm] = m;
+  let t = "";
+  if (hh !== undefined) {
+    const h = Number(hh);
+    t = `, ${h % 12 || 12}:${mm} ${h < 12 ? "AM" : "PM"}`;
+  }
+  return `${MONTHS_EN[Number(mo) - 1]} ${Number(d)}, ${y}${t}`;
 }
 
 export default async function handler(req, res) {
@@ -40,5 +55,5 @@ export default async function handler(req, res) {
   const cols = Object.fromEntries(item.column_values.map((c) => [c.id, c.text || ""]));
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "s-maxage=120, stale-while-revalidate=600");
-  res.end(JSON.stringify({ name: item.name, date: ruDate(cols[DATE_COL]), custom: (cols[CUSTOM_COL] || "").trim() }));
+  res.end(JSON.stringify({ name: item.name, date: ruDate(cols[DATE_COL]), dateEn: enDate(cols[DATE_COL]), custom: (cols[CUSTOM_COL] || "").trim() }));
 }

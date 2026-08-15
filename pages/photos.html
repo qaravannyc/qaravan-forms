@@ -200,7 +200,7 @@ en: {
 const params = new URLSearchParams(location.search);
 const eventId = ((window.__EVENT_ID__ || "") || params.get("event") || "").replace(/\D/g, "");
 let lang = params.get("lang") === "en" ? "en" : "ru";
-let eventName = "", eventDate = "";
+let eventName = "", eventDate = "", eventDateEn = "";
 
 const $ = id => document.getElementById(id);
 const T = () => STRINGS[lang];
@@ -215,7 +215,7 @@ function render(){
     if (k === "loading") { el.textContent = eventName || T().loading; return; }
     el.textContent = T()[k];
   });
-  $("evDate").textContent = cleanDate(eventDate);
+  $("evDate").textContent = cleanDate(lang === "en" ? (eventDateEn || eventDate) : eventDate);
   $("phAdd").textContent = T().photos_add;
   $("fbLink").href = eventId ? `/${eventId}` : "https://qaravan.org";
   phSync();
@@ -233,6 +233,7 @@ async function loadEvent(){
       const d = await r.json();
       eventName = d.name || "";
       eventDate = d.date || "";
+      eventDateEn = d.dateEn || "";
     }
   }catch(e){}
   $("hero").classList.add("on");
