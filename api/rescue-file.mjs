@@ -1,7 +1,7 @@
 // POST /api/rescue-file?event=<id>&name=<filename> — последний рубеж.
 //
 // Если Google Photos не принял файл гостя ни в альбом, ни в библиотеку, форма
-// присылает сюда сами байты, и мы кладём их в колонку «📎 Спасённые фото» на
+// присылает сюда сами байты, и мы кладём их в колонку «📎 Rescued photos» на
 // строке события в monday. Ничего не пропадает: файл лежит у нас, человек
 // потом разложит его руками.
 //
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
       res.statusCode = 502;
       return res.end('{"ok":false,"error":"monday upload failed"}');
     }
-    await slackNotify(`📎 Google Photos не принял файл «${name}» с события «${item.name}» — сохранил его в колонку «Спасённые фото» на строке события: https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${eventId}`);
+    await slackNotify(`📎 Google Photos не принял файл «${name}» с события «${item.name}» — сохранил его в колонку «📎 Rescued photos» на строке события: https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${eventId}`);
     return res.end('{"ok":true}');
   } catch (e) {
     console.error("rescue-file failed:", e.message);

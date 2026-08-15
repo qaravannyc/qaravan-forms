@@ -1,3 +1,4 @@
+<!-- Convention: all monday.com board structure (column titles, labels, descriptions) is named in English, never Russian. Russian is fine for content. -->
 # qaravan-forms
 
 Публичная витрина форм обратной связи QARAVAN. Здесь живёт только код формы — вся остальная автоматика в приватном репозитории `qaravannyc/events-robot`.
