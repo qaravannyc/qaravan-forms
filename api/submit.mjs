@@ -157,9 +157,53 @@ async function googleToken() {
   return j.access_token;
 }
 
+// Поиск существующего альбома по названию среди созданных ПРИЛОЖЕНИЕМ.
+// Нужен scope readonly.appcreateddata; если refresh-токен его не несёт,
+// Google откажет — тогда молча пропускаем и идём обычным путём.
+// Альбомы, созданные человеком руками в Google Photos, API не видит и
+// класть в них файлы не может ни при каких условиях — ограничение Google.
+async function findAppAlbumByTitle(title) {
+  const j = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+      grant_type: "refresh_token",
+      scope: "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata",
+    }),
+  }).then((r) => r.json());
+  if (!j.access_token) return "";
+  const hits = [];
+  let page = "";
+  do {
+    const r = await fetch(`https://photoslibrary.googleapis.com/v1/albums?pageSize=50&excludeNonAppCreatedData=true${page ? `&pageToken=${encodeURIComponent(page)}` : ""}`,
+      { headers: { Authorization: `Bearer ${j.access_token}` } });
+    if (!r.ok) return "";
+    const d = await r.json();
+    for (const a of d.albums || []) if (a.title === title) hits.push(a.id);
+    page = d.nextPageToken || "";
+  } while (page);
+  // только однозначное совпадение: два одноимённых альбома — не угадываем
+  return hits.length === 1 ? hits[0] : "";
+}
+
 async function filePhotos(ev, photos, credit) {
   const token = await googleToken();
   let albumId = ev.albumId;
+  if (!albumId) {
+    // Прежде чем заводить новый альбом — поискать существующий по названию:
+    // id мог не записаться или потеряться, а альбом уже есть.
+    albumId = await findAppAlbumByTitle(`${ev.name} — QARAVAN`).catch(() => "");
+    if (albumId) {
+      ev.albumId = albumId;
+      await monday(
+        `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v){id} }`,
+        { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({ [ALBUM_COL]: albumId }) }
+      ).catch((e) => console.error("album id write-back failed:", e.message));
+    }
+  }
   if (!albumId) {
     // Публичная ссылка на строке есть, а id альбома нет: по публичной ссылке
     // id не восстановить (в ней share-токен, а методы sharing из API убраны),
