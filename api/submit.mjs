@@ -647,8 +647,11 @@ export default async function handler(req, res) {
 
   const stars = b.rating >= 1 && b.rating <= 5 ? "★".repeat(b.rating) + "☆".repeat(5 - b.rating) : "без оценки";
   const header = `${updated ? "Обновлённый отзыв" : "Новый отзыв"} — ${ev?.name || "событие"}`;
+  // Контакты и демография — только на monday: в Slack карточка идёт без строк
+  // «Связь» (почта, телефон) и «В стране | Возраст».
+  const slackSafe = lines.filter((l) => !/^(Связь|В стране):/.test(l));
   await slackNotify(`${header} (${stars})`,
-    slackBlocks(`${header}`, ev, `*${stars}*\n${lines.join("\n")}`, itemId));
+    slackBlocks(`${header}`, ev, `*${stars}*\n${slackSafe.join("\n")}`, itemId));
 
   res.end(JSON.stringify({ ok: true, updated, rescue }));
 }
