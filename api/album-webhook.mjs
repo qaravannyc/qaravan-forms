@@ -1,8 +1,5 @@
-// POST /api/album-webhook — monday шлёт сюда вебхуки с календаря событий:
-//   • колонка «Create album» переключена в «▶️ Create now» — человек просит
-//     альбом СЕЙЧАС (кнопка). Создаём без проверок окна и приватности —
-//     осознанный клик; чип сбрасываем обратно в пусто.
-//   • колонка «Date and Time» изменилась — событию проставили дату: если она
+// POST /api/album-webhook — monday шлёт сюда вебхук с календаря событий,
+// когда колонка «Date and Time» изменилась — событию проставили дату: если она
 //     в альбомном окне (21 день назад … конец месяца, с 29-го — конец
 //     следующего) и альбома ещё нет, создаём сразу, не дожидаясь утреннего
 //     робота (events-robot/robot/albums.mjs — он же подчищает пропуски).
@@ -16,8 +13,6 @@ import { createEventAlbum, infoFingerprint } from "../lib/album.mjs";
 const MONDAY = "https://api.monday.com/v2";
 const EVENTS_BOARD = "4774572020";
 const DATE_COL = "date4";
-const TRIGGER_COL = "color_mm645sqk";     // «Create album» — кнопка-чип
-const TRIGGER_LABEL = "▶️ Create now";
 const ALBUM_COL = "text_mm64mt8q";        // «⚙️ Photos album id»
 const ALBUM_LINK_COL = "link_mm64zqrk";   // «Photo album»
 const ALBUM_STATUS_COL = "color_mm6470za"; // «Album status»
@@ -52,7 +47,7 @@ function albumWindow() {
 
 async function getEventRow(id) {
   const d = await monday(
-    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["${DATE_COL}","${TRIGGER_COL}","${ALBUM_COL}","${ALBUM_LINK_COL}","text_mm5qsspp","location","link","status","color_mm5yxxe3","color_mm6310pc","board_relation_mm63c5g1","people"]) { id text ... on BoardRelationValue { display_value } } } }`,
+    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["${DATE_COL}","${ALBUM_COL}","${ALBUM_LINK_COL}","text_mm5qsspp","location","link","status","color_mm5yxxe3","color_mm6310pc","board_relation_mm63c5g1","people"]) { id text ... on BoardRelationValue { display_value } } } }`,
     { ids: [String(id)] });
   const item = d.items?.[0];
   if (!item || String(item.board.id) !== EVENTS_BOARD) return null;
@@ -69,7 +64,6 @@ async function getEventRow(id) {
     eventStatus: (cols.status || "").trim().toLowerCase(),
     surveyStatus: cols.color_mm5yxxe3 || "",
     type: cols.color_mm6310pc || "",
-    trigger: cols[TRIGGER_COL] || "",
     albumId: (cols[ALBUM_COL] || "").trim() || idFromOwnerLink(albumLink),
     albumLink,
   };
@@ -96,10 +90,7 @@ async function createAndRecord(ev) {
   return ownerUrl;
 }
 
-const resetTrigger = (id) =>
-  monday(`mutation ($b: ID!, $i: ID!, $c: String!, $v: String!) { change_simple_column_value(board_id:$b,item_id:$i,column_id:$c,value:$v){id} }`,
-    { b: EVENTS_BOARD, i: String(id), c: TRIGGER_COL, v: "" })
-    .catch((e) => console.error("trigger reset failed:", e.message));
+
 
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
@@ -114,24 +105,12 @@ export default async function handler(req, res) {
 
   const evt = b.event || {};
   if (String(evt.boardId) !== EVENTS_BOARD || !evt.pulseId) return res.end('{"ok":true}');
-  if (evt.columnId !== TRIGGER_COL && evt.columnId !== DATE_COL) return res.end('{"ok":true}');
+  if (evt.columnId !== DATE_COL) return res.end('{"ok":true}');
 
   const ev = await getEventRow(evt.pulseId).catch(() => null);
   if (!ev) return res.end('{"ok":true}');
 
   try {
-    if (evt.columnId === TRIGGER_COL) {
-      // Кнопка. Реагируем только на реальное состояние чипа на доске.
-      if (ev.trigger !== TRIGGER_LABEL) return res.end('{"ok":true}');
-      if (ev.albumId) {
-        // Альбом уже есть — молча сбрасываем чип; ссылку видно в колонке «Photo album».
-      } else {
-        await createAndRecord(ev);
-      }
-      await resetTrigger(ev.id);
-      return res.end('{"ok":true}');
-    }
-
     // Смена даты: альбом сразу, если дата в окне и событию альбом положен.
     if (ev.albumId || isShareUrl(ev.albumLink)) return res.end('{"ok":true}');
     if (ev.eventStatus === "cancelled" || ev.surveyStatus === "No survey" || ev.type === "INTERNAL_MEETING") return res.end('{"ok":true}');
