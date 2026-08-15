@@ -404,6 +404,39 @@ export default async function handler(req, res) {
     return res.end('{"ok":true}');
   }
 
+  // Photos-only page (/{id}/photos): files go into the event album, no feedback
+  // row is created — the record of what landed where goes onto the EVENT row.
+  if (b.photos_only) {
+    if (!ev) { res.statusCode = 404; return res.end("{}"); }
+    const credit = String(b.photo_credit || "").slice(0, 120);
+    const media = Array.isArray(b.photos)
+      ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20)
+      : [];
+    if (!media.length) return res.end('{"ok":true,"rescue":[]}');
+    const rescue = [];
+    let photoLine;
+    try {
+      const done = await filePhotos(ev, media, credit);
+      photoLine = photoResultLine(ev, done, credit, media.length);
+      for (const l of done.lost || []) rescue.push({ eventId: String(ev.id), name: l.name });
+    } catch (e) {
+      console.error("photos-only failed:", e.message);
+      photoLine = `⚠️ Фото/видео: прислано ${media.length} шт., сохранить не удалось — ${String(e.message).slice(0, 200)}\n` +
+        `Токены загрузки (живут ~сутки):\n` + media.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
+      for (const m of media) rescue.push({ eventId: String(ev.id), name: m.name || "media" });
+    }
+    const noteBody = `Фото со страницы загрузки (${media.length} шт.)${credit ? ` — автор: ${credit}` : ""}\n${photoLine}`;
+    await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
+      { i: String(ev.id), t: noteBody }).catch((e) => console.error("photos-only update failed:", e.message));
+    await slackNotify(`📷 Фото с события — ${ev.name} (${media.length} шт.)`, [
+      { type: "header", text: { type: "plain_text", text: `📷 Фото с события — ${ev.name}`.slice(0, 150), emoji: true } },
+      { type: "context", elements: [{ type: "mrkdwn", text: slackCtx(ev).slice(0, 250) }] },
+      { type: "section", text: { type: "mrkdwn", text: `${media.length} шт.${credit ? ` — автор: ${credit}` : ""}\n${photoLine}`.slice(0, 2900) } },
+      { type: "context", elements: [{ type: "mrkdwn", text: `<https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${ev.id}|Строка события на доске>` }] },
+    ]);
+    return res.end(JSON.stringify({ ok: true, rescue }));
+  }
+
   // Combined Sunday form: short answers about several events at once.
   if (b.multi) {
     const attendeeId = multiAttendee(b.p);

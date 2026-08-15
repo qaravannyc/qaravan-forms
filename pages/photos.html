@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Фото с события — QARAVAN</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFFDF5">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --q-red:#FF3333; --q-orange:#FF9933; --q-yellow:#F8F36E;
+  --q-green:#66CC66; --q-sky:#0099CC; --q-purple:#7668AA;
+  --q-black:#000000; --q-ink:#333333; --q-gray:#6E6E6E;
+  --q-line:#ECE8DE; --q-paper:#FFFDF5; --q-white:#FFFFFF;
+  --q-red-tint:#FFE4E4; --q-sky-tint:#DDF1F8;
+  --font-brand:'Montserrat','Helvetica Neue',Arial,sans-serif;
+  --radius-md:12px; --radius-lg:16px; --radius-pill:999px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--q-paper); color:var(--q-ink);
+  font-family:var(--font-brand); font-size:17px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--q-sky); font-weight:700; text-decoration-thickness:2px}
+a:hover{color:var(--q-purple)}
+.wrap{max-width:560px; margin:0 auto; padding:20px 20px 64px}
+
+.top{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:4px 0 32px}
+.wordmark{font-weight:900; font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap}
+a.wordmark{text-decoration:none}
+.lang{display:flex; gap:0; border:2px solid var(--q-ink); border-radius:var(--radius-pill); overflow:hidden; background:var(--q-white)}
+.lang button{
+  border:0; background:transparent; padding:8px 15px; font:inherit; font-size:13px; font-weight:700;
+  color:var(--q-ink); cursor:pointer; line-height:1.2; transition:background .15s ease, color .15s ease;
+}
+.lang button[aria-pressed="true"]{background:var(--q-ink); color:var(--q-white)}
+
+.eyebrow{font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--q-sky)}
+h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-spacing:-.02em; margin:10px 0 8px; text-wrap:balance}
+.sub{color:var(--q-gray); margin:0; text-wrap:pretty}
+.hero{margin-bottom:30px;opacity:0; transform:translateY(8px); transition:opacity .28s ease-out, transform .28s ease-out}
+.hero.on{opacity:1; transform:none}
+@media (prefers-reduced-motion:reduce){ .hero{transition:none; transform:none} }
+
+.hint{color:var(--q-gray); font-size:14px; font-weight:400; margin:8px 0 0; text-wrap:pretty}
+input[type="text"]{
+  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-md); background:var(--q-white);
+  padding:13px 16px; font:inherit; font-size:16px; color:var(--q-ink); margin-top:10px;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+input[type="text"]:focus{outline:none; border-color:var(--q-sky); box-shadow:0 0 0 3px var(--q-sky-tint)}
+button:focus-visible,a:focus-visible{outline:3px solid var(--q-sky); outline-offset:2px}
+
+.ph-add{border:2px dashed var(--q-ink); background:var(--q-white); border-radius:var(--radius-md); width:100%; padding:22px 15px; font:inherit; font-size:17px; font-weight:700; color:var(--q-ink); cursor:pointer; transition:transform .15s ease, background .15s ease}
+.ph-add:active{transform:scale(.99)}
+.ph-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px}
+.ph-item{position:relative; border-radius:var(--radius-md); overflow:hidden; background:var(--q-line); aspect-ratio:1}
+.ph-item img,.ph-item video{width:100%; height:100%; object-fit:cover; display:block}
+.ph-bar{position:absolute; left:0; right:0; bottom:0; height:5px; background:rgba(255,255,255,.55)}
+.ph-bar i{display:block; height:100%; width:0; background:var(--q-sky); transition:width .2s}
+.ph-item.done .ph-bar{display:none}
+.ph-item.fail .ph-bar{display:none}
+.ph-retry{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; border:0; cursor:pointer; font:inherit; font-size:13px; font-weight:700; color:var(--q-white); background:rgba(255,51,51,.72)}
+.ph-x{position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:50%; border:0; background:rgba(0,0,0,.55); color:#fff; font-weight:900; font-size:14px; cursor:pointer; line-height:1; display:flex; align-items:center; justify-content:center}
+.ph-badge{position:absolute; left:6px; top:6px; background:rgba(0,0,0,.55); color:#fff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:99px}
+.hp{position:absolute; left:-9999px; top:-9999px}
+
+.submit{margin-top:34px}
+.submit button{
+  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink);
+  color:var(--q-white); font:inherit; font-size:18px; font-weight:700; padding:17px; cursor:pointer;
+  transition:transform .15s ease, opacity .15s ease;
+}
+.submit button:active{transform:scale(.99)}
+.submit button:disabled{opacity:.4; cursor:default; transform:none}
+.err{
+  display:none; margin:0 0 14px; background:var(--q-red-tint); color:var(--q-ink);
+  border-radius:var(--radius-md); padding:14px 18px; font-size:15px; font-weight:500;
+}
+.err.show{display:block}
+
+#thanks{display:none; padding-top:6vh}
+#thanks.show{display:block}
+#thanks h1{margin-top:0}
+.fb-card{background:var(--q-sky-tint); border-radius:var(--radius-lg); padding:22px; margin-top:22px}
+.fb-card p{margin:0 0 14px; font-size:16px; text-wrap:pretty}
+.fb-card a{
+  display:inline-block; background:var(--q-sky); border:2px solid var(--q-sky); color:var(--q-white);
+  text-decoration:none; border-radius:var(--radius-pill); padding:13px 24px; font-weight:700; font-size:16px;
+}
+.fb-card a:hover{color:var(--q-white); opacity:.9}
+footer{margin-top:56px; color:var(--q-gray); font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></a>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="btnRu" aria-pressed="true">РУ</button>
+      <button type="button" id="btnEn" aria-pressed="false">EN</button>
+    </div>
+  </div>
+
+  <div id="formView">
+    <header class="hero" id="hero">
+      <div class="eyebrow" id="evDate"></div>
+      <h1 id="evName" data-i18n="loading">…</h1>
+      <p class="sub" data-i18n="intro"></p>
+    </header>
+
+    <form id="f" novalidate="">
+      <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+      <input type="file" id="phInput" accept="image/*,video/*" multiple style="display:none">
+      <button type="button" class="ph-add" id="phAdd"></button>
+      <p class="hint" data-i18n="photos_hint"></p>
+      <div class="ph-grid" id="phGrid"></div>
+      <p class="hint" id="phStatus" role="status" style="display:none; margin-top:12px"></p>
+      <p class="err" id="phErr" role="alert" style="margin-top:14px"></p>
+
+      <div id="phConsentWrap" style="display:none">
+        <p class="hint" data-i18n="photos_credit" style="margin-top:22px"></p>
+        <input type="text" id="phCredit" maxlength="120">
+        <p class="hint" data-i18n="photos_agree" style="margin-top:14px"></p>
+      </div>
+
+      <div class="submit">
+        <p class="err" id="err" role="alert"></p>
+        <button type="submit" id="send" data-i18n="send"></button>
+        <footer>qaravan.org</footer>
+      </div>
+    </form>
+  </div>
+
+  <div id="thanks">
+    <h1 data-i18n="thanks_t"></h1>
+    <p class="sub" data-i18n="thanks_p"></p>
+    <div class="fb-card" id="fbCard" style="display:none">
+      <p data-i18n="fb_p"></p>
+      <a href="#" id="fbLink" data-i18n="fb_btn"></a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== все тексты страницы — редактируются здесь =====
+const STRINGS = {
+ru: {
+  loading: "Фото с события QARAVAN",
+  intro: "Загрузи сюда свои фото и видео с этого события — они попадут в общий альбом.",
+  photos_hint: "Можно до 20 файлов, каждый до 300 МБ. Если выбрать сразу много, телефон может на пару секунд задуматься — это нормально.",
+  photos_add: "Выбрать фото или видео",
+  photos_agree: "Загружая файлы, ты соглашаешься, что QARAVAN может использовать их в своих материалах и соцсетях.",
+  photos_credit: "Как тебя подписать как автора? Можно оставить пустым.",
+  photos_retry: "Ещё раз",
+  photos_err_size: "Файл больше 300 МБ. Сними покороче или сожми — и попробуй снова.",
+  photos_err_count: "Не больше 20 файлов за раз.",
+  photos_wait: "Файлы ещё загружаются — подожди пару секунд и нажми ещё раз.",
+  photos_none: "Сначала выбери хотя бы один файл.",
+  photos_bg: (a, b) => `Загрузилось ${a} из ${b} — загрузка идёт в фоне.`,
+  photos_done: "Все файлы загружены ✓",
+  send: "Отправить фото",
+  err_net: "Не отправилось. Проверь интернет и попробуй ещё раз.",
+  thanks_t: "Фото получили, спасибо!",
+  thanks_p: "Они попадут в общий альбом события.",
+  fb_p: "Есть пара минут? Расскажи, как тебе само событие — это читают те, кто его готовил.",
+  fb_btn: "Оставить отзыв",
+  generic_event: "Событие QARAVAN"
+},
+en: {
+  loading: "Event photos",
+  intro: "Upload your photos and videos from this event — they go into the shared album.",
+  photos_hint: "Up to 20 files, 300 MB each. Picking a lot at once can make your phone pause for a few seconds — that's normal.",
+  photos_add: "Pick photos or videos",
+  photos_agree: "By uploading, you agree that QARAVAN may use these files in its materials and social media.",
+  photos_credit: "How should we credit you? You can leave this empty.",
+  photos_retry: "Retry",
+  photos_err_size: "That file is over 300 MB. Trim or compress it and try again.",
+  photos_err_count: "Up to 20 files at a time.",
+  photos_wait: "Files are still uploading — give it a few seconds and tap again.",
+  photos_none: "Pick at least one file first.",
+  photos_bg: (a, b) => `Uploaded ${a} of ${b} — uploads run in the background.`,
+  photos_done: "All files uploaded ✓",
+  send: "Send photos",
+  err_net: "Didn't go through. Check your connection and try again.",
+  thanks_t: "Got them, thank you!",
+  thanks_p: "They'll appear in the event's shared album.",
+  fb_p: "Got a couple of minutes? Tell us how the event went — the people who made it will read it.",
+  fb_btn: "Leave feedback",
+  generic_event: "QARAVAN event"
+}};
+
+// ===== состояние =====
+const params = new URLSearchParams(location.search);
+const eventId = ((window.__EVENT_ID__ || "") || params.get("event") || "").replace(/\D/g, "");
+let lang = params.get("lang") === "en" ? "en" : "ru";
+let eventName = "", eventDate = "";
+
+const $ = id => document.getElementById(id);
+const T = () => STRINGS[lang];
+const cleanDate = s => (s || "").replace(/\s*[·•]\s*/g, ", ");
+
+function render(){
+  document.documentElement.lang = lang;
+  $("btnRu").setAttribute("aria-pressed", lang === "ru");
+  $("btnEn").setAttribute("aria-pressed", lang === "en");
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const k = el.dataset.i18n;
+    if (k === "loading") { el.textContent = eventName || T().loading; return; }
+    el.textContent = T()[k];
+  });
+  $("evDate").textContent = cleanDate(eventDate);
+  $("phAdd").textContent = T().photos_add;
+  $("fbLink").href = eventId ? `/${eventId}` : "https://qaravan.org";
+  phSync();
+}
+
+$("btnRu").onclick = () => { lang = "ru"; render(); };
+$("btnEn").onclick = () => { lang = "en"; render(); };
+
+// ===== имя ивента из monday =====
+async function loadEvent(){
+  if (!eventId) { eventName = ""; $("hero").classList.add("on"); render(); return; }
+  try{
+    const r = await fetch(`/api/event?id=${eventId}`);
+    if (r.ok){
+      const d = await r.json();
+      eventName = d.name || "";
+      eventDate = d.date || "";
+    }
+  }catch(e){}
+  $("hero").classList.add("on");
+  render();
+}
+
+// ===== фото и видео: сразу напрямую в Google Photos =====
+const PH_MAX_SIZE = 300 * 1024 * 1024, PH_MAX_COUNT = 20, PH_PARALLEL = 4;
+const photos = []; // {file, el, status: "wait"|"up"|"done"|"fail"|"removed", token}
+let phAccess = null, phAccessExp = 0, phAccessReq = null, phActive = 0;
+
+async function phGetAccess(){
+  if (phAccess && Date.now() < phAccessExp - 60000) return phAccess;
+  phAccessReq = phAccessReq || fetch("/api/photos-token", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ eventId }) })
+    .then(async r => {
+      if (!r.ok) throw new Error("token");
+      const d = await r.json();
+      phAccess = d.token; phAccessExp = Date.now() + (d.expiresIn || 3600) * 1000;
+      return phAccess;
+    })
+    .finally(() => { phAccessReq = null; });
+  return phAccessReq;
+}
+
+function phPump(){
+  if (phActive >= PH_PARALLEL) return;
+  const next = photos.find(p => p.status === "wait");
+  if (!next) return;
+  phActive++;
+  phSend(next).finally(() => { phActive--; phSync(); phPump(); });
+  phPump();
+}
+
+// Миниатюра: маленькая копия вместо полноразмерного кадра — полный декод
+// десятка фото подвешивает телефон. Где createImageBitmap нет — оригинал.
+function phThumb(img, file, url){
+  if (typeof createImageBitmap !== "function") { img.src = url; return; }
+  createImageBitmap(file, { resizeWidth: 360, resizeQuality: "low" }).then(bmp => {
+    const c = document.createElement("canvas");
+    c.width = bmp.width; c.height = bmp.height;
+    c.getContext("2d").drawImage(bmp, 0, 0);
+    if (bmp.close) bmp.close();
+    img.src = c.toDataURL("image/jpeg", 0.72);
+    URL.revokeObjectURL(url);
+  }).catch(() => { img.src = url; });
+}
+
+async function phSend(p){
+  p.status = "up";
+  const retry = p.el.querySelector(".ph-retry");
+  if (retry) retry.remove();
+  try {
+    const tok = await phGetAccess();
+    const text = await new Promise((ok, no) => {
+      const x = new XMLHttpRequest();
+      x.open("POST", "https://photoslibrary.googleapis.com/v1/uploads");
+      x.setRequestHeader("Authorization", "Bearer " + tok);
+      x.setRequestHeader("Content-Type", "application/octet-stream");
+      x.setRequestHeader("X-Goog-Upload-Content-Type", p.file.type || "application/octet-stream");
+      x.setRequestHeader("X-Goog-Upload-Protocol", "raw");
+      x.upload.onprogress = e => { if (e.lengthComputable) p.el.querySelector(".ph-bar i").style.width = (e.loaded / e.total * 100) + "%"; };
+      x.onload = () => (x.status === 200 && x.responseText) ? ok(x.responseText) : no(new Error("http " + x.status));
+      x.onerror = () => no(new Error("net"));
+      x.timeout = 15 * 60 * 1000;
+      x.ontimeout = () => no(new Error("timeout"));
+      x.send(p.file);
+    });
+    p.token = text.trim(); p.status = "done"; p.el.classList.add("done");
+  } catch (e) {
+    p.status = "fail"; p.el.classList.add("fail");
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "ph-retry"; b.textContent = T().photos_retry;
+    b.onclick = () => { p.el.classList.remove("fail"); p.status = "wait"; phPump(); };
+    p.el.appendChild(b);
+  }
+}
+
+function phAddFiles(files){
+  const err = $("phErr"); err.classList.remove("show");
+  for (const f of files) {
+    if (photos.filter(p => p.status !== "removed").length >= PH_MAX_COUNT) { err.textContent = T().photos_err_count; err.classList.add("show"); break; }
+    if (f.size > PH_MAX_SIZE) { err.textContent = T().photos_err_size; err.classList.add("show"); continue; }
+    const el = document.createElement("div");
+    el.className = "ph-item";
+    const url = URL.createObjectURL(f);
+    const isVideo = (f.type || "").startsWith("video/");
+    el.innerHTML = (isVideo
+      ? `<video muted playsinline preload="metadata" src="${url}"></video><span class="ph-badge">видео</span>`
+      : `<img alt="">`)
+      + `<div class="ph-bar"><i></i></div>`;
+    if (!isVideo) phThumb(el.querySelector("img"), f, url);
+    const x = document.createElement("button");
+    x.type = "button"; x.className = "ph-x"; x.textContent = "×"; x.setAttribute("aria-label", "remove");
+    const rec = { file: f, el, status: "wait", token: "" };
+    x.onclick = () => { rec.status = "removed"; el.remove(); URL.revokeObjectURL(url); phSync(); };
+    el.appendChild(x);
+    $("phGrid").appendChild(el);
+    photos.push(rec);
+  }
+  phSync();
+  phPump();
+}
+
+function phSync(){
+  const live = photos.filter(p => p.status !== "removed");
+  $("phConsentWrap").style.display = live.length ? "" : "none";
+  const st = $("phStatus");
+  if (!live.length) { st.style.display = "none"; return; }
+  const done = live.filter(p => p.status === "done").length;
+  st.style.display = "";
+  st.textContent = done === live.length ? T().photos_done : T().photos_bg(done, live.length);
+}
+
+// ===== отправка =====
+// Если Google Photos не принял файл, сервер вернёт его в списке rescue —
+// дошлём сами байты нам же, чтобы ничего не пропало.
+async function rescueFiles(list){
+  if (!Array.isArray(list) || !list.length) return;
+  const MAX = 4 * 1024 * 1024;
+  for (const item of list) {
+    const p = photos.find(x => x.status !== "removed" && (x.file.name || "") === item.name);
+    if (!p || !p.file || p.file.size > MAX) continue;
+    try {
+      await fetch(`/api/rescue-file?event=${encodeURIComponent(item.eventId || eventId)}&name=${encodeURIComponent(item.name)}`,
+        { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: p.file });
+    } catch (e) {}
+  }
+}
+
+$("f").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const err = $("err");
+  const ready = photos.filter(p => p.status === "done");
+  if (photos.some(p => p.status === "up" || p.status === "wait")){
+    err.textContent = T().photos_wait; err.classList.add("show");
+    return;
+  }
+  if (!ready.length){
+    err.textContent = T().photos_none; err.classList.add("show");
+    return;
+  }
+  err.classList.remove("show");
+  $("send").disabled = true;
+  const body = {
+    eventId, lang,
+    photos_only: true,
+    photos: ready.map(p => ({ token: p.token, mime: p.file.type || "", name: p.file.name || "" })),
+    photo_credit: $("phCredit").value.trim(),
+    website: document.querySelector(".hp").value
+  };
+  try{
+    const r = await fetch("/api/submit", {
+      method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error();
+    const data = await r.json().catch(() => ({}));
+    await rescueFiles(data.rescue);
+    $("formView").style.display = "none";
+    $("fbCard").style.display = eventId ? "" : "none";
+    $("thanks").classList.add("show");
+    window.scrollTo({top:0});
+  }catch(e){
+    err.textContent = T().err_net; err.classList.add("show");
+    $("send").disabled = false;
+  }
+});
+
+// токен берём заранее, пока человек выбирает файлы — загрузка стартует сразу
+$("phAdd").onclick = () => { phGetAccess().catch(() => {}); $("phInput").click(); };
+$("phInput").onchange = e => { phAddFiles([...e.target.files]); e.target.value = ""; };
+
+render();
+loadEvent();
+</script>
+</body></html>
