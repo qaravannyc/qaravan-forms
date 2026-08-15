@@ -27,6 +27,10 @@ const ALBUM_LINK_COL = "link_mm64zqrk";  // «Photo album» — публична
 const ALBUM_STATUS_COL = "color_mm6470za"; // «Album status» — 🔴 NO ALBUM / ⚠️ OPEN ACCESS / ✅ Shared by link
 const CUSTOM_COL = "long_text_mm64tyb5"; // «Свой вопрос гостям» — доп. вопрос про это событие
 const RESPONDENT_COL = "text_mm63r903"; // eventId:attendeeId, on the feedback board
+// «⚙️ Slack thread id»: родительская карточка события в #event-feedback.
+// Каждый отдельный отзыв, «не был(а)» и фото-квитанция уходят ОТВЕТОМ в её
+// тред — канал видит одну строку на событие, а не карточку на каждый отклик.
+const THREAD_COL = "text_mm681056";
 import { createHmac } from "node:crypto";
 
 // Отзывы с событий — column map
@@ -89,7 +93,7 @@ const isShareUrl = (u) => /photos\.app\.goo\.gl|photos\.google\.com\/(?:u\/\d+\/
 async function getEvent(id) {
   if (!id) return null;
   const d = await monday(
-    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["${CUSTOM_COL}","${ALBUM_COL}","${ALBUM_LINK_COL}","date4","location","text_mm5qsspp","text_mm5b1czz","link"]) { id text } } }`,
+    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["${CUSTOM_COL}","${ALBUM_COL}","${ALBUM_LINK_COL}","${THREAD_COL}","date4","location","text_mm5qsspp","text_mm5b1czz","link"]) { id text } } }`,
     { ids: [String(id)] });
   const item = d.items?.[0];
   if (!item || String(item.board.id) !== EVENTS_BOARD) return null;
@@ -108,6 +112,7 @@ async function getEvent(id) {
     ruName: (cols.text_mm5qsspp || "").trim(),
     lead: (cols.text_mm5b1czz || "").trim(),
     partiful: (String(cols.link || "").match(/https?:\/\/\S+/) || [""])[0],
+    slackThread: (cols[THREAD_COL] || "").trim(),
   };
 }
 
@@ -348,16 +353,38 @@ async function filePhotos(ev, photos, credit) {
 }
 
 // ---------- Slack: every submission lands in #event-feedback ----------
-async function slackNotify(text, blocks) {
+async function slackNotify(text, blocks, threadTs) {
   const tok = process.env.SLACK_BOT_TOKEN, ch = process.env.SLACK_CHANNEL_ID;
-  if (!tok || !ch) return;
+  if (!tok || !ch) return null;
   try {
-    await fetch("https://slack.com/api/chat.postMessage", {
+    const r = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
       headers: { Authorization: `Bearer ${tok}`, "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ channel: ch, text, blocks, unfurl_links: false, unfurl_media: false }),
+      body: JSON.stringify({ channel: ch, text, blocks, unfurl_links: false, unfurl_media: false, ...(threadTs ? { thread_ts: threadTs } : {}) }),
     });
-  } catch (e) { console.error("slack notify failed:", e.message); }
+    const j = await r.json();
+    return j.ok ? j : null;
+  } catch (e) { console.error("slack notify failed:", e.message); return null; }
+}
+
+// Правило против шума: на событие — ОДНА карточка-родитель в канале, всё
+// остальное репликами в её тред. Родитель создаётся при первом отклике,
+// его ts кэшируется в «⚙️ Slack thread id». Если Slack/monday не в духе —
+// честно возвращаем null и сообщение уходит в канал как раньше (не молчим).
+async function eventThread(ev) {
+  if (!ev) return null;
+  if (ev.slackThread) return ev.slackThread;
+  const parent = await slackNotify(`Отклики по «${ev.name}»`, [
+    { type: "header", text: { type: "plain_text", text: `Отклики по «${ev.name}»`.slice(0, 150), emoji: true } },
+    { type: "context", elements: [{ type: "mrkdwn", text: (slackCtx(ev) + " — отзывы, фото и «не был(а)» собираются в этом треде").slice(0, 250) }] },
+  ]);
+  if (!parent?.ts) return null;
+  ev.slackThread = parent.ts;
+  await monday(
+    `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v){id} }`,
+    { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({ [THREAD_COL]: parent.ts }) }
+  ).catch((e) => console.error("thread ts cache failed:", e.message));
+  return parent.ts;
 }
 
 const slackCtx = (ev) => [ev?.date, ev?.location, ev?.lead ? `Ведущие: ${ev.lead}` : ""].filter(Boolean).join(" — ") || "событие с календаря QARAVAN";
@@ -444,8 +471,8 @@ export default async function handler(req, res) {
         { i: String(c.create_item.id), t: "Отметил(а) в форме: не был(а) на событии" });
     }
     await slackNotify(`«Меня там не было» — ${ev.name}`, [
-      { type: "section", text: { type: "mrkdwn", text: `*«Меня там не было»* — ${ev.name}\n${slackCtx(ev)}${rKey ? "" : " — аноним"}` } },
-    ]);
+      { type: "section", text: { type: "mrkdwn", text: `*«Меня там не было»* — ${ev.name}${rKey ? "" : " — аноним"}` } },
+    ], await eventThread(ev));
     return res.end('{"ok":true}');
   }
 
@@ -474,11 +501,8 @@ export default async function handler(req, res) {
     await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
       { i: String(ev.id), t: noteBody }).catch((e) => console.error("photos-only update failed:", e.message));
     await slackNotify(`📷 Фото с события — ${ev.name} (${media.length} шт.)`, [
-      { type: "header", text: { type: "plain_text", text: `📷 Фото с события — ${ev.name}`.slice(0, 150), emoji: true } },
-      { type: "context", elements: [{ type: "mrkdwn", text: slackCtx(ev).slice(0, 250) }] },
-      { type: "section", text: { type: "mrkdwn", text: `${media.length} шт.${credit ? ` — автор: ${credit}` : ""}\n${photoLine}`.slice(0, 2900) } },
-      { type: "context", elements: [{ type: "mrkdwn", text: `<https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${ev.id}|Строка события на доске>` }] },
-    ]);
+      { type: "section", text: { type: "mrkdwn", text: `📷 *Фото: ${media.length} шт.*${credit ? ` — автор: ${credit}` : ""}\n${photoLine}`.slice(0, 2900) } },
+    ], await eventThread(ev));
     return res.end(JSON.stringify({ ok: true, rescue }));
   }
 
@@ -696,7 +720,8 @@ export default async function handler(req, res) {
   // «Связь» (почта, телефон) и «В стране | Возраст».
   const slackSafe = lines.filter((l) => !/^(Связь|В стране):/.test(l));
   await slackNotify(`${header} (${stars})`,
-    slackBlocks(`${header}`, ev, `*${stars}*\n${slackSafe.join("\n")}`, itemId));
+    slackBlocks(`${header}`, ev, `*${stars}*\n${slackSafe.join("\n")}`, itemId),
+    await eventThread(ev));
 
   res.end(JSON.stringify({ ok: true, updated, rescue }));
 }
