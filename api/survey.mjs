@@ -14,6 +14,18 @@ const SURVEY_BOARD = "18426996689";
 const GROUP_IN_PROGRESS = "group_mm6bbh6g";
 const GROUP_SUBMITTED = "group_mm6bvfyd";
 
+// Survey Translation Reports — сообщения «в переводе ошибка» с не-RU/EN версий.
+// Репорты анонимны и НЕ связаны с ответами на опрос (rid не передаётся).
+const REPORTS_BOARD = "18427148568";
+const REPORTS_GROUP = "topics";
+const R = {
+  status: "color_mm6b6cgg",   // New | Fixed | Dismissed
+  lang: "color_mm6bwwbj",     // UK | KA | UZ | KK | RU | EN
+  section: "numeric_mm6bfwcc",
+  text: "long_text_mm6bk0hd",
+  date: "date_mm6b3bv6",
+};
+
 // Community Needs Survey 2026 — column map
 const C = {
   status: "color_mm6b34af",        // In progress | Submitted
@@ -319,6 +331,31 @@ export default async function handler(req, res) {
 
   // Honeypot: боты заполняют скрытое поле — вежливо соглашаемся и ничего не пишем.
   if (b.website) return res.end('{"ok":true}');
+
+  // Репорт об ошибке перевода: отдельная доска, без rid (аноним по построению).
+  if (b.mode === "report") {
+    const text = String(b.text || "").trim().slice(0, 2000);
+    if (!text) return res.end('{"ok":true}');
+    const lng = langOf(b.lang);
+    const section = Math.min(5, Math.max(0, Math.round(Number(b.section) || 0)));
+    const now = new Date();
+    const cv = {
+      [R.status]: { label: "New" },
+      [R.lang]: { label: lng.toUpperCase() },
+      [R.section]: String(section),
+      [R.text]: { text },
+      [R.date]: { date: now.toISOString().slice(0, 10), time: now.toISOString().slice(11, 19) },
+    };
+    try {
+      await monday(
+        `mutation ($b: ID!, $g: String!, $n: String!, $v: JSON!) { create_item(board_id:$b,group_id:$g,item_name:$n,column_values:$v,create_labels_if_missing:true){id} }`,
+        { b: REPORTS_BOARD, g: REPORTS_GROUP, n: `${lng.toUpperCase()}: ${text.slice(0, 50).replace(/\s+/g, " ")}`, v: JSON.stringify(cv) });
+      return res.end('{"ok":true}');
+    } catch (e) {
+      console.error("translation report failed:", e.message);
+      res.statusCode = 502; return res.end("{}");
+    }
+  }
 
   const rid = String(b.rid || "").trim();
   if (!RID_RX.test(rid)) { res.statusCode = 400; return res.end("{}"); }
