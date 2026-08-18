@@ -37,9 +37,16 @@ a:hover{color:var(--q-purple)}
 .top{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:4px 0 18px}
 .wordmark{font-weight:900; font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap}
 a.wordmark{text-decoration:none}
+.topright{display:flex; align-items:center; gap:12px; min-width:0}
+.lang{display:flex; gap:0; border:2px solid var(--q-ink); border-radius:var(--radius-pill); overflow:hidden; background:var(--q-white); flex:none}
+.lang button{
+  border:0; background:transparent; padding:8px 15px; font:inherit; font-size:13px; font-weight:700;
+  color:var(--q-ink); cursor:pointer; line-height:1.2; transition:background .15s ease, color .15s ease;
+}
+.lang button[aria-pressed="true"]{background:var(--q-ink); color:var(--q-white)}
 
 /* автосохранение: человек всегда видит, что его ответы не пропадут */
-.savechip{display:none; align-items:center; gap:7px; font-size:13px; font-weight:700; color:var(--q-gray); white-space:nowrap}
+.savechip{display:none; align-items:center; gap:7px; font-size:13px; font-weight:700; color:var(--q-gray); white-space:nowrap; overflow:hidden}
 .savechip.show{display:flex}
 .savechip .dot{width:9px; height:9px; border-radius:50%; background:var(--q-line); flex:none; transition:background .2s}
 .savechip.saving .dot{background:var(--q-orange)}
@@ -202,7 +209,6 @@ button:focus-visible,a:focus-visible,input[type="range"]:focus-visible{outline:3
 }
 .submit button[type="submit"]:active{transform:scale(.99)}
 .submit button[type="submit"]:disabled{opacity:.4; cursor:default; transform:none}
-.submit .back{border:0; background:none; color:var(--q-gray); font:inherit; font-size:15px; font-weight:700; cursor:pointer; padding:0; margin-top:22px}
 .err{
   display:none; margin:0 0 14px; background:var(--q-red-tint); color:var(--q-ink);
   border-radius:var(--radius-md); padding:14px 18px; font-size:15px; font-weight:500;
@@ -221,10 +227,16 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
 </head>
 <body>
 <div class="wrap">
-  <noscript><p style="background:#FFE4E4;border-radius:12px;padding:14px 18px">Чтобы заполнить опрос, включите JavaScript в браузере.</p></noscript>
+  <noscript><p style="background:#FFE4E4;border-radius:12px;padding:14px 18px">Чтобы заполнить опрос, включите JavaScript в браузере. / Please enable JavaScript to fill out this survey.</p></noscript>
   <div class="top">
     <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></a>
-    <div class="savechip" id="saveChip" role="status" aria-live="polite"><span class="dot"></span><span id="saveText"></span></div>
+    <div class="topright">
+      <div class="savechip" id="saveChip" role="status" aria-live="polite"><span class="dot"></span><span id="saveText"></span></div>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" id="btnRu" aria-pressed="true">РУ</button>
+        <button type="button" id="btnEn" aria-pressed="false">EN</button>
+      </div>
+    </div>
   </div>
 
   <div class="progress" id="progress">
@@ -233,8 +245,8 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
   </div>
 
   <div id="formView">
-    <p class="resume-note" id="resumeNote">Мы восстановили ваши ответы — продолжайте с того места, где остановились.
-      <button type="button" id="restartBtn">Начать заново</button>
+    <p class="resume-note" id="resumeNote"><span data-i18n="resume_note"></span>
+      <button type="button" id="restartBtn" data-i18n="restart_btn"></button>
     </p>
 
     <form id="f" novalidate="">
@@ -244,24 +256,23 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
       <div class="step on" data-step="0">
         <header>
           <div class="eyebrow">QARAVAN · 2026</div>
-          <h1>Исследование потребностей сообщества</h1>
-          <p class="sub">Привет! QARAVAN проводит этот опрос, чтобы лучше понять, как мы можем поддержать наше сообщество в текущей ситуации.</p>
+          <h1 data-i18n="intro_h1"></h1>
+          <p class="sub" data-i18n="intro_sub"></p>
         </header>
         <div class="intro-card">
           <ul>
-            <li><span class="ico" style="background:var(--q-sky-tint)">🔒</span><span><b>Конфиденциальность.</b> Ваши ответы конфиденциальны: мы смотрим только на общую картину, а не на отдельные ответы, и не передаём их никому за пределами команды QARAVAN. Имя, почту и телефон мы не спрашиваем.</span></li>
-            <li><span class="ico" style="background:var(--q-orange-tint)">⏱️</span><span><b>Время.</b> Займёт около 10 минут — 5 коротких разделов.</span></li>
-            <li><span class="ico" style="background:var(--q-green-tint)">💾</span><span><b>Ничего не потеряется.</b> Ответы сохраняются автоматически после каждого вопроса — можно прерваться и вернуться позже. А по личной ссылке (внизу каждого раздела) можно продолжить на другом устройстве.</span></li>
-            <li><span class="ico" style="background:var(--q-purple-tint)">🙌</span><span><b>Любой вопрос можно пропустить.</b> Участие добровольное, «неудобных» обязательных вопросов здесь нет.</span></li>
+            <li><span class="ico" style="background:var(--q-sky-tint)">🔒</span><span data-i18n="card_privacy"></span></li>
+            <li><span class="ico" style="background:var(--q-orange-tint)">⏱️</span><span data-i18n="card_time"></span></li>
+            <li><span class="ico" style="background:var(--q-green-tint)">💾</span><span data-i18n="card_save"></span></li>
+            <li><span class="ico" style="background:var(--q-purple-tint)">🙌</span><span data-i18n="card_skip"></span></li>
           </ul>
         </div>
-        <p class="motto"><a href="https://ru.wikipedia.org/wiki/%D0%9D%D0%B8%D1%87%D0%B5%D0%B3%D0%BE_%D0%BE_%D0%BD%D0%B0%D1%81_%D0%B1%D0%B5%D0%B7_%D0%BD%D0%B0%D1%81" target="_blank" rel="noopener">«Ничего о нас без нас!»</a></p>
-        <p class="sub" style="margin-top:8px">Ваши ответы помогут нам понять, какие программы и поддержка нужны сообществу в ближайшие месяцы.</p>
+        <p class="motto" data-i18n="motto"></p>
+        <p class="sub" style="margin-top:8px" data-i18n="intro_sub2"></p>
         <div class="start">
-          <button type="button" id="startBtn">Мне есть 18 лет — начать</button>
-          <p class="fine">Опрос для тех, кому 18 лет и больше. Нажимая кнопку, вы подтверждаете свой возраст и согласие участвовать.</p>
+          <button type="button" id="startBtn" data-i18n="start_btn"></button>
+          <p class="fine" data-i18n="start_fine"></p>
         </div>
-        <div class="helpnow">Если вам нужна помощь прямо сейчас — не ждите конца опроса, <a href="https://forms.monday.com/forms/5cefb350d61a65aaea40252c23c93f86?r=use1" target="_blank" rel="noopener">заполните эту форму</a>, и мы свяжемся с вами.</div>
         <footer>qaravan.org</footer>
       </div>
 
@@ -275,11 +286,11 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
   </div>
 
   <div id="thanks">
-    <h1>Спасибо!</h1>
-    <p class="sub">Ваши ответы отправлены. Они помогут нам делать программы, которые сообществу правда нужны. <a href="https://ru.wikipedia.org/wiki/%D0%9D%D0%B8%D1%87%D0%B5%D0%B3%D0%BE_%D0%BE_%D0%BD%D0%B0%D1%81_%D0%B1%D0%B5%D0%B7_%D0%BD%D0%B0%D1%81" target="_blank" rel="noopener">«Ничего о нас без нас!»</a></p>
-    <div class="helpnow" style="margin-top:26px">Если вам нужна помощь прямо сейчас — <a href="https://forms.monday.com/forms/5cefb350d61a65aaea40252c23c93f86?r=use1" target="_blank" rel="noopener">заполните эту форму</a>, и мы свяжемся с вами.</div>
-    <p class="sub" style="margin-top:22px">Берегите себя. 🧡</p>
-    <button type="button" class="again" id="againBtn">Заполнить ещё раз (для другого человека на этом устройстве)</button>
+    <h1 data-i18n="thanks_h1"></h1>
+    <p class="sub" data-i18n="thanks_sub"></p>
+    <div class="helpnow" style="margin-top:26px" data-i18n="thanks_help"></div>
+    <p class="sub" style="margin-top:22px" data-i18n="thanks_care"></p>
+    <button type="button" class="again" id="againBtn" data-i18n="again_btn"></button>
     <footer>qaravan.org</footer>
   </div>
 </div>
@@ -287,126 +298,273 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
 <script>
 "use strict";
 // ============================================================================
-// Конфиг вопросов. Коды (первый элемент пары) — это язык обмена с сервером:
+// Конфиг вопросов. Коды (первый элемент тройки) — язык обмена с сервером:
 // api/survey.mjs переводит их в английские метки колонок monday, а
 // survey/CODEBOOK.md документирует соответствие. Меняешь код здесь — меняй там.
+// Тексты двуязычные: [ru, en] у вопросов, [code, ru, en] у вариантов —
+// обе версии обязаны спрашивать одно и то же (сравнимость данных).
 // ============================================================================
 const PNTS = "pnts"; // «Предпочитаю не отвечать»
-const NOPTS = "Предпочитаю не отвечать";
+const NO_ANS = ["Предпочитаю не отвечать", "Prefer not to answer"];
 
 const Q = {
-q1: { type:"single", text:"Как вы впервые узнали о QARAVAN?", hint:"Выберите один вариант.", opts:[
-  ["friends","Друзья или знакомые"], ["telegram","Телеграм"], ["social","Социальные сети (Instagram, Facebook и др.)"],
-  ["bbpride","Brighton Beach Pride"], ["org","Другая организация"], ["search","Поиск в интернете"], ["other","Другое"]], other:"other" },
-q2: { type:"multi", max:3, text:"Почему вы изначально решили участвовать в программах QARAVAN?", hint:"Выберите до 3-х вариантов.", opts:[
-  ["help","Искал(а) помощь (юридическую, медицинскую и т.д.)"], ["community","Хотел(а) найти друзей и сообщество"],
-  ["emosupport","Нужна была эмоциональная поддержка"], ["events","Интерес к мероприятиям"],
-  ["recommend","Рекомендация знакомых"], ["other","Другое"],
-  ["not_participated","Я пока не участвовал(а) в программах QARAVAN"]], other:"other", exclusive:["not_participated"] },
-q3: { type:"multi", text:"Как вы участвовали в жизни QARAVAN?", hint:"Выберите все подходящие варианты.", opts:[
-  ["inperson","Посещал(а) мероприятия лично"], ["chat","Участвую в телеграм-чате Qaravan Connects"],
-  ["referrals","Получал(а) через QARAVAN направления к специалистам (юристам, врачам и др.)"],
-  ["rainbow","Участвовал(а) в Rainbow Connections"], ["bbpride","Посещал(а) Brighton Beach Pride"],
-  ["groups","Участвовал(а) в группах поддержки"], ["volunteer","Волонтёрил(а)"], ["other","Другое"]], other:"other" },
-q4: { type:"single", text:"Как часто вы участвовали в мероприятиях или программах QARAVAN за последние 6 месяцев?", hint:"Выберите один вариант.", opts:[
-  ["weekly","Еженедельно или чаще"], ["fewmonth","Несколько раз в месяц"], ["monthly","Раз в месяц"],
-  ["few6mo","Несколько раз за 6 месяцев"], ["once","Один раз"],
-  ["before","Не участвовал(а) за последние 6 месяцев, но участвовал(а) раньше"], ["never","Никогда не участвовал(а)"]] },
-q5: { type:"multi", text:"Что мешает вам участвовать?", hint:"Выберите все подходящие варианты.", opts:[
-  ["time","Мало свободного времени"], ["moved","Переехал(а) в другой район или город"],
-  ["unsafe","Не чувствую себя в безопасности из-за политической ситуации"],
-  ["mismatch","Мероприятия не соответствуют моим потребностям"], ["unaware","Не знаю о предстоящих мероприятиях"],
-  ["belong","Не чувствую себя частью сообщества"], ["politics","Политические взгляды организации не совпадают с моими"],
-  ["other","Другое"]], other:"other" },
-q6: { type:"multi", text:"Что из этого лучше всего описывает вас?", hint:"Выберите все подходящие варианты.", opts:[
-  ["lgbtq","ЛГБТК+ человек"], ["immigrant","Иммигрант / беженец в США"],
-  ["usborn","Родился/вырос в США (русскоязычная семья)"], ["ally","Поддерживаю ЛГБТК+ сообщество, но не принадлежу к нему"],
-  ["other","Другое"], [PNTS,NOPTS]], other:"other", exclusive:[PNTS] },
-q7: { type:"single", text:"Считаете ли вы себя трансгендерным или небинарным человеком?", opts:[
-  ["yes","Да"], ["no","Нет"], [PNTS,NOPTS]] },
-q8: { type:"single", text:"Как давно вы живёте в США?", opts:[
-  ["lt6m","Менее 6 месяцев"], ["m6to12","От 6 месяцев до 1 года"], ["y1to3","От 1 года до 3 лет"],
-  ["y3to5","От 3 до 5 лет"], ["gt5y","Больше 5 лет"], ["usborn","Я родился/ась в США"], [PNTS,NOPTS]] },
-q9: { type:"single", cols2:true, text:"Откуда вы родом?", opts:[
-  ["az","Азербайджан"], ["am","Армения"], ["by","Беларусь"], ["ge","Грузия"], ["kz","Казахстан"],
-  ["kg","Кыргызстан"], ["md","Молдова"], ["ru","Россия"], ["tj","Таджикистан"], ["uz","Узбекистан"],
-  ["ua","Украина"], ["usborn","Родился/ась в США"], ["other","Другая страна"], [PNTS,NOPTS]], other:"other" },
-q10: { type:"single", cols2:true, text:"Ваш возраст?", opts:[
-  ["a18","18–24"], ["a25","25–34"], ["a35","35–44"], ["a45","45–54"], ["a55","55–64"], ["a65","65 и старше"], [PNTS,NOPTS]] },
-q11: { type:"single", cols2:true, text:"В какой части Нью-Йорка вы живёте?", opts:[
-  ["bk","Бруклин"], ["qn","Куинс"], ["mn","Манхэттен"], ["bx","Бронкс"], ["si","Стейтен-Айленд"],
-  ["outside","За пределами Нью-Йорка"], [PNTS,NOPTS]] },
-q12: { type:"single", text:"Что лучше всего описывает вашу жизнь в США сейчас?", opts:[
-  ["arrived","Только приехал(а) и осваиваюсь"], ["adapting","В процессе адаптации"],
-  ["settled","Устроился/ась, но есть сложности"], ["stable","Чувствую себя уверенно и стабильно"], [PNTS,NOPTS]] },
-q13: { type:"multi", max:3, text:"Какая помощь или поддержка вам сейчас нужнее всего?", hint:"Выберите до 3-х самых важных.", opts:[
-  ["immigration","Помощь с моим иммиграционным делом (убежище, статус, документы)"],
-  ["ice","Информация о правах при встрече с ICE (иммиграционной службой) и защите от депортации"],
-  ["health","Информация о медицинских услугах и страховании"], ["job","Помощь в поиске работы или развитии карьеры"],
-  ["housing","Помощь в поиске жилья"], ["money","Финансовая помощь (экстренная)"],
-  ["mental","Поддержка психического здоровья"], ["english","Изучение английского языка / языковая практика"],
-  ["social","Социальные связи и дружба"], ["docs","Помощь с документами и переводами"],
-  ["education","Информация об образовании и поступлении (колледж, магистратура и др.)"],
-  ["none","Не нуждаюсь в помощи прямо сейчас"], ["other","Другое"]], other:"other", exclusive:["none"] },
-q14: { type:"single", text:"Как изменились ваши потребности после января 2025 года?", opts:[
-  ["chg_big","Мои потребности значительно изменились — мне нужна другая поддержка"],
-  ["chg_some","Мои потребности немного изменились"], ["same","Мои потребности остались прежними"],
-  ["unsure","Не уверен(а)"], [PNTS,NOPTS]] },
-q15: { type:"open", text:"Что вам сейчас нужно больше всего?", hint:"2–3 предложения своими словами.", max:4000 },
-q16: { type:"multi", max:3, text:"Какие программы или мероприятия QARAVAN наиболее ценны для вас?",
-  hint:"Выберите до 3-х. Если вы ещё не участвовали — отметьте то, что кажется вам наиболее полезным.", opts:[
-  ["bbpride","Brighton Beach Pride"], ["social","Регулярные социальные/общественные мероприятия"],
-  ["rainbow","Rainbow Connections (программа наставничества один на один)"],
-  ["groups","Группы поддержки (психологическая поддержка, транс-группа)"], ["crisis","Поддержка в кризисной ситуации"],
-  ["referrals","Направления к проверенным юристам и специалистам"],
-  ["chat","Телеграм-чат Qaravan Connects (онлайн-сообщество)"], ["info","Информационные встречи и воркшопы"],
-  ["navigation","Помощь разобраться в медицинских и социальных услугах"],
-  ["none","Ничего из перечисленного мне не подходит"], ["other","Другое"]], other:"other", exclusive:["none"] },
-q17: { type:"scale", text:"Насколько вы беспокоитесь о своей безопасности, участвуя в ЛГБТК+ мероприятиях или программах в нынешней политической ситуации?",
-  hint:"Передвиньте ползунок или нажмите на подпись.",
+q1: { type:"single", text:["Как вы впервые узнали о QARAVAN?","How did you first hear about QARAVAN?"], hint:["Выберите один вариант.","Pick one."], opts:[
+  ["friends","Друзья или знакомые","Friends or acquaintances"],
+  ["telegram","Телеграм","Telegram"],
+  ["social","Социальные сети (Instagram, Facebook и др.)","Social media (Instagram, Facebook, etc.)"],
+  ["bbpride","Brighton Beach Pride","Brighton Beach Pride"],
+  ["org","Другая организация","Another organization"],
+  ["search","Поиск в интернете","Internet search"],
+  ["other","Другое","Other"]], other:"other" },
+q2: { type:"multi", max:3, text:["Почему вы изначально решили участвовать в программах QARAVAN?","Why did you originally decide to take part in QARAVAN's programs?"], hint:["Выберите до 3-х вариантов.","Pick up to 3."], opts:[
+  ["help","Искал(а) помощь (юридическую, медицинскую и т.д.)","I was looking for help (legal, medical, etc.)"],
+  ["community","Хотел(а) найти друзей и сообщество","I wanted to find friends and community"],
+  ["emosupport","Нужна была эмоциональная поддержка","I needed emotional support"],
+  ["events","Интерес к мероприятиям","Interest in the events"],
+  ["recommend","Рекомендация знакомых","A friend recommended it"],
+  ["other","Другое","Other"],
+  ["not_participated","Я пока не участвовал(а) в программах QARAVAN","I haven't taken part in QARAVAN's programs yet"]], other:"other", exclusive:["not_participated"] },
+q3: { type:"multi", text:["Как вы участвовали в жизни QARAVAN?","How have you taken part in QARAVAN's life?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
+  ["inperson","Посещал(а) мероприятия лично","Attended events in person"],
+  ["chat","Участвую в телеграм-чате Qaravan Connects","I'm in the Qaravan Connects Telegram chat"],
+  ["referrals","Получал(а) через QARAVAN направления к специалистам (юристам, врачам и др.)","Got referrals to specialists (lawyers, doctors, etc.) through QARAVAN"],
+  ["rainbow","Участвовал(а) в Rainbow Connections","Took part in Rainbow Connections"],
+  ["bbpride","Посещал(а) Brighton Beach Pride","Attended Brighton Beach Pride"],
+  ["groups","Участвовал(а) в группах поддержки","Took part in support groups"],
+  ["volunteer","Волонтёрил(а)","Volunteered"],
+  ["other","Другое","Other"]], other:"other" },
+q4: { type:"single", text:["Как часто вы участвовали в мероприятиях или программах QARAVAN за последние 6 месяцев?","How often have you taken part in QARAVAN events or programs in the last 6 months?"], hint:["Выберите один вариант.","Pick one."], opts:[
+  ["weekly","Еженедельно или чаще","Weekly or more often"],
+  ["fewmonth","Несколько раз в месяц","A few times a month"],
+  ["monthly","Раз в месяц","Once a month"],
+  ["few6mo","Несколько раз за 6 месяцев","A few times in 6 months"],
+  ["once","Один раз","Once"],
+  ["before","Не участвовал(а) за последние 6 месяцев, но участвовал(а) раньше","Not in the last 6 months, but I did before"],
+  ["never","Никогда не участвовал(а)","Never"]] },
+q5: { type:"multi", text:["Что мешает вам участвовать?","What keeps you from taking part?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
+  ["time","Мало свободного времени","Not enough free time"],
+  ["moved","Переехал(а) в другой район или город","I moved to another area or city"],
+  ["unsafe","Не чувствую себя в безопасности из-за политической ситуации","I don't feel safe because of the political situation"],
+  ["mismatch","Мероприятия не соответствуют моим потребностям","The events don't match my needs"],
+  ["unaware","Не знаю о предстоящих мероприятиях","I don't know about upcoming events"],
+  ["belong","Не чувствую себя частью сообщества","I don't feel like part of the community"],
+  ["politics","Политические взгляды организации не совпадают с моими","The organization's political views don't match mine"],
+  ["other","Другое","Other"]], other:"other" },
+q6: { type:"multi", text:["Что из этого лучше всего описывает вас?","Which of these best describes you?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
+  ["lgbtq","ЛГБТК+ человек","LGBTQ+ person"],
+  ["immigrant","Иммигрант / беженец в США","Immigrant / refugee in the US"],
+  ["usborn","Родился/вырос в США (русскоязычная семья)","Born/raised in the US (Russian-speaking family)"],
+  ["ally","Поддерживаю ЛГБТК+ сообщество, но не принадлежу к нему","I support the LGBTQ+ community but don't belong to it"],
+  ["other","Другое","Other"],
+  [PNTS, ...NO_ANS]], other:"other", exclusive:[PNTS] },
+q7: { type:"single", text:["Считаете ли вы себя трансгендерным или небинарным человеком?","Do you consider yourself transgender or nonbinary?"], opts:[
+  ["yes","Да","Yes"], ["no","Нет","No"], [PNTS, ...NO_ANS]] },
+q8: { type:"single", text:["Как давно вы живёте в США?","How long have you lived in the US?"], opts:[
+  ["lt6m","Менее 6 месяцев","Less than 6 months"],
+  ["m6to12","От 6 месяцев до 1 года","6 months to 1 year"],
+  ["y1to3","От 1 года до 3 лет","1 to 3 years"],
+  ["y3to5","От 3 до 5 лет","3 to 5 years"],
+  ["gt5y","Больше 5 лет","More than 5 years"],
+  ["usborn","Я родился/ась в США","I was born in the US"],
+  [PNTS, ...NO_ANS]] },
+q9: { type:"single", cols2:true, text:["Откуда вы родом?","Where are you from originally?"], opts:[
+  ["az","Азербайджан","Azerbaijan"], ["am","Армения","Armenia"], ["by","Беларусь","Belarus"],
+  ["ge","Грузия","Georgia"], ["kz","Казахстан","Kazakhstan"], ["kg","Кыргызстан","Kyrgyzstan"],
+  ["md","Молдова","Moldova"], ["ru","Россия","Russia"], ["tj","Таджикистан","Tajikistan"],
+  ["uz","Узбекистан","Uzbekistan"], ["ua","Украина","Ukraine"],
+  ["usborn","Родился/ась в США","Born in the US"],
+  ["other","Другая страна","Another country"],
+  [PNTS, ...NO_ANS]], other:"other" },
+q10: { type:"single", cols2:true, text:["Ваш возраст?","Your age?"], opts:[
+  ["a18","18–24","18–24"], ["a25","25–34","25–34"], ["a35","35–44","35–44"], ["a45","45–54","45–54"],
+  ["a55","55–64","55–64"], ["a65","65 и старше","65 and older"], [PNTS, ...NO_ANS]] },
+q11: { type:"single", cols2:true, text:["В какой части Нью-Йорка вы живёте?","What part of New York do you live in?"], opts:[
+  ["bk","Бруклин","Brooklyn"], ["qn","Куинс","Queens"], ["mn","Манхэттен","Manhattan"],
+  ["bx","Бронкс","Bronx"], ["si","Стейтен-Айленд","Staten Island"],
+  ["outside","За пределами Нью-Йорка","Outside New York City"], [PNTS, ...NO_ANS]] },
+q12: { type:"single", text:["Что лучше всего описывает вашу жизнь в США сейчас?","What best describes your life in the US right now?"], opts:[
+  ["arrived","Только приехал(а) и осваиваюсь","Just arrived and finding my feet"],
+  ["adapting","В процессе адаптации","In the process of adapting"],
+  ["settled","Устроился/ась, но есть сложности","Settled, but with some difficulties"],
+  ["stable","Чувствую себя уверенно и стабильно","Feeling confident and stable"],
+  [PNTS, ...NO_ANS]] },
+q13: { type:"multi", max:3, text:["Какая помощь или поддержка вам сейчас нужнее всего?","What help or support do you need most right now?"], hint:["Выберите до 3-х самых важных.","Pick up to 3 that matter most."], opts:[
+  ["immigration","Помощь с моим иммиграционным делом (убежище, статус, документы)","Help with my immigration case (asylum, status, documents)"],
+  ["ice","Информация о правах при встрече с ICE (иммиграционной службой) и защите от депортации","Know-your-rights info about ICE (immigration enforcement) and protection from deportation"],
+  ["health","Информация о медицинских услугах и страховании","Information about healthcare services and insurance"],
+  ["job","Помощь в поиске работы или развитии карьеры","Help finding a job or growing my career"],
+  ["housing","Помощь в поиске жилья","Help finding housing"],
+  ["money","Финансовая помощь (экстренная)","Emergency financial help"],
+  ["mental","Поддержка психического здоровья","Mental health support"],
+  ["english","Изучение английского языка / языковая практика","Learning English / language practice"],
+  ["social","Социальные связи и дружба","Social connection and friendship"],
+  ["docs","Помощь с документами и переводами","Help with documents and translations"],
+  ["education","Информация об образовании и поступлении (колледж, магистратура и др.)","Information about education and admissions (college, grad school, etc.)"],
+  ["none","Не нуждаюсь в помощи прямо сейчас","I don't need help right now"],
+  ["other","Другое","Other"]], other:"other", exclusive:["none"] },
+q14: { type:"single", text:["Как изменились ваши потребности после января 2025 года?","How have your needs changed since January 2025?"], opts:[
+  ["chg_big","Мои потребности значительно изменились — мне нужна другая поддержка","My needs have changed significantly — I need different support"],
+  ["chg_some","Мои потребности немного изменились","My needs have changed somewhat"],
+  ["same","Мои потребности остались прежними","My needs are the same"],
+  ["unsure","Не уверен(а)","Not sure"],
+  [PNTS, ...NO_ANS]] },
+q15: { type:"open", text:["Что вам сейчас нужно больше всего?","What do you need most right now?"], hint:["2–3 предложения своими словами.","2–3 sentences in your own words."], max:4000 },
+q16: { type:"multi", max:3, text:["Какие программы или мероприятия QARAVAN наиболее ценны для вас?","Which QARAVAN programs or events are most valuable to you?"],
+  hint:["Выберите до 3-х. Если вы ещё не участвовали — отметьте то, что кажется вам наиболее полезным.","Pick up to 3. If you haven't taken part yet — pick what looks most useful."], opts:[
+  ["bbpride","Brighton Beach Pride","Brighton Beach Pride"],
+  ["social","Регулярные социальные/общественные мероприятия","Regular social/community events"],
+  ["rainbow","Rainbow Connections (программа наставничества один на один)","Rainbow Connections (one-on-one mentorship program)"],
+  ["groups","Группы поддержки (психологическая поддержка, транс-группа)","Support groups (psychological support, trans group)"],
+  ["crisis","Поддержка в кризисной ситуации","Support in a crisis"],
+  ["referrals","Направления к проверенным юристам и специалистам","Referrals to vetted lawyers and specialists"],
+  ["chat","Телеграм-чат Qaravan Connects (онлайн-сообщество)","Qaravan Connects Telegram chat (online community)"],
+  ["info","Информационные встречи и воркшопы","Info sessions and workshops"],
+  ["navigation","Помощь с навигацией по медицинским/социальным услугам","Help navigating medical and social services"],
+  ["none","Ничего из перечисленного мне не подходит","None of these fit me"],
+  ["other","Другое","Other"]], other:"other", exclusive:["none"] },
+q17: { type:"scale", text:["Насколько вы беспокоитесь о своей безопасности, участвуя в ЛГБТК+ мероприятиях или программах в нынешней политической ситуации?","How worried are you about your safety when taking part in LGBTQ+ events or programs in the current political situation?"],
+  hint:["Передвиньте ползунок или нажмите на подпись.","Drag the slider or tap a label."],
   min:1, max:4, pnts:true,
-  ticks:["Совсем нет","Не очень","Немного","Очень"],
-  labels:{1:"Совсем не обеспокоен(а)",2:"Не очень обеспокоен(а)",3:"Немного обеспокоен(а)",4:"Очень обеспокоен(а)"} },
-q18: { type:"single", text:"Как беспокойство о безопасности влияет на ваше участие?", opts:[
-  ["less","Участвую реже, чем раньше"], ["same","Участвую так же, как раньше"],
-  ["online","Выбираю онлайн-формат вместо личных встреч"], ["stopped","Совсем перестал(а) участвовать"], [PNTS,NOPTS]] },
-q19: { type:"multi", text:"Что помогло бы вам почувствовать себя в большей безопасности при участии в программах QARAVAN?", hint:"Выберите все подходящие варианты.", opts:[
-  ["protocols","Понятные правила безопасности на мероприятиях"], ["online","Больше онлайн-форматов (вместо личного присутствия)"],
-  ["private","Более приватные/закрытые встречи (не публичные)"],
-  ["data","Информация о том, какие данные собирает и не собирает QARAVAN"],
-  ["legal","Юридическая информация о моих правах"],
-  ["ice","Знать, что делать, если ICE (иммиграционная служба) появится на мероприятии"],
-  ["safe","Я уже чувствую себя в безопасности"], ["other","Другое"]], other:"other", exclusive:["safe"] },
-q20: { type:"single", text:"Какой формат мероприятий вы предпочитаете в нынешней ситуации?", opts:[
-  ["inperson","Личные встречи"], ["online","Онлайн-мероприятия"], ["hybrid","Смешанный формат (и онлайн, и лично)"],
-  ["depends","Зависит от типа мероприятия"], ["unsure","Не уверен(а)"]] },
-q21: { type:"multi", text:"Что могло бы помочь вам участвовать в программах QARAVAN чаще?", hint:"Выберите все подходящие варианты.", opts:[
-  ["weekend","Больше мероприятий на выходных"], ["online","Больше онлайн-форматов"], ["transport","Помощь с транспортом/проездом"],
-  ["childcare","Присмотр за детьми во время мероприятий"], ["boroughs","Мероприятия в других районах Нью-Йорка"],
-  ["announce","Узнавать о мероприятиях заранее"], ["max","Уже участвую столько, сколько могу"], ["other","Другое"]],
-  other:"other", exclusive:["max"] },
-q22: { type:"multi", text:"Через какие каналы вам удобнее всего получать информацию о мероприятиях и программах?", hint:"Выберите все подходящие варианты.", opts:[
-  ["telegram","Телеграм"], ["instagram","Instagram"], ["facebook","Facebook"], ["website","Сайт QARAVAN"],
-  ["email","Рассылки по электронной почте"], ["friends","От друзей, знакомых или сообщества"],
-  ["orgs","Через другие общественные организации"], ["other","Другое"]], other:"other" },
-q23: { type:"scale", text:"Насколько вероятно, что вы будете участвовать в программах QARAVAN в следующие 6 месяцев?",
-  hint:"Передвиньте ползунок или нажмите на подпись.",
+  ticks:[["Совсем нет","Not at all"],["Не очень","Not really"],["Немного","Somewhat"],["Очень","Very"]],
+  labels:{1:["Совсем не обеспокоен(а)","Not worried at all"],2:["Не очень обеспокоен(а)","Not really worried"],3:["Немного обеспокоен(а)","Somewhat worried"],4:["Очень обеспокоен(а)","Very worried"]} },
+q18: { type:"single", text:["Как беспокойство о безопасности влияет на ваше участие?","How does worrying about safety affect your participation?"], opts:[
+  ["less","Участвую реже, чем раньше","I take part less than before"],
+  ["same","Участвую так же, как раньше","I take part the same as before"],
+  ["online","Выбираю онлайн-формат вместо личных встреч","I choose online formats instead of meeting in person"],
+  ["stopped","Совсем перестал(а) участвовать","I stopped taking part entirely"],
+  [PNTS, ...NO_ANS]] },
+q19: { type:"multi", text:["Что помогло бы вам почувствовать себя в большей безопасности при участии в программах QARAVAN?","What would help you feel safer taking part in QARAVAN programs?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
+  ["protocols","Понятные правила безопасности на мероприятиях","Clear safety guidelines at events"],
+  ["online","Больше онлайн-форматов (вместо личного присутствия)","More online formats (instead of attending in person)"],
+  ["private","Более приватные/закрытые встречи (не публичные)","More private/closed gatherings (not public)"],
+  ["data","Информация о том, какие данные собирает и не собирает QARAVAN","Information about what data QARAVAN does and doesn't collect"],
+  ["legal","Юридическая информация о моих правах","Legal information about my rights"],
+  ["ice","Знать, что делать, если ICE (иммиграционная служба) появится на мероприятии","Knowing what to do if ICE (immigration enforcement) shows up at an event"],
+  ["safe","Я уже чувствую себя в безопасности","I already feel safe"],
+  ["other","Другое","Other"]], other:"other", exclusive:["safe"] },
+q20: { type:"single", text:["Какой формат мероприятий вы предпочитаете в нынешней ситуации?","What event format do you prefer in the current situation?"], opts:[
+  ["inperson","Личные встречи","In-person gatherings"],
+  ["online","Онлайн-мероприятия","Online events"],
+  ["hybrid","Смешанный формат (и онлайн, и лично)","Mixed (both online and in person)"],
+  ["depends","Зависит от типа мероприятия","Depends on the type of event"],
+  ["unsure","Не уверен(а)","Not sure"]] },
+q21: { type:"multi", text:["Что могло бы помочь вам участвовать в программах QARAVAN чаще?","What would help you take part in QARAVAN programs more often?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
+  ["weekend","Больше мероприятий на выходных","More weekend events"],
+  ["online","Больше онлайн-форматов","More online formats"],
+  ["transport","Помощь с транспортом/проездом","Help with transportation"],
+  ["childcare","Присмотр за детьми во время мероприятий","Childcare during events"],
+  ["boroughs","Мероприятия в других районах Нью-Йорка","Events in other parts of New York"],
+  ["announce","Узнавать о мероприятиях заранее","Hearing about events earlier"],
+  ["max","Уже участвую столько, сколько могу","I already take part as much as I can"],
+  ["other","Другое","Other"]], other:"other", exclusive:["max"] },
+q22: { type:"multi", text:["Через какие каналы вам удобнее всего получать информацию о мероприятиях и программах?","What channels work best for you to hear about events and programs?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
+  ["telegram","Телеграм","Telegram"], ["instagram","Instagram","Instagram"], ["facebook","Facebook","Facebook"],
+  ["website","Сайт QARAVAN","QARAVAN website"],
+  ["email","Рассылки по электронной почте","Email newsletters"],
+  ["partiful","Partiful — уведомления и приглашения","Partiful notifications and invites"],
+  ["friends","От друзей, знакомых или сообщества","From friends, acquaintances, or the community"],
+  ["orgs","Через другие общественные организации","Through other community organizations"],
+  ["other","Другое","Other"]], other:"other" },
+q23: { type:"scale", text:["Насколько вероятно, что вы будете участвовать в программах QARAVAN в следующие 6 месяцев?","How likely are you to take part in QARAVAN programs in the next 6 months?"],
+  hint:["Передвиньте ползунок или нажмите на подпись.","Drag the slider or tap a label."],
   min:1, max:5, positive:true,
-  ticks:["Точно нет","Скорее нет","Не уверен(а)","Скорее да","Точно да"],
-  labels:{1:"Определённо нет",2:"Скорее нет",3:"Не уверен(а)",4:"Скорее да",5:"Определённо да"} },
-q24: { type:"open", text:"Есть ли что-то ещё, что вы хотели бы, чтобы QARAVAN знал о ваших потребностях или о том, как мы можем лучше поддержать вас?", hint:"Свободный ответ — необязательно.", max:4000 },
+  ticks:[["Точно нет","Definitely not"],["Скорее нет","Probably not"],["Не уверен(а)","Not sure"],["Скорее да","Probably yes"],["Точно да","Definitely yes"]],
+  labels:{1:["Определённо нет","Definitely not"],2:["Скорее нет","Probably not"],3:["Не уверен(а)","Not sure"],4:["Скорее да","Probably yes"],5:["Определённо да","Definitely yes"]} },
+q24: { type:"open", text:["Есть ли что-то ещё, что вы хотели бы, чтобы QARAVAN знал о ваших потребностях или о том, как мы можем лучше поддержать вас?","Is there anything else you'd like QARAVAN to know about your needs or how we can support you better?"], hint:["Свободный ответ — необязательно.","Open answer — optional."], max:4000 },
 };
 
 const SECTIONS = [
-  { n:1, name:"Ваша связь с QARAVAN", qs:["q1","q2","q3","q4","q5"] },
-  { n:2, name:"Кто вы", qs:["q6","q7","q8","q9","q10","q11","q12"],
-    intro:"Эти вопросы помогают понять, кто отвечал, и заметить, чьи потребности отличаются. Любой вопрос можно пропустить." },
-  { n:3, name:"Что вам нужно прямо сейчас", qs:["q13","q14","q15","q16"] },
-  { n:4, name:"Безопасность и участие", qs:["q17","q18","q19","q20","q21","q22"],
-    intro:"Мы понимаем, что сейчас тревожное время. Эти ответы помогут нам делать участие безопаснее." },
-  { n:5, name:"Будущее участие", qs:["q23","q24"] },
+  { n:1, name:["Ваша связь с QARAVAN","Your connection to QARAVAN"], qs:["q1","q2","q3","q4","q5"] },
+  { n:2, name:["Кто вы","About you"], qs:["q6","q7","q8","q9","q10","q11","q12"],
+    intro:["Эти вопросы помогают понять, кто отвечал, и заметить, чьи потребности отличаются. Любой вопрос можно пропустить.","These questions help us understand who responded and notice whose needs differ. You can skip any of them."] },
+  { n:3, name:["Что вам нужно прямо сейчас","What you need right now"], qs:["q13","q14","q15","q16"] },
+  { n:4, name:["Безопасность и участие","Safety and participation"], qs:["q17","q18","q19","q20","q21","q22"],
+    intro:["Мы понимаем, что сейчас тревожное время. Эти ответы помогут нам делать участие безопаснее.","We know this is an anxious time. These answers will help us make participation safer."] },
+  { n:5, name:["Будущее участие","Future participation"], qs:["q23","q24"] },
 ];
 const SEC_COLORS = ["var(--q-red)","var(--q-orange)","var(--q-green)","var(--q-sky)","var(--q-purple)"];
+
+// ===== все тексты интерфейса =====
+const WIKI = {
+  ru: "https://ru.wikipedia.org/wiki/%D0%9D%D0%B8%D1%87%D0%B5%D0%B3%D0%BE_%D0%BE_%D0%BD%D0%B0%D1%81_%D0%B1%D0%B5%D0%B7_%D0%BD%D0%B0%D1%81",
+  en: "https://en.wikipedia.org/wiki/Nothing_about_us_without_us",
+};
+const HELP_URL = "https://forms.monday.com/forms/5cefb350d61a65aaea40252c23c93f86?r=use1";
+const STRINGS = {
+ru: {
+  title: "Исследование потребностей сообщества — QARAVAN",
+  intro_h1: "Исследование потребностей сообщества",
+  intro_sub: "Привет! QARAVAN проводит этот опрос, чтобы лучше понять, как мы можем поддержать наше сообщество в текущей ситуации.",
+  card_privacy: "<b>Конфиденциальность.</b> Ваши ответы конфиденциальны: мы смотрим только на общую картину, а не на отдельные ответы, и не передаём их никому за пределами команды QARAVAN. Имя, почту и телефон мы не спрашиваем.",
+  card_time: "<b>Время.</b> Займёт около 10 минут — 5 коротких разделов.",
+  card_save: "<b>Ничего не потеряется.</b> Ответы сохраняются автоматически после каждого вопроса — можно прерваться и вернуться позже. А по личной ссылке (внизу каждого раздела) можно продолжить на другом устройстве.",
+  card_skip: "<b>Любой вопрос можно пропустить.</b> Участие добровольное, «неудобных» обязательных вопросов здесь нет.",
+  motto: `<a href="${WIKI.ru}" target="_blank" rel="noopener">«Ничего о нас без нас!»</a>`,
+  intro_sub2: "Ваши ответы помогут нам понять, какие программы и поддержка нужны сообществу в ближайшие месяцы.",
+  start_btn: "Мне есть 18 лет — начать",
+  start_fine: "Опрос для тех, кому 18 лет и больше. Нажимая кнопку, вы подтверждаете свой возраст и согласие участвовать.",
+  resume_note: "Мы восстановили ваши ответы — продолжайте с того места, где остановились.",
+  restart_btn: "Начать заново",
+  confirm_restart: "Точно начать заново? Сохранённые ответы будут стёрты.",
+  confirm_adopt: "На этом устройстве уже есть незаконченный ответ на опрос. Открыть черновик по ссылке вместо него?",
+  section_of: n => `Раздел ${n} из ${SECTIONS.length}`,
+  completed: p => `Заполнено: ${p}%`,
+  nav_next: "Дальше", nav_back: "Назад",
+  send: "Отправить ответы", sending: "Отправляем…",
+  err_net: "Не отправилось. Ответы сохранены на этом устройстве — проверьте интернет и нажмите ещё раз.",
+  save_saving: "Сохраняется…", save_saved: "Сохранено ✓", save_local: "Сохранено на устройстве", save_restored: "Черновик восстановлен",
+  count_sel: (n, m) => `Выбрано: ${n} из ${m}`,
+  count_cap: m => `Можно выбрать до ${m === 3 ? "трёх" : m}`,
+  limit_hint: m => `Не больше ${m === 3 ? "трёх" : m}: чтобы выбрать это, сначала снимите один из выбранных.`,
+  other_ph: "Ваш вариант", other_aria: "Другое — уточните",
+  no_answer: "Ответ не выбран",
+  xfer_link: "Продолжить на другом устройстве",
+  xfer_note: "Откройте эту ссылку на другом устройстве — сохранённый черновик подтянется, и можно будет продолжить с того же места. Не делитесь ссылкой: по ней открываются ваши ответы.",
+  xfer_copy: "Скопировать ссылку", xfer_copied: "Скопировано ✓", xfer_aria: "Личная ссылка для продолжения",
+  thanks_h1: "Спасибо!",
+  thanks_sub: `Ваши ответы отправлены. Они помогут нам делать программы, которые сообществу правда нужны. <a href="${WIKI.ru}" target="_blank" rel="noopener">«Ничего о нас без нас!»</a>`,
+  thanks_help: `Если вам нужна помощь прямо сейчас — <a href="${HELP_URL}" target="_blank" rel="noopener">заполните эту форму</a>, и мы свяжемся с вами.`,
+  thanks_care: "Берегите себя. 🧡",
+  again_btn: "Заполнить ещё раз (для другого человека на этом устройстве)",
+},
+en: {
+  title: "Community Needs Survey — QARAVAN",
+  intro_h1: "Community Needs Survey",
+  intro_sub: "Hi! QARAVAN is running this survey to better understand how we can support our community in the current situation.",
+  card_privacy: "<b>Confidentiality.</b> Your answers are confidential: we only look at the overall picture, not at individual responses, and we never share them with anyone outside the QARAVAN team. We don't ask for your name, email, or phone number.",
+  card_time: "<b>Time.</b> About 10 minutes — 5 short sections.",
+  card_save: "<b>Nothing gets lost.</b> Answers save automatically after every question — you can stop and come back later. A personal link (at the bottom of every section) lets you continue on another device.",
+  card_skip: "<b>You can skip any question.</b> Participation is voluntary — nothing here is required.",
+  motto: `<a href="${WIKI.en}" target="_blank" rel="noopener">“Nothing about us without us!”</a>`,
+  intro_sub2: "Your answers will help us understand what programs and support the community needs in the coming months.",
+  start_btn: "I'm 18 or older — start",
+  start_fine: "This survey is for people 18 and older. By tapping the button you confirm your age and agree to take part.",
+  resume_note: "We've restored your answers — continue right where you left off.",
+  restart_btn: "Start over",
+  confirm_restart: "Start over? Your saved answers will be erased.",
+  confirm_adopt: "There's an unfinished response on this device. Open the draft from the link instead?",
+  section_of: n => `Section ${n} of ${SECTIONS.length}`,
+  completed: p => `Completed: ${p}%`,
+  nav_next: "Next", nav_back: "Back",
+  send: "Submit answers", sending: "Submitting…",
+  err_net: "It didn't go through. Your answers are saved on this device — check your connection and try again.",
+  save_saving: "Saving…", save_saved: "Saved ✓", save_local: "Saved on this device", save_restored: "Draft restored",
+  count_sel: (n, m) => `Selected: ${n} of ${m}`,
+  count_cap: m => `Pick up to ${m === 3 ? "three" : m}`,
+  limit_hint: m => `No more than ${m === 3 ? "three" : m}: unselect one of your picks first.`,
+  other_ph: "Your answer", other_aria: "Other — please specify",
+  no_answer: "No answer selected",
+  xfer_link: "Continue on another device",
+  xfer_note: "Open this link on another device — your saved draft will load and you can pick up where you left off. Don't share the link: it opens your answers.",
+  xfer_copy: "Copy link", xfer_copied: "Copied ✓", xfer_aria: "Personal link to continue",
+  thanks_h1: "Thank you!",
+  thanks_sub: `Your answers have been submitted. They'll help us build the programs our community actually needs. <a href="${WIKI.en}" target="_blank" rel="noopener">“Nothing about us without us!”</a>`,
+  thanks_help: `If you need help right now — <a href="${HELP_URL}" target="_blank" rel="noopener">fill out this form</a> and we'll get in touch.`,
+  thanks_care: "Take care of yourself. 🧡",
+  again_btn: "Fill it out again (for another person on this device)",
+},
+};
+const HTML_KEYS = new Set(["card_privacy", "card_time", "card_save", "card_skip", "motto", "thanks_sub", "thanks_help"]);
 
 // Логика показа: вопрос виден, только когда он применим к человеку.
 // Скрытый вопрос не уходит на сервер и не считается в прогрессе.
@@ -424,14 +582,18 @@ const uuid = () => (crypto.randomUUID ? crypto.randomUUID() :
   "xxxx-xxxx-4xxx-yxxx-xxxx".replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==="x"?r:(r&0x3|0x8)).toString(16); }) + "-" + Date.now().toString(16));
 
 let S;
-function freshState(){ return { rid: uuid(), A: {}, step: 0, maxSection: 0, startedAt: 0, done: false }; }
+function freshState(){ return { rid: uuid(), A: {}, step: 0, maxSection: 0, startedAt: 0, done: false, lang: "" }; }
 function load(){
   try { const d = JSON.parse(localStorage.getItem(LSKEY) || "null"); if (d && d.rid && d.A) return d; } catch (e) {}
   return null;
 }
 S = load() || freshState();
 let A = S.A;
-function persist(){ try { localStorage.setItem(LSKEY, JSON.stringify(S)); } catch (e) {} }
+let lang = S.lang === "en" || (!S.lang && new URLSearchParams(location.search).get("lang") === "en") ? "en" : "ru";
+const STR = () => STRINGS[lang];
+const tx = v => Array.isArray(v) ? v[lang === "en" ? 1 : 0] : v;          // текст вопроса/подсказки
+const optLabel = o => (lang === "en" && o[2]) ? o[2] : o[1];              // подпись варианта
+function persist(){ S.lang = lang; try { localStorage.setItem(LSKEY, JSON.stringify(S)); } catch (e) {} }
 const RID_RX = /^[0-9a-zA-Z-]{12,64}$/;
 const resumeURL = () => location.origin + location.pathname.replace(/\/index\.html$/, "") + "?r=" + S.rid;
 
@@ -441,8 +603,8 @@ function el(tag, cls, text){ const n = document.createElement(tag); if (cls) n.c
 function fsWrap(qid, q){
   const fs = el("fieldset"); fs.id = "fs_" + qid;
   const lg = el("legend");
-  const t = el("span", null, q.text); lg.appendChild(t);
-  if (q.hint) lg.appendChild(el("span", "hint", q.hint));
+  const t = el("span", null, tx(q.text)); lg.appendChild(t);
+  if (q.hint) lg.appendChild(el("span", "hint", tx(q.hint)));
   fs.appendChild(lg);
   return fs;
 }
@@ -451,12 +613,13 @@ function renderSingle(qid, q){
   const fs = fsWrap(qid, q);
   const wrap = el("div", "opts" + (q.cols2 ? " cols2" : ""));
   wrap.setAttribute("role", "radiogroup");
-  q.opts.forEach(([code, label]) => {
+  q.opts.forEach(o => {
+    const code = o[0];
     const l = el("label");
     const r = document.createElement("input");
     r.type = "radio"; r.name = qid; r.value = code; r.checked = A[qid] === code;
     r.onchange = () => { A[qid] = code; onOther(qid, q, true); touched(qid); };
-    l.append(r, el("span", null, label));
+    l.append(r, el("span", null, optLabel(o)));
     wrap.appendChild(l);
   });
   fs.appendChild(wrap);
@@ -467,17 +630,16 @@ function renderSingle(qid, q){
 function renderMulti(qid, q){
   const fs = fsWrap(qid, q);
   const wrap = el("div", "chips");
-  q.opts.forEach(([code, label]) => {
-    const b = el("button", null, label);
-    b.type = "button"; b.dataset.code = code;
-    b.onclick = () => toggleChip(qid, q, code);
+  q.opts.forEach(o => {
+    const b = el("button", null, optLabel(o));
+    b.type = "button"; b.dataset.code = o[0];
+    b.onclick = () => toggleChip(qid, q, o[0]);
     wrap.appendChild(b);
   });
   fs.appendChild(wrap);
   if (q.max){
     fs.appendChild(el("p", "counter", ""));
-    const lh = el("p", "limit-hint", `Не больше ${q.max === 3 ? "трёх" : q.max}: чтобы выбрать это, сначала снимите один из выбранных.`);
-    fs.appendChild(lh);
+    fs.appendChild(el("p", "limit-hint", STR().limit_hint(q.max)));
   }
   if (q.other) fs.appendChild(otherInput(qid));
   syncMulti(qid, q);
@@ -519,7 +681,7 @@ function syncMulti(qid, q){
   });
   const c = fs.querySelector(".counter");
   if (c){
-    c.textContent = cur.size ? `Выбрано: ${normal || cur.size} из ${q.max}` : `Можно выбрать до ${q.max === 3 ? "трёх" : q.max}`;
+    c.textContent = cur.size ? STR().count_sel(normal || cur.size, q.max) : STR().count_cap(q.max);
     c.classList.toggle("maxed", !!maxed);
   }
 }
@@ -527,8 +689,8 @@ function syncMulti(qid, q){
 function otherInput(qid){
   const w = el("div", "other-input"); w.id = "other_" + qid;
   const i = document.createElement("input");
-  i.type = "text"; i.maxLength = 200; i.placeholder = "Ваш вариант"; i.value = A[qid + "_other"] || "";
-  i.setAttribute("aria-label", "Другое — уточните");
+  i.type = "text"; i.maxLength = 200; i.placeholder = STR().other_ph; i.value = A[qid + "_other"] || "";
+  i.setAttribute("aria-label", STR().other_aria);
   i.oninput = () => { A[qid + "_other"] = i.value; touched(); };
   w.appendChild(i);
   return w;
@@ -544,15 +706,15 @@ function onOther(qid, q, focus){
 function renderScale(qid, q){
   const fs = fsWrap(qid, q);
   const box = el("div", "slider" + (q.positive ? " pos" : ""));
-  const read = el("div", "readout", "Ответ не выбран");
+  const read = el("div", "readout", STR().no_answer);
   const r = document.createElement("input");
   r.type = "range"; r.min = q.min; r.max = q.max; r.step = 1;
   r.value = Math.ceil((q.min + q.max) / 2);
-  r.setAttribute("aria-label", q.text);
+  r.setAttribute("aria-label", tx(q.text));
   const ticks = el("div", "ticks");
   ticks.style.gridTemplateColumns = `repeat(${q.max - q.min + 1},1fr)`;
   q.ticks.forEach((t, i) => {
-    const b = el("button", null, t); b.type = "button";
+    const b = el("button", null, tx(t)); b.type = "button";
     b.onclick = () => setScale(q.min + i);
     ticks.appendChild(b);
   });
@@ -560,8 +722,8 @@ function renderScale(qid, q){
     const v = A[qid];
     const answered = typeof v === "number";
     box.classList.toggle("answered", answered);
-    if (answered){ r.value = v; read.textContent = q.labels[v]; r.setAttribute("aria-valuetext", q.labels[v]); }
-    else read.textContent = v === PNTS ? NOPTS : "Ответ не выбран";
+    if (answered){ r.value = v; read.textContent = tx(q.labels[v]); r.setAttribute("aria-valuetext", tx(q.labels[v])); }
+    else read.textContent = v === PNTS ? tx(NO_ANS) : STR().no_answer;
     [...ticks.children].forEach((b, i) => b.classList.toggle("on", answered && q.min + i === v));
     if (q.pnts){ const na = fs.querySelector(".na-link"); if (na) na.classList.toggle("on", v === PNTS); }
   };
@@ -570,7 +732,7 @@ function renderScale(qid, q){
   box.append(read, r, ticks);
   fs.appendChild(box);
   if (q.pnts){
-    const na = el("button", "na-link", NOPTS);
+    const na = el("button", "na-link", tx(NO_ANS));
     na.type = "button";
     na.onclick = () => { A[qid] = A[qid] === PNTS ? undefined : PNTS; if (A[qid] === undefined) delete A[qid]; sync(); touched(qid); };
     fs.appendChild(na);
@@ -583,7 +745,7 @@ function renderOpen(qid, q){
   const fs = fsWrap(qid, q);
   const t = document.createElement("textarea");
   t.maxLength = q.max || 4000; t.value = A[qid] || "";
-  t.setAttribute("aria-label", q.text);
+  t.setAttribute("aria-label", tx(q.text));
   t.oninput = () => { A[qid] = t.value; touched(); };
   fs.appendChild(t);
   return fs;
@@ -591,26 +753,52 @@ function renderOpen(qid, q){
 
 const RENDER = { single: renderSingle, multi: renderMulti, scale: renderScale, open: renderOpen };
 
+// «Продолжить на другом устройстве»: личная ссылка с response id. Открыв её
+// на другом устройстве, человек получает свой черновик с доски (GET /api/survey).
+function xferBlock(){
+  const box = el("div", "xfer");
+  const btn = el("button", "na-link", STR().xfer_link);
+  btn.type = "button";
+  const panel = el("div", "xfer-panel");
+  const inp = document.createElement("input");
+  inp.type = "text"; inp.readOnly = true;
+  inp.setAttribute("aria-label", STR().xfer_aria);
+  inp.onfocus = () => inp.select();
+  const copy = el("button", "xfer-copy", STR().xfer_copy);
+  copy.type = "button";
+  copy.onclick = async () => {
+    inp.value = resumeURL();
+    let ok = false;
+    try { await navigator.clipboard.writeText(inp.value); ok = true; }
+    catch (e) { inp.select(); try { ok = document.execCommand("copy"); } catch (e2) {} }
+    if (ok){ copy.textContent = STR().xfer_copied; setTimeout(() => { copy.textContent = STR().xfer_copy; }, 2200); }
+  };
+  btn.onclick = () => { inp.value = resumeURL(); panel.classList.toggle("show"); };
+  panel.append(el("p", null, STR().xfer_note), inp, copy);
+  box.append(btn, panel);
+  return box;
+}
+
 function buildSteps(){
   SECTIONS.forEach((sec, si) => {
     const host = document.querySelector(`.step[data-step="${sec.n}"]`);
     host.innerHTML = "";
     const head = el("header", "sec-head");
-    const eb = el("div", "eyebrow", `Раздел ${sec.n} из ${SECTIONS.length}`);
+    const eb = el("div", "eyebrow", STR().section_of(sec.n));
     eb.style.color = SEC_COLORS[si];
-    const h2 = el("h2", "sec", sec.name);
+    const h2 = el("h2", "sec", tx(sec.name));
     h2.id = "sech_" + sec.n; h2.tabIndex = -1;
     head.append(eb, h2);
-    if (sec.intro) head.appendChild(el("p", "sec-intro", sec.intro));
+    if (sec.intro) head.appendChild(el("p", "sec-intro", tx(sec.intro)));
     host.appendChild(head);
     sec.qs.forEach(qid => host.appendChild(RENDER[Q[qid].type](qid, Q[qid])));
 
     const nav = el("div", "stepnav");
-    const back = el("button", "back", "Назад");
+    const back = el("button", "back", STR().nav_back);
     back.type = "button"; back.onclick = () => goStep(sec.n - 1);
     nav.appendChild(back);
     if (sec.n < SECTIONS.length){
-      const next = el("button", "next", "Дальше");
+      const next = el("button", "next", STR().nav_next);
       next.type = "button"; next.onclick = () => goStep(sec.n + 1);
       nav.appendChild(next);
     }
@@ -618,7 +806,7 @@ function buildSteps(){
     if (sec.n === SECTIONS.length){
       const sub = el("div", "submit");
       const err = el("p", "err"); err.id = "err"; err.setAttribute("role", "alert");
-      const send = el("button", null, "Отправить ответы");
+      const send = el("button", null, STR().send);
       send.type = "submit"; send.id = "send";
       sub.append(err, send, el("footer", null, "qaravan.org"));
       host.appendChild(sub);
@@ -629,40 +817,37 @@ function buildSteps(){
   applyVisibility();
 }
 
-// «Продолжить на другом устройстве»: личная ссылка с response id. Открыв её
-// на другом устройстве, человек получает свой черновик с доски (GET /api/survey).
-function xferBlock(){
-  const box = el("div", "xfer");
-  const btn = el("button", "na-link", "Продолжить на другом устройстве");
-  btn.type = "button";
-  const panel = el("div", "xfer-panel");
-  const inp = document.createElement("input");
-  inp.type = "text"; inp.readOnly = true;
-  inp.setAttribute("aria-label", "Личная ссылка для продолжения");
-  inp.onfocus = () => inp.select();
-  const copy = el("button", "xfer-copy", "Скопировать ссылку");
-  copy.type = "button";
-  copy.onclick = async () => {
-    inp.value = resumeURL();
-    let ok = false;
-    try { await navigator.clipboard.writeText(inp.value); ok = true; }
-    catch (e) { inp.select(); try { ok = document.execCommand("copy"); } catch (e2) {} }
-    if (ok){ copy.textContent = "Скопировано ✓"; setTimeout(() => { copy.textContent = "Скопировать ссылку"; }, 2200); }
-  };
-  btn.onclick = () => { inp.value = resumeURL(); panel.classList.toggle("show"); };
-  panel.append(
-    el("p", null, "Откройте эту ссылку на другом устройстве — сохранённый черновик подтянется, и можно будет продолжить с того же места. Не делитесь ссылкой: по ней открываются ваши ответы."),
-    inp, copy);
-  box.append(btn, panel);
-  return box;
-}
-
 function applyVisibility(){
   Object.keys(VISIBLE).forEach(qid => {
     const fs = $("fs_" + qid);
     if (fs) fs.classList.toggle("gone", !VISIBLE[qid]());
   });
 }
+
+// ===== язык =====
+// Тексты «хрома» страницы (вступление, «спасибо», кнопки) живут в data-i18n;
+// вопросы перерисовываются заново из конфига. Ответы при переключении не трогаем.
+function renderChrome(){
+  document.documentElement.lang = lang;
+  document.title = STR().title;
+  $("btnRu").setAttribute("aria-pressed", lang === "ru" ? "true" : "false");
+  $("btnEn").setAttribute("aria-pressed", lang === "en" ? "true" : "false");
+  document.querySelectorAll("[data-i18n]").forEach(n => {
+    const k = n.dataset.i18n;
+    if (HTML_KEYS.has(k)) n.innerHTML = STR()[k]; else n.textContent = STR()[k];
+  });
+}
+function setLang(l){
+  if (l === lang) return;
+  lang = l;
+  persist();
+  renderChrome();
+  buildSteps();
+  if (S.step >= 1){ $("stepLabel").textContent = STR().section_of(S.step); syncPct(); }
+  schedule(); // язык заполнения — тоже данные, пусть уедет с автосейвом
+}
+$("btnRu").onclick = () => setLang("ru");
+$("btnEn").onclick = () => setLang("en");
 
 // ===== шаги и прогресс =====
 function goStep(n, focusHeading = true){
@@ -672,7 +857,7 @@ function goStep(n, focusHeading = true){
   const p = $("progress");
   p.classList.toggle("show", n >= 1);
   if (n >= 1){
-    $("stepLabel").textContent = `Раздел ${n} из ${SECTIONS.length}`;
+    $("stepLabel").textContent = STR().section_of(n);
     $("barFill").style.width = Math.max(4, Math.round((n - 1) / SECTIONS.length * 100)) + "%";
     syncPct();
   }
@@ -682,11 +867,12 @@ function goStep(n, focusHeading = true){
   if (n >= 1) schedule();   // переход между разделами — тоже повод сохраниться
 }
 
-function syncPct(){ $("secName").textContent = `Заполнено: ${progressPct()}%`; }
+function syncPct(){ $("secName").textContent = STR().completed(progressPct()); }
 
 function applicable(){ return Object.keys(Q).filter(qid => !(qid in VISIBLE) || VISIBLE[qid]()); }
 function answered(qid){
   const v = A[qid], q = Q[qid];
+  if (!q) return false;
   if (q.type === "multi") return Array.isArray(v) && v.length > 0;
   if (q.type === "open") return typeof v === "string" && v.trim().length > 0;
   if (q.type === "scale") return typeof v === "number" || v === PNTS;
@@ -702,10 +888,10 @@ function progressPct(){
 // паузой 1200 мс, чтобы не бомбить API на каждую букву. Строка в monday
 // создаётся при первом содержательном ответе и дальше обновляется.
 let dirty = false, inflight = false, timer = 0;
-const chip = (mode, text) => {
+const chip = (mode, key) => {
   const c = $("saveChip");
   c.className = "savechip show " + mode;
-  $("saveText").textContent = text;
+  $("saveText").textContent = STR()[key];
 };
 
 function touched(qid){
@@ -718,7 +904,7 @@ function touched(qid){
 function schedule(){
   if (S.done || !hasAnswers()) return;
   dirty = true;
-  chip("saving", "Сохраняется…");
+  chip("saving", "save_saving");
   clearTimeout(timer);
   timer = setTimeout(() => save("draft"), 1200);
 }
@@ -746,7 +932,7 @@ function payload(mode){
     }
   });
   return {
-    rid: S.rid, mode,
+    rid: S.rid, mode, lang,
     answers: out,
     progress: progressPct(),
     lastSection: Math.min(S.maxSection, SECTIONS.length),
@@ -764,10 +950,10 @@ async function save(mode){
       body: JSON.stringify(payload(mode)),
     });
     if (!r.ok) throw new Error("http " + r.status);
-    chip("saved", "Сохранено ✓");
+    chip("saved", "save_saved");
   } catch (e) {
     dirty = true;                                // локально всё есть; сервер догоним позже
-    chip("local", "Сохранено на устройстве");
+    chip("local", "save_local");
   } finally {
     inflight = false;
     if (dirty && !S.done){ clearTimeout(timer); timer = setTimeout(() => save("draft"), 4000); }
@@ -788,7 +974,7 @@ $("f").addEventListener("submit", async ev => {
   ev.preventDefault();
   const err = $("err"), send = $("send");
   err.classList.remove("show");
-  send.disabled = true; send.textContent = "Отправляем…";
+  send.disabled = true; send.textContent = STR().sending;
   clearTimeout(timer);
   const waitIdle = () => new Promise(res => { const t = () => inflight ? setTimeout(t, 150) : res(); t(); });
   await waitIdle();
@@ -808,27 +994,28 @@ $("f").addEventListener("submit", async ev => {
     window.scrollTo({ top: 0 });
   } catch (e) {
     inflight = false;
-    err.textContent = "Не отправилось. Ответы сохранены на этом устройстве — проверьте интернет и нажмите ещё раз.";
+    err.textContent = STR().err_net;
     err.classList.add("show");
-    send.disabled = false; send.textContent = "Отправить ответы";
+    send.disabled = false; send.textContent = STR().send;
   }
 });
 
 // ===== старт, восстановление, «ещё раз» =====
 $("startBtn").onclick = () => goStep(1);
 function resetAll(){
-  try { localStorage.removeItem(LSKEY); } catch (e) {}
+  try { localStorage.setItem(LSKEY, JSON.stringify({ ...freshState(), lang })); } catch (e) {}
   S.done = true;            // заглушить pagehide-маячок со старыми ответами
   dirty = false;
   location.reload();
 }
 $("restartBtn").onclick = () => {
-  if (!confirm("Точно начать заново? Сохранённые ответы будут стёрты.")) return;
+  if (!confirm(STR().confirm_restart)) return;
   resetAll();
 };
 $("againBtn").onclick = resetAll;
 
 (async function boot(){
+  renderChrome();
   buildSteps();
   // ?r=<rid> — переход по личной ссылке «продолжить на другом устройстве»:
   // забираем черновик с доски и принимаем его rid, чтобы писать в ту же строку.
@@ -836,7 +1023,7 @@ $("againBtn").onclick = resetAll;
   if (r && RID_RX.test(r)){
     if (r !== S.rid){
       const localBusy = hasAnswers() && !S.done;
-      const adopt = !localBusy || confirm("На этом устройстве уже есть незаконченный ответ на опрос. Открыть черновик по ссылке вместо него?");
+      const adopt = !localBusy || confirm(STR().confirm_adopt);
       if (adopt){
         let d = null;
         try {
@@ -851,6 +1038,7 @@ $("againBtn").onclick = resetAll;
           S.step = Math.min(Math.max(Math.round(Number(d.lastSection) || 1), 1), SECTIONS.length);
           S.maxSection = S.step;
         }
+        if (d && (d.lang === "en" || d.lang === "ru") && d.lang !== lang){ lang = d.lang; renderChrome(); }
         persist();
         buildSteps(); // перерисовать с подтянутыми ответами
       }
@@ -863,7 +1051,7 @@ $("againBtn").onclick = resetAll;
   } else if (S.step >= 1 && hasAnswers()){
     $("resumeNote").classList.add("show");
     goStep(Math.min(S.step, SECTIONS.length), false);
-    chip("saved", "Черновик восстановлен");
+    chip("saved", "save_restored");
   } else {
     goStep(0, false);
   }

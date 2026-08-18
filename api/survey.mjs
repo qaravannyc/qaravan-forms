@@ -48,6 +48,7 @@ const C = {
   q23n: "numeric_mm6bcwwv",
   q24: "long_text_mm6be0fm",
   others: "long_text_mm6bzt03",    // Other answers (verbatim)
+  lang: "color_mm6b61m9",          // Language (RU | EN)
   rid: "text_mm6bqa0w",            // ⚙️ Response id
   raw: "long_text_mm6bxg7f",       // ⚙️ Raw answers (JSON)
 };
@@ -76,7 +77,7 @@ const L = {
   q19: { protocols: "Clear safety protocols", online: "More online formats", private: "More private events", data: "Data-collection transparency", legal: "Legal rights info", ice: "ICE response plan", safe: "Already feels safe", other: "Other" },
   q20: { inperson: "In person", online: "Online", hybrid: "Hybrid", depends: "Depends on event", unsure: "Not sure" },
   q21: { weekend: "Weekend events", online: "More online formats", transport: "Transport help", childcare: "Childcare", boroughs: "Events in other boroughs", announce: "Earlier announcements", max: "Attends as much as possible", other: "Other" },
-  q22: { telegram: "Telegram", instagram: "Instagram", facebook: "Facebook", website: "QARAVAN website", email: "Email newsletter", friends: "Friends & community", orgs: "Other organizations", other: "Other" },
+  q22: { telegram: "Telegram", instagram: "Instagram", facebook: "Facebook", website: "QARAVAN website", email: "Email newsletter", partiful: "Partiful", friends: "Friends & community", orgs: "Other organizations", other: "Other" },
   q23: { 1: "Definitely not", 2: "Probably not", 3: "Not sure", 4: "Probably yes", 5: "Definitely yes" },
 };
 
@@ -96,13 +97,13 @@ const RU = {
   q12: { arrived: "Только приехал(а) и осваиваюсь", adapting: "В процессе адаптации", settled: "Устроился/ась, но есть сложности", stable: "Чувствую себя уверенно и стабильно", pnts: "Предпочитаю не отвечать" },
   q13: { immigration: "Помощь с иммиграционным делом", ice: "Информация о правах при встрече с ICE и защите от депортации", health: "Информация о медицинских услугах и страховании", job: "Помощь в поиске работы или развитии карьеры", housing: "Помощь в поиске жилья", money: "Финансовая помощь (экстренная)", mental: "Поддержка психического здоровья", english: "Изучение английского / языковая практика", social: "Социальные связи и дружба", docs: "Помощь с документами и переводами", education: "Информация об образовании и поступлении", none: "Не нуждаюсь в помощи прямо сейчас", other: "Другое" },
   q14: { chg_big: "Значительно изменились — нужна другая поддержка", chg_some: "Немного изменились", same: "Остались прежними", unsure: "Не уверен(а)", pnts: "Предпочитаю не отвечать" },
-  q16: { bbpride: "Brighton Beach Pride", social: "Регулярные социальные мероприятия", rainbow: "Rainbow Connections", groups: "Группы поддержки", crisis: "Поддержка в кризисной ситуации", referrals: "Направления к проверенным юристам и специалистам", chat: "Телеграм-чат Qaravan Connects", info: "Информационные встречи и воркшопы", navigation: "Помощь разобраться в медицинских и социальных услугах", none: "Ничего из перечисленного не подходит", other: "Другое" },
+  q16: { bbpride: "Brighton Beach Pride", social: "Регулярные социальные мероприятия", rainbow: "Rainbow Connections", groups: "Группы поддержки", crisis: "Поддержка в кризисной ситуации", referrals: "Направления к проверенным юристам и специалистам", chat: "Телеграм-чат Qaravan Connects", info: "Информационные встречи и воркшопы", navigation: "Помощь с навигацией по медицинским/социальным услугам", none: "Ничего из перечисленного не подходит", other: "Другое" },
   q17: { 1: "Совсем не обеспокоен(а)", 2: "Не очень обеспокоен(а)", 3: "Немного обеспокоен(а)", 4: "Очень обеспокоен(а)", pnts: "Предпочитаю не отвечать" },
   q18: { less: "Участвую реже, чем раньше", same: "Участвую так же, как раньше", online: "Выбираю онлайн-формат вместо личных встреч", stopped: "Совсем перестал(а) участвовать", pnts: "Предпочитаю не отвечать" },
   q19: { protocols: "Понятные правила безопасности на мероприятиях", online: "Больше онлайн-форматов", private: "Более приватные/закрытые встречи", data: "Информация о том, какие данные собирает QARAVAN", legal: "Юридическая информация о правах", ice: "Знать, что делать, если появится ICE", safe: "Уже чувствую себя в безопасности", other: "Другое" },
   q20: { inperson: "Личные встречи", online: "Онлайн-мероприятия", hybrid: "Смешанный формат", depends: "Зависит от типа мероприятия", unsure: "Не уверен(а)" },
   q21: { weekend: "Больше мероприятий на выходных", online: "Больше онлайн-форматов", transport: "Помощь с транспортом/проездом", childcare: "Присмотр за детьми", boroughs: "Мероприятия в других районах", announce: "Узнавать о мероприятиях заранее", max: "Уже участвую столько, сколько могу", other: "Другое" },
-  q22: { telegram: "Телеграм", instagram: "Instagram", facebook: "Facebook", website: "Сайт QARAVAN", email: "Почтовые рассылки", friends: "От друзей и сообщества", orgs: "Через другие организации", other: "Другое" },
+  q22: { telegram: "Телеграм", instagram: "Instagram", facebook: "Facebook", website: "Сайт QARAVAN", email: "Почтовые рассылки", partiful: "Partiful — уведомления и приглашения", friends: "От друзей и сообщества", orgs: "Через другие организации", other: "Другое" },
   q23: { 1: "Определённо нет", 2: "Скорее нет", 3: "Не уверен(а)", 4: "Скорее да", 5: "Определённо да" },
 };
 
@@ -214,6 +215,7 @@ function columnValues(a, mode, meta) {
   const cv = {
     [C.rid]: meta.rid,
     [C.status]: { label: mode === "submit" ? "Submitted" : "In progress" },
+    [C.lang]: { label: meta.lang === "en" ? "EN" : "RU" },
     [C.progress]: String(meta.progress),
     [C.lastSection]: String(meta.lastSection),
     [C.q1]: single("q1"),
@@ -245,7 +247,7 @@ function columnValues(a, mode, meta) {
   };
   const others = OTHER_ORDER.filter((q) => a[q + "_other"]).map((q) => `Q${q.slice(1)}: ${a[q + "_other"]}`);
   cv[C.others] = others.length ? { text: others.join("\n").slice(0, 9500) } : "";
-  cv[C.raw] = { text: JSON.stringify({ rid: meta.rid, savedAt: new Date().toISOString(), mode, progress: meta.progress, lastSection: meta.lastSection, startedAt: meta.startedAt || undefined, answers: a }).slice(0, 9500) };
+  cv[C.raw] = { text: JSON.stringify({ rid: meta.rid, savedAt: new Date().toISOString(), mode, lang: meta.lang, progress: meta.progress, lastSection: meta.lastSection, startedAt: meta.startedAt || undefined, answers: a }).slice(0, 9500) };
   if (mode === "submit") {
     const now = new Date();
     cv[C.submittedAt] = { date: now.toISOString().slice(0, 10), time: now.toISOString().slice(11, 19) };
@@ -270,7 +272,7 @@ function updateText(a, meta, repeat) {
     parts.push(`\n${title}`);
     for (const qid of qids) parts.push(line(qid));
   }
-  parts.push(`\nЗаполнено: ${meta.progress}% · ${meta.minutes != null ? meta.minutes + " мин" : "время неизвестно"}`);
+  parts.push(`\nЗаполнено: ${meta.progress}% · ${meta.minutes != null ? meta.minutes + " мин" : "время неизвестно"} · язык формы: ${meta.lang === "en" ? "EN" : "RU"}`);
   return parts.join("\n").slice(0, 9500);
 }
 
@@ -297,6 +299,7 @@ export default async function handler(req, res) {
         answers: draft?.answers || {},
         lastSection: draft?.lastSection || 1,
         startedAt: draft?.startedAt || 0,
+        lang: draft?.lang === "en" ? "en" : "ru",
       }));
     } catch (e) {
       console.error("survey draft read failed:", e.message);
@@ -323,6 +326,7 @@ export default async function handler(req, res) {
   const meta = {
     rid,
     startedAt,
+    lang: b.lang === "en" ? "en" : "ru",
     progress: Math.min(100, Math.max(0, Math.round(Number(b.progress) || 0))),
     lastSection: Math.min(5, Math.max(0, Math.round(Number(b.lastSection) || 0))),
     minutes: startedAt > 0 ? Math.min(1440, Math.max(0, Math.round((Date.now() - startedAt) / 6000) / 10)) : null,

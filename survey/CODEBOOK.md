@@ -26,7 +26,7 @@
 
 Скейлы читаются так: код формы → метка на доске. Уровни: N = номинальная, O = порядковая, Числ = числовая.
 
-**Мета** — Status (In progress/Submitted); Progress % (0–100); Last section (0–5, докуда дошёл); Minutes spent (от первого ответа до отправки; < ~3 мин на полной форме — подозрение на «спидера»); Submitted at.
+**Мета** — Status (In progress/Submitted); Language (RU/EN — язык заполнения; форма двуязычная, вопросы идентичны; перед объединением проверяйте, не отличаются ли ответы по языковым версиям — «разница групп» может оказаться разницей инструмента); Progress % (0–100); Last section (0–5, докуда дошёл); Minutes spent (от первого ответа до отправки; < ~3 мин на полной форме — подозрение на «спидера»); Submitted at.
 
 | Колонка | Вопрос (дословно, RU) | Тип | Коды формы → метки доски |
 |---|---|---|---|
@@ -51,7 +51,7 @@
 | Q19 Would feel safer with | Что помогло бы чувствовать себя безопаснее? | N, много | protocols→Clear safety protocols; online→More online formats; private→More private events; data→Data-collection transparency; legal→Legal rights info; ice→ICE response plan; safe→Already feels safe (эксклюзивный); other→Other |
 | Q20 Preferred format | Какой формат мероприятий предпочитаете? | N, один | inperson→In person; online→Online; hybrid→Hybrid; depends→Depends on event; unsure→Not sure |
 | Q21 Would attend more if | Что помогло бы участвовать чаще? | N, много | weekend→Weekend events; online→More online formats; transport→Transport help; childcare→Childcare; boroughs→Events in other boroughs; announce→Earlier announcements; max→Attends as much as possible (эксклюзивный); other→Other |
-| Q22 Info channels | Какие каналы информации удобнее? | N, много | telegram/instagram/facebook→то же; website→QARAVAN website; email→Email newsletter; friends→Friends & community; orgs→Other organizations; other→Other |
+| Q22 Info channels | Какие каналы информации удобнее? | N, много | telegram/instagram/facebook→то же; website→QARAVAN website; email→Email newsletter; partiful→Partiful; friends→Friends & community; orgs→Other organizations; other→Other |
 | Q23 Will participate (+ 1–5) | Вероятность участия в следующие 6 месяцев? | O + Числ | слайдер: 1→Definitely not … 5→Definitely yes |
 | Q24 Anything else (open) | Что ещё нам стоит знать? | текст | Кодировать в темы постфактум |
 
