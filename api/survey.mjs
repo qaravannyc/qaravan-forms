@@ -169,6 +169,10 @@ async function findByRid(rid) {
 
 const RID_RX = /^[0-9a-zA-Z-]{12,64}$/;
 
+// Шесть языковых версий формы; метка в колонке Language — код заглавными.
+const FORM_LANGS = new Set(["ru", "en", "uk", "ka", "uz", "kk"]);
+const langOf = (v) => (FORM_LANGS.has(v) ? v : "ru");
+
 // Санитайзер: пропускает только известные коды, режет длины, приводит типы.
 function cleanAnswers(raw) {
   const src = raw && typeof raw === "object" ? raw : {};
@@ -215,7 +219,7 @@ function columnValues(a, mode, meta) {
   const cv = {
     [C.rid]: meta.rid,
     [C.status]: { label: mode === "submit" ? "Submitted" : "In progress" },
-    [C.lang]: { label: meta.lang === "en" ? "EN" : "RU" },
+    [C.lang]: { label: meta.lang.toUpperCase() },
     [C.progress]: String(meta.progress),
     [C.lastSection]: String(meta.lastSection),
     [C.q1]: single("q1"),
@@ -272,7 +276,7 @@ function updateText(a, meta, repeat) {
     parts.push(`\n${title}`);
     for (const qid of qids) parts.push(line(qid));
   }
-  parts.push(`\nЗаполнено: ${meta.progress}% · ${meta.minutes != null ? meta.minutes + " мин" : "время неизвестно"} · язык формы: ${meta.lang === "en" ? "EN" : "RU"}`);
+  parts.push(`\nЗаполнено: ${meta.progress}% · ${meta.minutes != null ? meta.minutes + " мин" : "время неизвестно"} · язык формы: ${meta.lang.toUpperCase()}`);
   return parts.join("\n").slice(0, 9500);
 }
 
@@ -299,7 +303,7 @@ export default async function handler(req, res) {
         answers: draft?.answers || {},
         lastSection: draft?.lastSection || 1,
         startedAt: draft?.startedAt || 0,
-        lang: draft?.lang === "en" ? "en" : "ru",
+        lang: langOf(draft?.lang),
       }));
     } catch (e) {
       console.error("survey draft read failed:", e.message);
@@ -326,7 +330,7 @@ export default async function handler(req, res) {
   const meta = {
     rid,
     startedAt,
-    lang: b.lang === "en" ? "en" : "ru",
+    lang: langOf(b.lang),
     progress: Math.min(100, Math.max(0, Math.round(Number(b.progress) || 0))),
     lastSection: Math.min(5, Math.max(0, Math.round(Number(b.lastSection) || 0))),
     minutes: startedAt > 0 ? Math.min(1440, Math.max(0, Math.round((Date.now() - startedAt) / 6000) / 10)) : null,

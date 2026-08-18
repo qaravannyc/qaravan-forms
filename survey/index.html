@@ -11,7 +11,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&family=Noto+Sans+Georgian:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
   /* Qaravan tokens — те же, что на форме отзыва */
@@ -21,7 +21,8 @@
   --q-line:#ECE8DE; --q-paper:#FFFDF5; --q-white:#FFFFFF;
   --q-red-tint:#FFE4E4; --q-orange-tint:#FFEDD9; --q-sky-tint:#DDF1F8;
   --q-green-tint:#E3F6E3; --q-purple-tint:#EAE7F4;
-  --font-brand:'Montserrat','Helvetica Neue',Arial,sans-serif;
+  /* Noto Sans Georgian — для грузинской версии: в Montserrat нет грузинских букв */
+  --font-brand:'Montserrat','Noto Sans Georgian','Helvetica Neue',Arial,sans-serif;
   --radius-md:12px; --radius-lg:16px; --radius-pill:999px;
   --shadow-card:0 2px 6px rgba(51,51,51,.05), 0 10px 28px rgba(51,51,51,.07);
 }
@@ -41,12 +42,14 @@ a:hover{color:var(--q-purple)}
 .wordmark{font-weight:900; font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap}
 a.wordmark{text-decoration:none}
 .topright{display:flex; align-items:center; gap:12px; min-width:0}
-.lang{display:flex; gap:0; border:2px solid var(--q-ink); border-radius:var(--radius-pill); overflow:hidden; background:var(--q-white); flex:none}
-.lang button{
-  border:0; background:transparent; padding:8px 15px; font:inherit; font-size:13px; font-weight:700;
-  color:var(--q-ink); cursor:pointer; line-height:1.2; transition:background .15s ease, color .15s ease;
+.lang-sel{
+  border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-white);
+  font:inherit; font-size:13px; font-weight:700; color:var(--q-ink); line-height:1.2;
+  padding:8px 30px 8px 14px; cursor:pointer; flex:none;
+  -webkit-appearance:none; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2710%27%20height%3D%276%27%3E%3Cpath%20d%3D%27M1%201l4%204%204-4%27%20stroke%3D%27%23333333%27%20stroke-width%3D%272%27%20fill%3D%27none%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E");
+  background-repeat:no-repeat; background-position:right 12px center;
 }
-.lang button[aria-pressed="true"]{background:var(--q-ink); color:var(--q-white)}
 
 /* автосохранение: человек всегда видит, что его ответы не пропадут */
 .savechip{display:none; align-items:center; gap:7px; font-size:13px; font-weight:700; color:var(--q-gray); white-space:nowrap; overflow:hidden}
@@ -55,6 +58,7 @@ a.wordmark{text-decoration:none}
 .savechip.saving .dot{background:var(--q-orange)}
 .savechip.saved .dot{background:var(--q-green)}
 .savechip.local .dot{background:var(--q-gray)}
+@media (max-width:430px){ .savechip #saveText{display:none} } /* на узком экране остаётся цветная точка-статус */
 
 /* progress */
 .progress{display:none; margin-bottom:26px}
@@ -137,7 +141,7 @@ textarea{min-height:118px; resize:vertical; line-height:1.5}
 textarea:focus,input[type="text"]:focus{
   outline:none; border-color:var(--q-sky); box-shadow:0 0 0 3px var(--q-sky-tint);
 }
-button:focus-visible,a:focus-visible,input[type="range"]:focus-visible{outline:3px solid var(--q-sky); outline-offset:2px}
+button:focus-visible,a:focus-visible,select:focus-visible,input[type="range"]:focus-visible{outline:3px solid var(--q-sky); outline-offset:2px}
 
 /* radio rows (один вариант) */
 .opts{display:grid; gap:12px; margin-top:0}
@@ -235,10 +239,14 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
     <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></a>
     <div class="topright">
       <div class="savechip" id="saveChip" role="status" aria-live="polite"><span class="dot"></span><span id="saveText"></span></div>
-      <div class="lang" role="group" aria-label="Language">
-        <button type="button" id="btnRu" aria-pressed="true">РУ</button>
-        <button type="button" id="btnEn" aria-pressed="false">EN</button>
-      </div>
+      <select class="lang-sel" id="langSel" aria-label="Language">
+        <option value="ru">Русский</option>
+        <option value="en">English</option>
+        <option value="uk">Українська</option>
+        <option value="ka">ქართული</option>
+        <option value="uz">Oʻzbekcha</option>
+        <option value="kk">Қазақша</option>
+      </select>
     </div>
   </div>
 
@@ -302,198 +310,257 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
 <script>
 "use strict";
 // ============================================================================
-// Конфиг вопросов. Коды (первый элемент тройки) — язык обмена с сервером:
-// api/survey.mjs переводит их в английские метки колонок monday, а
-// survey/CODEBOOK.md документирует соответствие. Меняешь код здесь — меняй там.
-// Тексты двуязычные: [ru, en] у вопросов, [code, ru, en] у вариантов —
-// обе версии обязаны спрашивать одно и то же (сравнимость данных).
+// Шесть языковых версий: русский, английский, украинский, грузинский,
+// узбекский (латиница), казахский. Все версии задают ОДНИ И ТЕ ЖЕ вопросы —
+// это условие сравнимости данных; редактируешь формулировку — правь во всех.
+// Тексты вопросов: [ru, en, uk, ka, uz, kk]; варианты: [code, ru, en, uk, ka, uz, kk].
+// Коды (первый элемент) — язык обмена с сервером: api/survey.mjs переводит их
+// в английские метки колонок monday, survey/CODEBOOK.md документирует всё.
 // ============================================================================
+const LANGS = ["ru", "en", "uk", "ka", "uz", "kk"];
+const LX = Object.fromEntries(LANGS.map((l, i) => [l, i]));
 const PNTS = "pnts"; // «Предпочитаю не отвечать»
-const NO_ANS = ["Предпочитаю не отвечать", "Prefer not to answer"];
+const NO_ANS = ["Предпочитаю не отвечать", "Prefer not to answer", "Волію не відповідати", "მირჩევნია, არ ვუპასუხო", "Javob bermaslikni afzal koʻraman", "Жауап бергім келмейді"];
 
 const Q = {
-q1: { type:"single", text:["Как вы впервые узнали о QARAVAN?","How did you first hear about QARAVAN?"], hint:["Выберите один вариант.","Pick one."], opts:[
-  ["friends","Друзья или знакомые","Friends or acquaintances"],
-  ["telegram","Телеграм","Telegram"],
-  ["social","Социальные сети (Instagram, Facebook и др.)","Social media (Instagram, Facebook, etc.)"],
-  ["bbpride","Brighton Beach Pride","Brighton Beach Pride"],
-  ["org","Другая организация","Another organization"],
-  ["search","Поиск в интернете","Internet search"],
-  ["other","Другое","Other"]], other:"other" },
-q2: { type:"multi", max:3, text:["Почему вы изначально решили участвовать в программах QARAVAN?","Why did you originally decide to take part in QARAVAN's programs?"], hint:["Выберите до 3-х вариантов.","Pick up to 3."], opts:[
-  ["help","Искал(а) помощь (юридическую, медицинскую и т.д.)","I was looking for help (legal, medical, etc.)"],
-  ["community","Хотел(а) найти друзей и сообщество","I wanted to find friends and community"],
-  ["emosupport","Нужна была эмоциональная поддержка","I needed emotional support"],
-  ["events","Интерес к мероприятиям","Interest in the events"],
-  ["recommend","Рекомендация знакомых","A friend recommended it"],
-  ["other","Другое","Other"],
-  ["not_participated","Я пока не участвовал(а) в программах QARAVAN","I haven't taken part in QARAVAN's programs yet"]], other:"other", exclusive:["not_participated"] },
-q3: { type:"multi", text:["Как вы участвовали в жизни QARAVAN?","How have you taken part in QARAVAN's life?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
-  ["inperson","Посещал(а) мероприятия лично","Attended events in person"],
-  ["chat","Участвую в телеграм-чате Qaravan Connects","I'm in the Qaravan Connects Telegram chat"],
-  ["referrals","Получал(а) через QARAVAN направления к специалистам (юристам, врачам и др.)","Got referrals to specialists (lawyers, doctors, etc.) through QARAVAN"],
-  ["rainbow","Участвовал(а) в Rainbow Connections","Took part in Rainbow Connections"],
-  ["bbpride","Посещал(а) Brighton Beach Pride","Attended Brighton Beach Pride"],
-  ["groups","Участвовал(а) в группах поддержки","Took part in support groups"],
-  ["volunteer","Волонтёрил(а)","Volunteered"],
-  ["other","Другое","Other"]], other:"other" },
-q4: { type:"single", text:["Как часто вы участвовали в мероприятиях или программах QARAVAN за последние 6 месяцев?","How often have you taken part in QARAVAN events or programs in the last 6 months?"], hint:["Выберите один вариант.","Pick one."], opts:[
-  ["weekly","Еженедельно или чаще","Weekly or more often"],
-  ["fewmonth","Несколько раз в месяц","A few times a month"],
-  ["monthly","Раз в месяц","Once a month"],
-  ["few6mo","Несколько раз за 6 месяцев","A few times in 6 months"],
-  ["once","Один раз","Once"],
-  ["before","Не участвовал(а) за последние 6 месяцев, но участвовал(а) раньше","Not in the last 6 months, but I did before"],
-  ["never","Никогда не участвовал(а)","Never"]] },
-q5: { type:"multi", text:["Что мешает вам участвовать?","What keeps you from taking part?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
-  ["time","Мало свободного времени","Not enough free time"],
-  ["moved","Переехал(а) в другой район или город","I moved to another area or city"],
-  ["unsafe","Не чувствую себя в безопасности из-за политической ситуации","I don't feel safe because of the political situation"],
-  ["mismatch","Мероприятия не соответствуют моим потребностям","The events don't match my needs"],
-  ["unaware","Не знаю о предстоящих мероприятиях","I don't know about upcoming events"],
-  ["belong","Не чувствую себя частью сообщества","I don't feel like part of the community"],
-  ["politics","Политические взгляды организации не совпадают с моими","The organization's political views don't match mine"],
-  ["other","Другое","Other"]], other:"other" },
-q6: { type:"multi", text:["Что из этого лучше всего описывает вас?","Which of these best describes you?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
-  ["lgbtq","ЛГБТК+ человек","LGBTQ+ person"],
-  ["immigrant","Иммигрант / беженец в США","Immigrant / refugee in the US"],
-  ["usborn","Родился/вырос в США (русскоязычная семья)","Born/raised in the US (Russian-speaking family)"],
-  ["ally","Поддерживаю ЛГБТК+ сообщество, но не принадлежу к нему","I support the LGBTQ+ community but don't belong to it"],
-  ["other","Другое","Other"],
+q1: { type:"single",
+  text:["Как вы впервые узнали о QARAVAN?","How did you first hear about QARAVAN?","Як ви вперше дізналися про QARAVAN?","პირველად როგორ გაიგეთ QARAVAN-ის შესახებ?","QARAVAN haqida birinchi marta qayerdan eshitgansiz?","QARAVAN туралы алғаш қайдан білдіңіз?"],
+  hint:["Выберите один вариант.","Pick one.","Виберіть один варіант.","აირჩიეთ ერთი ვარიანტი.","Bitta variantni tanlang.","Бір нұсқаны таңдаңыз."], opts:[
+  ["friends","Друзья или знакомые","Friends or acquaintances","Друзі або знайомі","მეგობრები ან ნაცნობები","Doʻstlar yoki tanishlar","Достар немесе таныстар"],
+  ["telegram","Телеграм","Telegram","Телеграм","ტელეგრამი","Telegram","Телеграм"],
+  ["social","Социальные сети (Instagram, Facebook и др.)","Social media (Instagram, Facebook, etc.)","Соцмережі (Instagram, Facebook та ін.)","სოციალური ქსელები (Instagram, Facebook და სხვ.)","Ijtimoiy tarmoqlar (Instagram, Facebook va b.)","Әлеуметтік желілер (Instagram, Facebook және т.б.)"],
+  ["bbpride","Brighton Beach Pride","Brighton Beach Pride","Brighton Beach Pride","Brighton Beach Pride","Brighton Beach Pride","Brighton Beach Pride"],
+  ["org","Другая организация","Another organization","Інша організація","სხვა ორგანიზაცია","Boshqa tashkilot","Басқа ұйым"],
+  ["search","Поиск в интернете","Internet search","Пошук в інтернеті","ინტერნეტში ძიება","Internetdan qidiruv","Интернеттен іздеу"],
+  ["other","Другое","Other","Інше","სხვა","Boshqa","Басқа"]], other:"other" },
+q2: { type:"multi", max:3,
+  text:["Почему вы изначально решили участвовать в программах QARAVAN?","Why did you originally decide to take part in QARAVAN's programs?","Чому ви спочатку вирішили брати участь у програмах QARAVAN?","თავდაპირველად რატომ გადაწყვიტეთ QARAVAN-ის პროგრამებში მონაწილეობა?","Dastlab QARAVAN dasturlarida qatnashishga nima sabab boʻlgan?","QARAVAN бағдарламаларына қатысуды әуелде неге шештіңіз?"],
+  hint:["Выберите до 3-х вариантов.","Pick up to 3.","Виберіть до 3-х варіантів.","აირჩიეთ 3-მდე ვარიანტი.","3 tagacha variant tanlang.","3-ке дейін нұсқа таңдаңыз."], opts:[
+  ["help","Искал(а) помощь (юридическую, медицинскую и т.д.)","I was looking for help (legal, medical, etc.)","Шукав(-ла) допомогу (юридичну, медичну тощо)","დახმარებას ვეძებდი (იურიდიულს, სამედიცინოს და ა.შ.)","Yordam izlaganman (yuridik, tibbiy va b.)","Көмек іздедім (заңгерлік, медициналық т.б.)"],
+  ["community","Хотел(а) найти друзей и сообщество","I wanted to find friends and community","Хотів(-ла) знайти друзів і спільноту","მინდოდა მეპოვა მეგობრები და თემი","Doʻstlar va hamjamiyat topmoqchi boʻlganman","Дос және қауымдастық тапқым келді"],
+  ["emosupport","Нужна была эмоциональная поддержка","I needed emotional support","Потрібна була емоційна підтримка","ემოციური მხარდაჭერა მჭირდებოდა","Ruhiy madad kerak edi","Эмоциялық қолдау қажет болды"],
+  ["events","Интерес к мероприятиям","Interest in the events","Цікавість до заходів","ღონისძიებები მაინტერესებდა","Tadbirlar qiziqtirgan","Іс-шараларға қызығушылық"],
+  ["recommend","Рекомендация знакомых","A friend recommended it","Порадили знайомі","ნაცნობებმა მირჩიეს","Tanishlar tavsiya qilgan","Таныстар ұсынды"],
+  ["other","Другое","Other","Інше","სხვა","Boshqa","Басқа"],
+  ["not_participated","Я пока не участвовал(а) в программах QARAVAN","I haven't taken part in QARAVAN's programs yet","Я поки не брав(-ла) участі в програмах QARAVAN","QARAVAN-ის პროგრამებში ჯერ არ მიმიღია მონაწილეობა","QARAVAN dasturlarida hali qatnashmaganman","QARAVAN бағдарламаларына әлі қатысқан жоқпын"]], other:"other", exclusive:["not_participated"] },
+q3: { type:"multi",
+  text:["Как вы участвовали в жизни QARAVAN?","How have you taken part in QARAVAN's life?","Як ви брали участь у житті QARAVAN?","როგორ მონაწილეობდით QARAVAN-ის ცხოვრებაში?","QARAVAN hayotida qanday qatnashgansiz?","QARAVAN өміріне қалай қатыстыңыз?"],
+  hint:["Выберите все подходящие варианты.","Pick all that apply.","Виберіть усі відповідні варіанти.","მონიშნეთ ყველა შესაბამისი ვარიანტი.","Mos keladigan barcha variantlarni tanlang.","Сәйкес келетін барлық нұсқаны таңдаңыз."], opts:[
+  ["inperson","Посещал(а) мероприятия лично","Attended events in person","Відвідував(-ла) заходи особисто","ღონისძიებებს პირადად ვესწრებოდი","Tadbirlarga shaxsan borganman","Іс-шараларға өзім бардым"],
+  ["chat","Участвую в телеграм-чате Qaravan Connects","I'm in the Qaravan Connects Telegram chat","Беру участь у телеграм-чаті Qaravan Connects","ვარ Qaravan Connects-ის ტელეგრამ-ჩატში","Qaravan Connects telegram-chatida qatnashaman","Qaravan Connects телеграм-чатына қатысамын"],
+  ["referrals","Получал(а) через QARAVAN направления к специалистам (юристам, врачам и др.)","Got referrals to specialists (lawyers, doctors, etc.) through QARAVAN","Отримував(-ла) через QARAVAN направлення до фахівців (юристів, лікарів та ін.)","QARAVAN-ის მეშვეობით სპეციალისტებთან (იურისტებთან, ექიმებთან და სხვ.) მიმართვები მიმიღია","QARAVAN orqali mutaxassislarga (yurist, shifokor va b.) yoʻllanma olganman","QARAVAN арқылы мамандарға (заңгер, дәрігер т.б.) жолдама алдым"],
+  ["rainbow","Участвовал(а) в Rainbow Connections","Took part in Rainbow Connections","Брав(-ла) участь у Rainbow Connections","ვმონაწილეობდი Rainbow Connections-ში","Rainbow Connections dasturida qatnashganman","Rainbow Connections бағдарламасына қатыстым"],
+  ["bbpride","Посещал(а) Brighton Beach Pride","Attended Brighton Beach Pride","Відвідував(-ла) Brighton Beach Pride","დავესწარი Brighton Beach Pride-ს","Brighton Beach Pride'da boʻlganman","Brighton Beach Pride-қа бардым"],
+  ["groups","Участвовал(а) в группах поддержки","Took part in support groups","Брав(-ла) участь у групах підтримки","ვმონაწილეობდი მხარდაჭერის ჯგუფებში","Qoʻllab-quvvatlash guruhlarida qatnashganman","Қолдау топтарына қатыстым"],
+  ["volunteer","Волонтёрил(а)","Volunteered","Волонтерив(-ла)","ვმოხალისეობდი","Volontyor boʻlganman","Волонтер болдым"],
+  ["other","Другое","Other","Інше","სხვა","Boshqa","Басқа"]], other:"other" },
+q4: { type:"single",
+  text:["Как часто вы участвовали в мероприятиях или программах QARAVAN за последние 6 месяцев?","How often have you taken part in QARAVAN events or programs in the last 6 months?","Як часто ви брали участь у заходах чи програмах QARAVAN за останні 6 місяців?","ბოლო 6 თვეში რამდენად ხშირად მონაწილეობდით QARAVAN-ის ღონისძიებებში ან პროგრამებში?","Soʻnggi 6 oyda QARAVAN tadbirlari yoki dasturlarida qanchalik tez-tez qatnashdingiz?","Соңғы 6 айда QARAVAN іс-шаралары мен бағдарламаларына қаншалықты жиі қатыстыңыз?"],
+  hint:["Выберите один вариант.","Pick one.","Виберіть один варіант.","აირჩიეთ ერთი ვარიანტი.","Bitta variantni tanlang.","Бір нұсқаны таңдаңыз."], opts:[
+  ["weekly","Еженедельно или чаще","Weekly or more often","Щотижня або частіше","ყოველკვირა ან უფრო ხშირად","Har hafta yoki undan koʻp","Апта сайын немесе одан жиі"],
+  ["fewmonth","Несколько раз в месяц","A few times a month","Кілька разів на місяць","თვეში რამდენჯერმე","Oyiga bir necha marta","Айына бірнеше рет"],
+  ["monthly","Раз в месяц","Once a month","Раз на місяць","თვეში ერთხელ","Oyiga bir marta","Айына бір рет"],
+  ["few6mo","Несколько раз за 6 месяцев","A few times in 6 months","Кілька разів за 6 місяців","6 თვეში რამდენჯერმე","6 oyda bir necha marta","6 айда бірнеше рет"],
+  ["once","Один раз","Once","Один раз","ერთხელ","Bir marta","Бір рет"],
+  ["before","Не участвовал(а) за последние 6 месяцев, но участвовал(а) раньше","Not in the last 6 months, but I did before","За останні 6 місяців — ні, але раніше брав(-ла) участь","ბოლო 6 თვეში არა, მაგრამ ადრე ვმონაწილეობდი","Soʻnggi 6 oyda yoʻq, lekin avval qatnashganman","Соңғы 6 айда жоқ, бірақ бұрын қатысқанмын"],
+  ["never","Никогда не участвовал(а)","Never","Ніколи не брав(-ла) участі","არასდროს მიმიღია მონაწილეობა","Hech qachon qatnashmaganman","Ешқашан қатысқан емеспін"]] },
+q5: { type:"multi",
+  text:["Что мешает вам участвовать?","What keeps you from taking part?","Що заважає вам брати участь?","რა გიშლით ხელს მონაწილეობაში?","Qatnashishingizga nima xalaqit beradi?","Қатысуыңызға не кедергі?"],
+  hint:["Выберите все подходящие варианты.","Pick all that apply.","Виберіть усі відповідні варіанти.","მონიშნეთ ყველა შესაბამისი ვარიანტი.","Mos keladigan barcha variantlarni tanlang.","Сәйкес келетін барлық нұсқаны таңдаңыз."], opts:[
+  ["time","Мало свободного времени","Not enough free time","Мало вільного часу","თავისუფალი დრო არ მყოფნის","Boʻsh vaqtim kam","Бос уақытым аз"],
+  ["moved","Переехал(а) в другой район или город","I moved to another area or city","Переїхав(-ла) в інший район чи місто","სხვა უბანში ან ქალაქში გადავედი","Boshqa hudud yoki shaharga koʻchib ketganman","Басқа ауданға немесе қалаға көшіп кеттім"],
+  ["unsafe","Не чувствую себя в безопасности из-за политической ситуации","I don't feel safe because of the political situation","Не почуваюся в безпеці через політичну ситуацію","პოლიტიკური ვითარების გამო თავს უსაფრთხოდ ვერ ვგრძნობ","Siyosiy vaziyat tufayli oʻzimni xavfsiz his qilmayman","Саяси жағдайға байланысты өзімді қауіпсіз сезінбеймін"],
+  ["mismatch","Мероприятия не соответствуют моим потребностям","The events don't match my needs","Заходи не відповідають моїм потребам","ღონისძიებები ჩემს საჭიროებებს არ შეესაბამება","Tadbirlar ehtiyojlarimga mos emas","Іс-шаралар қажеттіліктеріме сай емес"],
+  ["unaware","Не знаю о предстоящих мероприятиях","I don't know about upcoming events","Не знаю про майбутні заходи","მომავალი ღონისძიებების შესახებ არ ვიცი","Boʻlajak tadbirlardan xabarim yoʻq","Алдағы іс-шаралар туралы білмеймін"],
+  ["belong","Не чувствую себя частью сообщества","I don't feel like part of the community","Не почуваюся частиною спільноти","თემის ნაწილად თავს ვერ ვგრძნობ","Oʻzimni hamjamiyatning bir qismi deb his qilmayman","Өзімді қауымдастықтың бөлігі сезінбеймін"],
+  ["politics","Политические взгляды организации не совпадают с моими","The organization's political views don't match mine","Політичні погляди організації не збігаються з моїми","ორგანიზაციის პოლიტიკური შეხედულებები ჩემსას არ ემთხვევა","Tashkilotning siyosiy qarashlari menikiga toʻgʻri kelmaydi","Ұйымның саяси көзқарасы менікімен сәйкес келмейді"],
+  ["other","Другое","Other","Інше","სხვა","Boshqa","Басқа"]], other:"other" },
+q6: { type:"multi",
+  text:["Что из этого лучше всего описывает вас?","Which of these best describes you?","Що з цього найкраще описує вас?","ამათგან რომელი აღწერს თქვენ ყველაზე კარგად?","Quyidagilardan qaysi biri sizni eng yaxshi tavsiflaydi?","Мыналардың қайсысы сізді жақсырақ сипаттайды?"],
+  hint:["Выберите все подходящие варианты.","Pick all that apply.","Виберіть усі відповідні варіанти.","მონიშნეთ ყველა შესაბამისი ვარიანტი.","Mos keladigan barcha variantlarni tanlang.","Сәйкес келетін барлық нұсқаны таңдаңыз."], opts:[
+  ["lgbtq","ЛГБТК+ человек","LGBTQ+ person","ЛГБТК+ людина","ლგბტქ+ ადამიანი","LGBTK+ inson","ЛГБТК+ адам"],
+  ["immigrant","Иммигрант / беженец в США","Immigrant / refugee in the US","Іммігрант / біженець у США","იმიგრანტი / ლტოლვილი აშშ-ში","AQShdagi immigrant / qochqin","АҚШ-тағы иммигрант / босқын"],
+  ["usborn","Родился/вырос в США (русскоязычная семья)","Born/raised in the US (Russian-speaking family)","Народився/виріс у США (російськомовна сім'я)","აშშ-ში დავიბადე/გავიზარდე (რუსულენოვანი ოჯახი)","AQShda tugʻilib oʻsganman (rusiyzabon oila)","АҚШ-та туып-өстім (орыстілді отбасы)"],
+  ["ally","Поддерживаю ЛГБТК+ сообщество, но не принадлежу к нему","I support the LGBTQ+ community but don't belong to it","Підтримую ЛГБТК+ спільноту, але не належу до неї","მხარს ვუჭერ ლგბტქ+ თემს, თუმცა მას არ ვეკუთვნი","LGBTK+ hamjamiyatini qoʻllab-quvvatlayman, lekin unga mansub emasman","ЛГБТК+ қауымдастығын қолдаймын, бірақ оған жатпаймын"],
+  ["other","Другое","Other","Інше","სხვა","Boshqa","Басқа"],
   [PNTS, ...NO_ANS]], other:"other", exclusive:[PNTS] },
-q7: { type:"single", text:["Считаете ли вы себя трансгендерным или небинарным человеком?","Do you consider yourself transgender or nonbinary?"], opts:[
-  ["yes","Да","Yes"], ["no","Нет","No"], [PNTS, ...NO_ANS]] },
-q8: { type:"single", text:["Как давно вы живёте в США?","How long have you lived in the US?"], opts:[
-  ["lt6m","Менее 6 месяцев","Less than 6 months"],
-  ["m6to12","От 6 месяцев до 1 года","6 months to 1 year"],
-  ["y1to3","От 1 года до 3 лет","1 to 3 years"],
-  ["y3to5","От 3 до 5 лет","3 to 5 years"],
-  ["gt5y","Больше 5 лет","More than 5 years"],
-  ["usborn","Я родился/ась в США","I was born in the US"],
+q7: { type:"single",
+  text:["Считаете ли вы себя трансгендерным или небинарным человеком?","Do you consider yourself transgender or nonbinary?","Чи вважаєте ви себе трансгендерною або небінарною людиною?","თვლით თუ არა თავს ტრანსგენდერ ან არაბინარულ ადამიანად?","Oʻzingizni transgender yoki nobinar inson deb hisoblaysizmi?","Өзіңізді трансгендер немесе бейбинарлы адам деп санайсыз ба?"], opts:[
+  ["yes","Да","Yes","Так","დიახ","Ha","Иә"],
+  ["no","Нет","No","Ні","არა","Yoʻq","Жоқ"],
   [PNTS, ...NO_ANS]] },
-q9: { type:"single", cols2:true, text:["Откуда вы родом?","Where are you from originally?"], opts:[
-  ["az","Азербайджан","Azerbaijan"], ["am","Армения","Armenia"], ["by","Беларусь","Belarus"],
-  ["ge","Грузия","Georgia"], ["kz","Казахстан","Kazakhstan"], ["kg","Кыргызстан","Kyrgyzstan"],
-  ["md","Молдова","Moldova"], ["ru","Россия","Russia"], ["tj","Таджикистан","Tajikistan"],
-  ["uz","Узбекистан","Uzbekistan"], ["ua","Украина","Ukraine"],
-  ["usborn","Родился/ась в США","Born in the US"],
-  ["other","Другая страна","Another country"],
+q8: { type:"single",
+  text:["Как давно вы живёте в США?","How long have you lived in the US?","Як давно ви живете у США?","რამდენი ხანია აშშ-ში ცხოვრობთ?","AQShda qachondan beri yashaysiz?","АҚШ-та қашаннан бері тұрасыз?"], opts:[
+  ["lt6m","Менее 6 месяцев","Less than 6 months","Менше ніж 6 місяців","6 თვეზე ნაკლები","6 oydan kam","6 айдан аз"],
+  ["m6to12","От 6 месяцев до 1 года","6 months to 1 year","Від 6 місяців до 1 року","6 თვიდან 1 წლამდე","6 oydan 1 yilgacha","6 ай — 1 жыл"],
+  ["y1to3","От 1 года до 3 лет","1 to 3 years","Від 1 до 3 років","1-დან 3 წლამდე","1–3 yil","1–3 жыл"],
+  ["y3to5","От 3 до 5 лет","3 to 5 years","Від 3 до 5 років","3-დან 5 წლამდე","3–5 yil","3–5 жыл"],
+  ["gt5y","Больше 5 лет","More than 5 years","Понад 5 років","5 წელზე მეტი","5 yildan koʻp","5 жылдан астам"],
+  ["usborn","Я родился/ась в США","I was born in the US","Я народився/-лася у США","აშშ-ში დავიბადე","AQShda tugʻilganman","АҚШ-та туғанмын"],
+  [PNTS, ...NO_ANS]] },
+q9: { type:"single", cols2:true,
+  text:["Откуда вы родом?","Where are you from originally?","Звідки ви родом?","წარმოშობით საიდან ხართ?","Asli qayerdansiz?","Қай елденсіз?"], opts:[
+  ["az","Азербайджан","Azerbaijan","Азербайджан","აზერბაიჯანი","Ozarbayjon","Әзірбайжан"],
+  ["am","Армения","Armenia","Вірменія","სომხეთი","Armaniston","Армения"],
+  ["by","Беларусь","Belarus","Білорусь","ბელარუსი","Belarus","Беларусь"],
+  ["ge","Грузия","Georgia","Грузія","საქართველო","Gruziya","Грузия"],
+  ["kz","Казахстан","Kazakhstan","Казахстан","ყაზახეთი","Qozogʻiston","Қазақстан"],
+  ["kg","Кыргызстан","Kyrgyzstan","Киргизстан","ყირგიზეთი","Qirgʻiziston","Қырғызстан"],
+  ["md","Молдова","Moldova","Молдова","მოლდოვა","Moldova","Молдова"],
+  ["ru","Россия","Russia","Росія","რუსეთი","Rossiya","Ресей"],
+  ["tj","Таджикистан","Tajikistan","Таджикистан","ტაჯიკეთი","Tojikiston","Тәжікстан"],
+  ["uz","Узбекистан","Uzbekistan","Узбекистан","უზბეკეთი","Oʻzbekiston","Өзбекстан"],
+  ["ua","Украина","Ukraine","Україна","უკრაინა","Ukraina","Украина"],
+  ["usborn","Родился/ась в США","Born in the US","Народився/-лася у США","აშშ-ში დავიბადე","AQShda tugʻilganman","АҚШ-та туғанмын"],
+  ["other","Другая страна","Another country","Інша країна","სხვა ქვეყანა","Boshqa mamlakat","Басқа ел"],
   [PNTS, ...NO_ANS]], other:"other" },
-q10: { type:"single", cols2:true, text:["Ваш возраст?","Your age?"], opts:[
-  ["a18","18–24","18–24"], ["a25","25–34","25–34"], ["a35","35–44","35–44"], ["a45","45–54","45–54"],
-  ["a55","55–64","55–64"], ["a65","65 и старше","65 and older"], [PNTS, ...NO_ANS]] },
-q11: { type:"single", cols2:true, text:["В какой части Нью-Йорка вы живёте?","What part of New York do you live in?"], opts:[
-  ["bk","Бруклин","Brooklyn"], ["qn","Куинс","Queens"], ["mn","Манхэттен","Manhattan"],
-  ["bx","Бронкс","Bronx"], ["si","Стейтен-Айленд","Staten Island"],
-  ["outside","За пределами Нью-Йорка","Outside New York City"], [PNTS, ...NO_ANS]] },
-q12: { type:"single", text:["Что лучше всего описывает вашу жизнь в США сейчас?","What best describes your life in the US right now?"], opts:[
-  ["arrived","Только приехал(а) и осваиваюсь","Just arrived and finding my feet"],
-  ["adapting","В процессе адаптации","In the process of adapting"],
-  ["settled","Устроился/ась, но есть сложности","Settled, but with some difficulties"],
-  ["stable","Чувствую себя уверенно и стабильно","Feeling confident and stable"],
+q10: { type:"single", cols2:true,
+  text:["Ваш возраст?","Your age?","Ваш вік?","თქვენი ასაკი?","Yoshingiz?","Жасыңыз?"], opts:[
+  ["a18","18–24","18–24","18–24","18–24","18–24","18–24"],
+  ["a25","25–34","25–34","25–34","25–34","25–34","25–34"],
+  ["a35","35–44","35–44","35–44","35–44","35–44","35–44"],
+  ["a45","45–54","45–54","45–54","45–54","45–54","45–54"],
+  ["a55","55–64","55–64","55–64","55–64","55–64","55–64"],
+  ["a65","65 и старше","65 and older","65 і старше","65 და მეტი","65 va undan katta","65 және одан жоғары"],
   [PNTS, ...NO_ANS]] },
-q13: { type:"multi", max:3, text:["Какая помощь или поддержка вам сейчас нужнее всего?","What help or support do you need most right now?"], hint:["Выберите до 3-х самых важных.","Pick up to 3 that matter most."], opts:[
-  ["immigration","Помощь с моим иммиграционным делом (убежище, статус, документы)","Help with my immigration case (asylum, status, documents)"],
-  ["ice","Информация о правах при встрече с ICE (иммиграционной службой) и защите от депортации","Know-your-rights info about ICE (immigration enforcement) and protection from deportation"],
-  ["health","Информация о медицинских услугах и страховании","Information about healthcare services and insurance"],
-  ["job","Помощь в поиске работы или развитии карьеры","Help finding a job or growing my career"],
-  ["housing","Помощь в поиске жилья","Help finding housing"],
-  ["money","Финансовая помощь (экстренная)","Emergency financial help"],
-  ["mental","Поддержка психического здоровья","Mental health support"],
-  ["english","Изучение английского языка / языковая практика","Learning English / language practice"],
-  ["social","Социальные связи и дружба","Social connection and friendship"],
-  ["docs","Помощь с документами и переводами","Help with documents and translations"],
-  ["education","Информация об образовании и поступлении (колледж, магистратура и др.)","Information about education and admissions (college, grad school, etc.)"],
-  ["none","Не нуждаюсь в помощи прямо сейчас","I don't need help right now"],
-  ["other","Другое","Other"]], other:"other", exclusive:["none"] },
-q14: { type:"single", text:["Как изменились ваши потребности после января 2025 года?","How have your needs changed since January 2025?"], opts:[
-  ["chg_big","Мои потребности значительно изменились — мне нужна другая поддержка","My needs have changed significantly — I need different support"],
-  ["chg_some","Мои потребности немного изменились","My needs have changed somewhat"],
-  ["same","Мои потребности остались прежними","My needs are the same"],
-  ["unsure","Не уверен(а)","Not sure"],
+q11: { type:"single", cols2:true,
+  text:["В какой части Нью-Йорка вы живёте?","What part of New York do you live in?","У якій частині Нью-Йорка ви живете?","ნიუ-იორკის რომელ ნაწილში ცხოვრობთ?","Nyu-Yorkning qaysi qismida yashaysiz?","Нью-Йорктің қай бөлігінде тұрасыз?"], opts:[
+  ["bk","Бруклин","Brooklyn","Бруклін","ბრუკლინი","Bruklin","Бруклин"],
+  ["qn","Куинс","Queens","Квінс","ქუინსი","Kvins","Куинс"],
+  ["mn","Манхэттен","Manhattan","Мангеттен","მანჰეტენი","Manxetten","Манхэттен"],
+  ["bx","Бронкс","Bronx","Бронкс","ბრონქსი","Bronks","Бронкс"],
+  ["si","Стейтен-Айленд","Staten Island","Стейтен-Айленд","სტეიტენ-აილენდი","Staten-Aylend","Стейтен-Айленд"],
+  ["outside","За пределами Нью-Йорка","Outside New York City","За межами Нью-Йорка","ნიუ-იორკის ფარგლებს გარეთ","Nyu-York tashqarisida","Нью-Йорктен тыс"],
   [PNTS, ...NO_ANS]] },
-q15: { type:"open", text:["Что вам сейчас нужно больше всего?","What do you need most right now?"], hint:["2–3 предложения своими словами.","2–3 sentences in your own words."], max:4000 },
-q16: { type:"multi", max:3, text:["Какие программы или мероприятия QARAVAN наиболее ценны для вас?","Which QARAVAN programs or events are most valuable to you?"],
-  hint:["Выберите до 3-х. Если вы ещё не участвовали — отметьте то, что кажется вам наиболее полезным.","Pick up to 3. If you haven't taken part yet — pick what looks most useful."], opts:[
-  ["bbpride","Brighton Beach Pride","Brighton Beach Pride"],
-  ["social","Регулярные социальные/общественные мероприятия","Regular social/community events"],
-  ["rainbow","Rainbow Connections (программа наставничества один на один)","Rainbow Connections (one-on-one mentorship program)"],
-  ["groups","Группы поддержки (психологическая поддержка, транс-группа)","Support groups (psychological support, trans group)"],
-  ["crisis","Поддержка в кризисной ситуации","Support in a crisis"],
-  ["referrals","Направления к проверенным юристам и специалистам","Referrals to vetted lawyers and specialists"],
-  ["chat","Телеграм-чат Qaravan Connects (онлайн-сообщество)","Qaravan Connects Telegram chat (online community)"],
-  ["info","Информационные встречи и воркшопы","Info sessions and workshops"],
-  ["navigation","Помощь с навигацией по медицинским/социальным услугам","Help navigating medical and social services"],
-  ["none","Ничего из перечисленного мне не подходит","None of these fit me"],
-  ["other","Другое","Other"]], other:"other", exclusive:["none"] },
-q17: { type:"scale", text:["Насколько вы беспокоитесь о своей безопасности, участвуя в ЛГБТК+ мероприятиях или программах в нынешней политической ситуации?","How worried are you about your safety when taking part in LGBTQ+ events or programs in the current political situation?"],
-  hint:["Передвиньте ползунок или нажмите на подпись.","Drag the slider or tap a label."],
-  min:1, max:4, pnts:true,
-  ticks:[["Совсем нет","Not at all"],["Не очень","Not really"],["Немного","Somewhat"],["Очень","Very"]],
-  labels:{1:["Совсем не обеспокоен(а)","Not worried at all"],2:["Не очень обеспокоен(а)","Not really worried"],3:["Немного обеспокоен(а)","Somewhat worried"],4:["Очень обеспокоен(а)","Very worried"]} },
-q18: { type:"single", text:["Как беспокойство о безопасности влияет на ваше участие?","How does worrying about safety affect your participation?"], opts:[
-  ["less","Участвую реже, чем раньше","I take part less than before"],
-  ["same","Участвую так же, как раньше","I take part the same as before"],
-  ["online","Выбираю онлайн-формат вместо личных встреч","I choose online formats instead of meeting in person"],
-  ["stopped","Совсем перестал(а) участвовать","I stopped taking part entirely"],
+q12: { type:"single",
+  text:["Что лучше всего описывает вашу жизнь в США сейчас?","What best describes your life in the US right now?","Що найкраще описує ваше життя у США зараз?","რა აღწერს ყველაზე კარგად თქვენს ახლანდელ ცხოვრებას აშშ-ში?","Hozirgi AQShdagi hayotingizni nima yaxshiroq tavsiflaydi?","Қазіргі АҚШ-тағы өміріңізді не жақсырақ сипаттайды?"], opts:[
+  ["arrived","Только приехал(а) и осваиваюсь","Just arrived and finding my feet","Щойно приїхав(-ла) і освоююся","ახალი ჩამოსული ვარ და ვეჩვევი","Endigina kelganman, oʻrganib boryapman","Жаңа келдім, енді үйреніп жатырмын"],
+  ["adapting","В процессе адаптации","In the process of adapting","У процесі адаптації","ადაპტაციის პროცესში ვარ","Moslashish jarayonidaman","Бейімделу үстіндемін"],
+  ["settled","Устроился/ась, но есть сложности","Settled, but with some difficulties","Облаштувався/-лася, але є труднощі","მოვეწყვე, თუმცა სირთულეები მაქვს","Oʻrnashib oldim, lekin qiyinchiliklar bor","Орналастым, бірақ қиындықтар бар"],
+  ["stable","Чувствую себя уверенно и стабильно","Feeling confident and stable","Почуваюся впевнено і стабільно","თავს დამაჯერებლად და სტაბილურად ვგრძნობ","Oʻzimni ishonchli va barqaror his qilaman","Өзімді сенімді әрі тұрақты сезінемін"],
   [PNTS, ...NO_ANS]] },
-q19: { type:"multi", text:["Что помогло бы вам почувствовать себя в большей безопасности при участии в программах QARAVAN?","What would help you feel safer taking part in QARAVAN programs?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
-  ["protocols","Понятные правила безопасности на мероприятиях","Clear safety guidelines at events"],
-  ["online","Больше онлайн-форматов (вместо личного присутствия)","More online formats (instead of attending in person)"],
-  ["private","Более приватные/закрытые встречи (не публичные)","More private/closed gatherings (not public)"],
-  ["data","Информация о том, какие данные собирает и не собирает QARAVAN","Information about what data QARAVAN does and doesn't collect"],
-  ["legal","Юридическая информация о моих правах","Legal information about my rights"],
-  ["ice","Знать, что делать, если ICE (иммиграционная служба) появится на мероприятии","Knowing what to do if ICE (immigration enforcement) shows up at an event"],
-  ["safe","Я уже чувствую себя в безопасности","I already feel safe"],
-  ["other","Другое","Other"]], other:"other", exclusive:["safe"] },
-q20: { type:"single", text:["Какой формат мероприятий вы предпочитаете в нынешней ситуации?","What event format do you prefer in the current situation?"], opts:[
-  ["inperson","Личные встречи","In-person gatherings"],
-  ["online","Онлайн-мероприятия","Online events"],
-  ["hybrid","Смешанный формат (и онлайн, и лично)","Mixed (both online and in person)"],
-  ["depends","Зависит от типа мероприятия","Depends on the type of event"],
-  ["unsure","Не уверен(а)","Not sure"]] },
-q21: { type:"multi", text:["Что могло бы помочь вам участвовать в программах QARAVAN чаще?","What would help you take part in QARAVAN programs more often?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
-  ["weekend","Больше мероприятий на выходных","More weekend events"],
-  ["online","Больше онлайн-форматов","More online formats"],
-  ["transport","Помощь с транспортом/проездом","Help with transportation"],
-  ["childcare","Присмотр за детьми во время мероприятий","Childcare during events"],
-  ["boroughs","Мероприятия в других районах Нью-Йорка","Events in other parts of New York"],
-  ["announce","Узнавать о мероприятиях заранее","Hearing about events earlier"],
-  ["max","Уже участвую столько, сколько могу","I already take part as much as I can"],
-  ["other","Другое","Other"]], other:"other", exclusive:["max"] },
-q22: { type:"multi", text:["Через какие каналы вам удобнее всего получать информацию о мероприятиях и программах?","What channels work best for you to hear about events and programs?"], hint:["Выберите все подходящие варианты.","Pick all that apply."], opts:[
-  ["telegram","Телеграм","Telegram"], ["instagram","Instagram","Instagram"], ["facebook","Facebook","Facebook"],
-  ["website","Сайт QARAVAN","QARAVAN website"],
-  ["email","Рассылки по электронной почте","Email newsletters"],
-  ["partiful","Partiful — уведомления и приглашения","Partiful notifications and invites"],
-  ["friends","От друзей, знакомых или сообщества","From friends, acquaintances, or the community"],
-  ["orgs","Через другие общественные организации","Through other community organizations"],
-  ["other","Другое","Other"]], other:"other" },
-q23: { type:"scale", text:["Насколько вероятно, что вы будете участвовать в программах QARAVAN в следующие 6 месяцев?","How likely are you to take part in QARAVAN programs in the next 6 months?"],
-  hint:["Передвиньте ползунок или нажмите на подпись.","Drag the slider or tap a label."],
-  min:1, max:5, positive:true,
-  ticks:[["Точно нет","Definitely not"],["Скорее нет","Probably not"],["Не уверен(а)","Not sure"],["Скорее да","Probably yes"],["Точно да","Definitely yes"]],
-  labels:{1:["Определённо нет","Definitely not"],2:["Скорее нет","Probably not"],3:["Не уверен(а)","Not sure"],4:["Скорее да","Probably yes"],5:["Определённо да","Definitely yes"]} },
-q24: { type:"open", text:["Есть ли что-то ещё, что вы хотели бы, чтобы QARAVAN знал о ваших потребностях или о том, как мы можем лучше поддержать вас?","Is there anything else you'd like QARAVAN to know about your needs or how we can support you better?"], hint:["Свободный ответ — необязательно.","Open answer — optional."], max:4000 },
+q13: { type:"multi", max:3,
+  text:["Какая помощь или поддержка вам сейчас нужнее всего?","What help or support do you need most right now?","Яка допомога чи підтримка вам зараз найпотрібніша?","ახლა ყველაზე მეტად რა დახმარება ან მხარდაჭერა გჭირდებათ?","Hozir sizga qanday yordam yoki koʻmak eng zarur?","Қазір сізге қандай көмек немесе қолдау ең қажет?"],
+  hint:["Выберите до 3-х самых важных.","Pick up to 3 that matter most.","Виберіть до 3-х найважливіших.","აირჩიეთ 3-მდე ყველაზე მნიშვნელოვანი.","Eng muhim 3 tagachasini tanlang.","Ең маңызды 3-еуіне дейін таңдаңыз."], opts:[
+  ["immigration","Помощь с моим иммиграционным делом (убежище, статус, документы)","Help with my immigration case (asylum, status, documents)","Допомога з моєю імміграційною справою (притулок, статус, документи)","დახმარება ჩემს საიმიგრაციო საქმეში (თავშესაფარი, სტატუსი, დოკუმენტები)","Immigratsiya ishimda yordam (boshpana, maqom, hujjatlar)","Иммиграциялық ісіме көмек (баспана, мәртебе, құжаттар)"],
+  ["ice","Информация о правах при встрече с ICE (иммиграционной службой) и защите от депортации","Know-your-rights info about ICE (immigration enforcement) and protection from deportation","Інформація про права під час зустрічі з ICE (імміграційною службою) і захист від депортації","ინფორმაცია ჩემს უფლებებზე ICE-სთან (საიმიგრაციო სამსახურთან) შეხვედრისას და დეპორტაციისგან დაცვაზე","ICE (immigratsiya xizmati) bilan uchrashganda huquqlar va deportatsiyadan himoya haqida maʼlumot","ICE-мен (иммиграция қызметі) кездескендегі құқықтар мен депортациядан қорғану туралы ақпарат"],
+  ["health","Информация о медицинских услугах и страховании","Information about healthcare services and insurance","Інформація про медичні послуги та страхування","ინფორმაცია სამედიცინო სერვისებსა და დაზღვევაზე","Tibbiy xizmatlar va sugʻurta haqida maʼlumot","Медициналық қызметтер мен сақтандыру туралы ақпарат"],
+  ["job","Помощь в поиске работы или развитии карьеры","Help finding a job or growing my career","Допомога з пошуком роботи чи розвитком кар'єри","დახმარება სამსახურის ძიებაში ან კარიერულ განვითარებაში","Ish topish yoki karyera rivojida yordam","Жұмыс табуға немесе мансап дамытуға көмек"],
+  ["housing","Помощь в поиске жилья","Help finding housing","Допомога з пошуком житла","დახმარება საცხოვრებლის ძიებაში","Uy-joy topishda yordam","Тұрғын үй табуға көмек"],
+  ["money","Финансовая помощь (экстренная)","Emergency financial help","Фінансова допомога (екстрена)","ფინანსური დახმარება (გადაუდებელი)","Moliyaviy yordam (favqulodda)","Қаржылай көмек (шұғыл)"],
+  ["mental","Поддержка психического здоровья","Mental health support","Підтримка психічного здоров'я","ფსიქიკური ჯანმრთელობის მხარდაჭერა","Ruhiy salomatlik boʻyicha qoʻllab-quvvatlash","Психикалық денсаулықты қолдау"],
+  ["english","Изучение английского языка / языковая практика","Learning English / language practice","Вивчення англійської / мовна практика","ინგლისურის სწავლა / ენობრივი პრაქტიკა","Ingliz tilini oʻrganish / til amaliyoti","Ағылшын тілін үйрену / тілдік практика"],
+  ["social","Социальные связи и дружба","Social connection and friendship","Соціальні зв'язки і дружба","სოციალური კავშირები და მეგობრობა","Ijtimoiy aloqalar va doʻstlik","Әлеуметтік байланыс пен достық"],
+  ["docs","Помощь с документами и переводами","Help with documents and translations","Допомога з документами й перекладами","დახმარება დოკუმენტებსა და თარგმანებში","Hujjatlar va tarjimalarda yordam","Құжаттар мен аудармаларға көмек"],
+  ["education","Информация об образовании и поступлении (колледж, магистратура и др.)","Information about education and admissions (college, grad school, etc.)","Інформація про освіту і вступ (коледж, магістратура тощо)","ინფორმაცია განათლებასა და ჩაბარებაზე (კოლეჯი, მაგისტრატურა და ა.შ.)","Taʼlim va oʻqishga kirish haqida maʼlumot (kollej, magistratura va b.)","Білім алу мен оқуға түсу туралы ақпарат (колледж, магистратура т.б.)"],
+  ["none","Не нуждаюсь в помощи прямо сейчас","I don't need help right now","Зараз допомоги не потребую","ახლა დახმარება არ მჭირდება","Hozircha yordam kerak emas","Қазір көмек қажет емес"],
+  ["other","Другое","Other","Інше","სხვა","Boshqa","Басқа"]], other:"other", exclusive:["none"] },
+q14: { type:"single",
+  text:["Как изменились ваши потребности после января 2025 года?","How have your needs changed since January 2025?","Як змінилися ваші потреби після січня 2025 року?","როგორ შეიცვალა თქვენი საჭიროებები 2025 წლის იანვრის შემდეგ?","2025-yil yanvaridan keyin ehtiyojlaringiz qanday oʻzgardi?","2025 жылғы қаңтардан кейін қажеттіліктеріңіз қалай өзгерді?"], opts:[
+  ["chg_big","Мои потребности значительно изменились — мне нужна другая поддержка","My needs have changed significantly — I need different support","Мої потреби значно змінилися — мені потрібна інша підтримка","ჩემი საჭიროებები მნიშვნელოვნად შეიცვალა — სხვა მხარდაჭერა მჭირდება","Ehtiyojlarim ancha oʻzgardi — menga boshqacha koʻmak kerak","Қажеттіліктерім едәуір өзгерді — маған басқа қолдау керек"],
+  ["chg_some","Мои потребности немного изменились","My needs have changed somewhat","Мої потреби трохи змінилися","ჩემი საჭიროებები ოდნავ შეიცვალა","Ehtiyojlarim biroz oʻzgardi","Қажеттіліктерім аздап өзгерді"],
+  ["same","Мои потребности остались прежними","My needs are the same","Мої потреби не змінилися","ჩემი საჭიროებები იგივე დარჩა","Ehtiyojlarim oʻzgargani yoʻq","Қажеттіліктерім бұрынғыша"],
+  ["unsure","Не уверен(а)","Not sure","Не впевнений(-а)","დარწმუნებული არ ვარ","Aniq bilmayman","Нақты білмеймін"],
+  [PNTS, ...NO_ANS]] },
+q15: { type:"open",
+  text:["Что вам сейчас нужно больше всего?","What do you need most right now?","Що вам зараз потрібно найбільше?","ახლა ყველაზე მეტად რა გჭირდებათ?","Hozir sizga eng koʻp nima kerak?","Қазір сізге ең керегі не?"],
+  hint:["2–3 предложения своими словами.","2–3 sentences in your own words.","2–3 речення своїми словами.","2–3 წინადადება თქვენი სიტყვებით.","Oʻz soʻzlaringiz bilan 2–3 jumla.","Өз сөзіңізбен 2–3 сөйлем."], max:4000 },
+q16: { type:"multi", max:3,
+  text:["Какие программы или мероприятия QARAVAN наиболее ценны для вас?","Which QARAVAN programs or events are most valuable to you?","Які програми чи заходи QARAVAN найцінніші для вас?","QARAVAN-ის რომელი პროგრამები ან ღონისძიებებია თქვენთვის ყველაზე ღირებული?","QARAVANning qaysi dastur yoki tadbirlari siz uchun eng qadrli?","QARAVAN-ның қай бағдарламалары мен іс-шаралары сіз үшін ең құнды?"],
+  hint:["Выберите до 3-х. Если вы ещё не участвовали — отметьте то, что кажется вам наиболее полезным.","Pick up to 3. If you haven't taken part yet — pick what looks most useful.","Виберіть до 3-х. Якщо ви ще не брали участі — позначте те, що видається найкориснішим.","აირჩიეთ 3-მდე. თუ ჯერ არ მიგიღიათ მონაწილეობა — მონიშნეთ ის, რაც ყველაზე სასარგებლოდ გეჩვენებათ.","3 tagacha tanlang. Hali qatnashmagan boʻlsangiz — eng foydali koʻringanini belgilang.","3-ке дейін таңдаңыз. Әлі қатыспаған болсаңыз — ең пайдалы көрінгенін белгілеңіз."], opts:[
+  ["bbpride","Brighton Beach Pride","Brighton Beach Pride","Brighton Beach Pride","Brighton Beach Pride","Brighton Beach Pride","Brighton Beach Pride"],
+  ["social","Регулярные социальные/общественные мероприятия","Regular social/community events","Регулярні соціальні/громадські заходи","რეგულარული სოციალური/სათემო ღონისძიებები","Muntazam ijtimoiy tadbirlar","Тұрақты әлеуметтік іс-шаралар"],
+  ["rainbow","Rainbow Connections (программа наставничества один на один)","Rainbow Connections (one-on-one mentorship program)","Rainbow Connections (програма наставництва один на один)","Rainbow Connections (მენტორობის პროგრამა „ერთი ერთზე“)","Rainbow Connections (yakkama-yakka murabbiylik dasturi)","Rainbow Connections (жеке тәлімгерлік бағдарламасы)"],
+  ["groups","Группы поддержки (психологическая поддержка, транс-группа)","Support groups (psychological support, trans group)","Групи підтримки (психологічна підтримка, транс-група)","მხარდაჭერის ჯგუფები (ფსიქოლოგიური მხარდაჭერა, ტრანს-ჯგუფი)","Qoʻllab-quvvatlash guruhlari (psixologik koʻmak, trans-guruh)","Қолдау топтары (психологиялық қолдау, транс-топ)"],
+  ["crisis","Поддержка в кризисной ситуации","Support in a crisis","Підтримка в кризовій ситуації","მხარდაჭერა კრიზისულ სიტუაციაში","Inqirozli vaziyatda koʻmak","Дағдарыс жағдайындағы қолдау"],
+  ["referrals","Направления к проверенным юристам и специалистам","Referrals to vetted lawyers and specialists","Направлення до перевірених юристів і фахівців","მიმართვები სანდო იურისტებთან და სპეციალისტებთან","Ishonchli yurist va mutaxassislarga yoʻllanma","Сенімді заңгерлер мен мамандарға жолдама"],
+  ["chat","Телеграм-чат Qaravan Connects (онлайн-сообщество)","Qaravan Connects Telegram chat (online community)","Телеграм-чат Qaravan Connects (онлайн-спільнота)","Qaravan Connects-ის ტელეგრამ-ჩატი (ონლაინ-თემი)","Qaravan Connects telegram-chati (onlayn hamjamiyat)","Qaravan Connects телеграм-чаты (онлайн қауымдастық)"],
+  ["info","Информационные встречи и воркшопы","Info sessions and workshops","Інформаційні зустрічі та воркшопи","საინფორმაციო შეხვედრები და ვორქშოფები","Axborot uchrashuvlari va vorkshoplar","Ақпараттық кездесулер мен воркшоптар"],
+  ["navigation","Помощь с навигацией по медицинским/социальным услугам","Help navigating medical and social services","Допомога з навігацією медичними/соціальними послугами","დახმარება სამედიცინო/სოციალურ სერვისებში გარკვევაში","Tibbiy/ijtimoiy xizmatlar boʻyicha yoʻl-yoʻriq","Медициналық/әлеуметтік қызметтер бойынша бағдар беру"],
+  ["none","Ничего из перечисленного мне не подходит","None of these fit me","Нічого з переліченого мені не підходить","ჩამოთვლილთაგან არცერთი არ მესადაგება","Sanab oʻtilganlarning hech biri menga mos emas","Аталғандардың ешқайсысы маған сай емес"],
+  ["other","Другое","Other","Інше","სხვა","Boshqa","Басқа"]], other:"other", exclusive:["none"] },
+q17: { type:"scale", min:1, max:4, pnts:true,
+  text:["Насколько вы беспокоитесь о своей безопасности, участвуя в ЛГБТК+ мероприятиях или программах в нынешней политической ситуации?","How worried are you about your safety when taking part in LGBTQ+ events or programs in the current political situation?","Наскільки ви непокоїтеся про свою безпеку, беручи участь у ЛГБТК+ заходах чи програмах у нинішній політичній ситуації?","რამდენად გაწუხებთ საკუთარი უსაფრთხოება ლგბტქ+ ღონისძიებებში ან პროგრამებში მონაწილეობისას ახლანდელ პოლიტიკურ ვითარებაში?","Hozirgi siyosiy vaziyatda LGBTK+ tadbirlari yoki dasturlarida qatnashayotganda xavfsizligingiz haqida qanchalik xavotirdasiz?","Қазіргі саяси жағдайда ЛГБТК+ іс-шаралары мен бағдарламаларына қатысқанда қауіпсіздігіңіз үшін қаншалықты алаңдайсыз?"],
+  hint:["Передвиньте ползунок или нажмите на подпись.","Drag the slider or tap a label.","Пересуньте повзунок або натисніть на підпис.","გადაადგილეთ სასრიალო ან დააჭირეთ წარწერას.","Slayderni suring yoki yozuvni bosing.","Жүгірткіні жылжытыңыз немесе жазуды басыңыз."],
+  ticks:[["Совсем нет","Not at all","Зовсім ні","საერთოდ არა","Umuman yoʻq","Мүлдем жоқ"],["Не очень","Not really","Не дуже","არც ისე","Uncha emas","Онша емес"],["Немного","Somewhat","Трохи","ცოტა","Biroz","Аздап"],["Очень","Very","Дуже","ძალიან","Juda","Қатты"]],
+  labels:{1:["Совсем не обеспокоен(а)","Not worried at all","Зовсім не непокоюся","საერთოდ არ ვღელავ","Umuman xavotir emasman","Мүлдем алаңдамаймын"],2:["Не очень обеспокоен(а)","Not really worried","Не дуже непокоюся","არც ისე ვღელავ","Uncha xavotir emasman","Онша алаңдамаймын"],3:["Немного обеспокоен(а)","Somewhat worried","Трохи непокоюся","ცოტა ვღელავ","Biroz xavotirdaman","Аздап алаңдаймын"],4:["Очень обеспокоен(а)","Very worried","Дуже непокоюся","ძალიან ვღელავ","Juda xavotirdaman","Қатты алаңдаймын"]} },
+q18: { type:"single",
+  text:["Как беспокойство о безопасности влияет на ваше участие?","How does worrying about safety affect your participation?","Як занепокоєння безпекою впливає на вашу участь?","როგორ მოქმედებს უსაფრთხოებაზე ღელვა თქვენს მონაწილეობაზე?","Xavfsizlik borasidagi xavotir qatnashishingizga qanday taʼsir qiladi?","Қауіпсіздік алаңдаушылығы қатысуыңызға қалай әсер етеді?"], opts:[
+  ["less","Участвую реже, чем раньше","I take part less than before","Беру участь рідше, ніж раніше","უფრო იშვიათად ვმონაწილეობ, ვიდრე ადრე","Avvalgidan kamroq qatnashaman","Бұрынғыдан сирек қатысамын"],
+  ["same","Участвую так же, как раньше","I take part the same as before","Беру участь так само, як раніше","ისევე ვმონაწილეობ, როგორც ადრე","Avvalgidek qatnashaman","Бұрынғыдай қатысамын"],
+  ["online","Выбираю онлайн-формат вместо личных встреч","I choose online formats instead of meeting in person","Обираю онлайн-формат замість особистих зустрічей","პირადი შეხვედრების ნაცვლად ონლაინ-ფორმატს ვირჩევ","Yuzma-yuz uchrashuvlar oʻrniga onlayn formatni tanlayman","Жеке кездесулердің орнына онлайн форматты таңдаймын"],
+  ["stopped","Совсем перестал(а) участвовать","I stopped taking part entirely","Зовсім перестав(-ла) брати участь","საერთოდ შევწყვიტე მონაწილეობა","Qatnashishni butunlay toʻxtatganman","Қатысуды мүлдем қойдым"],
+  [PNTS, ...NO_ANS]] },
+q19: { type:"multi",
+  text:["Что помогло бы вам почувствовать себя в большей безопасности при участии в программах QARAVAN?","What would help you feel safer taking part in QARAVAN programs?","Що допомогло б вам почуватися безпечніше, беручи участь у програмах QARAVAN?","რა დაგეხმარებოდათ, რომ QARAVAN-ის პროგრამებში მონაწილეობისას თავი უფრო უსაფრთხოდ იგრძნოთ?","QARAVAN dasturlarida qatnashganda oʻzingizni xavfsizroq his qilishingizga nima yordam berardi?","QARAVAN бағдарламаларына қатысқанда өзіңізді қауіпсізірек сезінуге не көмектесер еді?"],
+  hint:["Выберите все подходящие варианты.","Pick all that apply.","Виберіть усі відповідні варіанти.","მონიშნეთ ყველა შესაბამისი ვარიანტი.","Mos keladigan barcha variantlarni tanlang.","Сәйкес келетін барлық нұсқаны таңдаңыз."], opts:[
+  ["protocols","Понятные правила безопасности на мероприятиях","Clear safety guidelines at events","Зрозумілі правила безпеки на заходах","გასაგები უსაფრთხოების წესები ღონისძიებებზე","Tadbirlarda aniq xavfsizlik qoidalari","Іс-шаралардағы түсінікті қауіпсіздік ережелері"],
+  ["online","Больше онлайн-форматов (вместо личного присутствия)","More online formats (instead of attending in person)","Більше онлайн-форматів (замість особистої присутності)","მეტი ონლაინ-ფორმატი (პირადი დასწრების ნაცვლად)","Koʻproq onlayn formatlar (shaxsan kelish oʻrniga)","Онлайн форматтардың көбеюі (жеке келудің орнына)"],
+  ["private","Более приватные/закрытые встречи (не публичные)","More private/closed gatherings (not public)","Більш приватні/закриті зустрічі (не публічні)","უფრო პრივატული/დახურული შეხვედრები (არა საჯარო)","Yopiqroq, xususiy uchrashuvlar (ochiq boʻlmagan)","Жабығырақ, жеке кездесулер (жария емес)"],
+  ["data","Информация о том, какие данные собирает и не собирает QARAVAN","Information about what data QARAVAN does and doesn't collect","Інформація про те, які дані QARAVAN збирає і не збирає","ინფორმაცია იმაზე, რა მონაცემებს აგროვებს და არ აგროვებს QARAVAN","QARAVAN qanday maʼlumot yigʻishi va yigʻmasligi haqida axborot","QARAVAN қандай деректерді жинайтыны және жинамайтыны туралы ақпарат"],
+  ["legal","Юридическая информация о моих правах","Legal information about my rights","Юридична інформація про мої права","იურიდიული ინფორმაცია ჩემს უფლებებზე","Huquqlarim haqida yuridik maʼlumot","Құқықтарым туралы заңгерлік ақпарат"],
+  ["ice","Знать, что делать, если ICE (иммиграционная служба) появится на мероприятии","Knowing what to do if ICE (immigration enforcement) shows up at an event","Знати, що робити, якщо ICE (імміграційна служба) з'явиться на заході","ვიცოდე, რა ვქნა, თუ ICE (საიმიგრაციო სამსახური) ღონისძიებაზე გამოჩნდება","Tadbirga ICE (immigratsiya xizmati) kelsa nima qilishni bilish","Іс-шараға ICE (иммиграция қызметі) келсе не істеу керегін білу"],
+  ["safe","Я уже чувствую себя в безопасности","I already feel safe","Я вже почуваюся в безпеці","თავს უკვე უსაფრთხოდ ვგრძნობ","Oʻzimni allaqachon xavfsiz his qilaman","Өзімді онсыз да қауіпсіз сезінемін"],
+  ["other","Другое","Other","Інше","სხვა","Boshqa","Басқа"]], other:"other", exclusive:["safe"] },
+q20: { type:"single",
+  text:["Какой формат мероприятий вы предпочитаете в нынешней ситуации?","What event format do you prefer in the current situation?","Якому формату заходів ви віддаєте перевагу в нинішній ситуації?","ღონისძიებების რომელ ფორმატს ანიჭებთ უპირატესობას ახლანდელ ვითარებაში?","Hozirgi vaziyatda tadbirlarning qaysi formatini afzal koʻrasiz?","Қазіргі жағдайда іс-шаралардың қай форматын қалайсыз?"], opts:[
+  ["inperson","Личные встречи","In-person gatherings","Особисті зустрічі","პირადი შეხვედრები","Yuzma-yuz uchrashuvlar","Жеке кездесулер"],
+  ["online","Онлайн-мероприятия","Online events","Онлайн-заходи","ონლაინ-ღონისძიებები","Onlayn tadbirlar","Онлайн іс-шаралар"],
+  ["hybrid","Смешанный формат (и онлайн, и лично)","Mixed (both online and in person)","Змішаний формат (і онлайн, і особисто)","შერეული ფორმატი (ონლაინიც და პირადიც)","Aralash format (onlayn ham, yuzma-yuz ham)","Аралас формат (онлайн да, жеке де)"],
+  ["depends","Зависит от типа мероприятия","Depends on the type of event","Залежить від типу заходу","ღონისძიების ტიპზეა დამოკიდებული","Tadbir turiga bogʻliq","Іс-шара түріне байланысты"],
+  ["unsure","Не уверен(а)","Not sure","Не впевнений(-а)","დარწმუნებული არ ვარ","Aniq bilmayman","Нақты білмеймін"]] },
+q21: { type:"multi",
+  text:["Что могло бы помочь вам участвовать в программах QARAVAN чаще?","What would help you take part in QARAVAN programs more often?","Що могло б допомогти вам брати участь у програмах QARAVAN частіше?","რა დაგეხმარებოდათ, რომ QARAVAN-ის პროგრამებში უფრო ხშირად მიიღოთ მონაწილეობა?","QARAVAN dasturlarida tez-tezroq qatnashishingizga nima yordam berardi?","QARAVAN бағдарламаларына жиірек қатысуға не көмектесер еді?"],
+  hint:["Выберите все подходящие варианты.","Pick all that apply.","Виберіть усі відповідні варіанти.","მონიშნეთ ყველა შესაბამისი ვარიანტი.","Mos keladigan barcha variantlarni tanlang.","Сәйкес келетін барлық нұсқаны таңдаңыз."], opts:[
+  ["weekend","Больше мероприятий на выходных","More weekend events","Більше заходів на вихідних","მეტი ღონისძიება შაბათ-კვირას","Dam olish kunlari koʻproq tadbirlar","Демалыс күндері көбірек іс-шара"],
+  ["online","Больше онлайн-форматов","More online formats","Більше онлайн-форматів","მეტი ონლაინ-ფორმატი","Koʻproq onlayn formatlar","Көбірек онлайн формат"],
+  ["transport","Помощь с транспортом/проездом","Help with transportation","Допомога з транспортом/проїздом","დახმარება ტრანსპორტით/მგზავრობით","Transport/yoʻl bilan yordam","Көлік/жол жүруге көмек"],
+  ["childcare","Присмотр за детьми во время мероприятий","Childcare during events","Догляд за дітьми під час заходів","ბავშვების მოვლა ღონისძიებების დროს","Tadbirlar paytida bolalarga qarash","Іс-шара кезінде балаларға қарау"],
+  ["boroughs","Мероприятия в других районах Нью-Йорка","Events in other parts of New York","Заходи в інших районах Нью-Йорка","ღონისძიებები ნიუ-იორკის სხვა უბნებში","Nyu-Yorkning boshqa hududlarida tadbirlar","Нью-Йорктің басқа аудандарындағы іс-шаралар"],
+  ["announce","Узнавать о мероприятиях заранее","Hearing about events earlier","Дізнаватися про заходи заздалегідь","ღონისძიებების შესახებ წინასწარ ცოდნა","Tadbirlar haqida oldindan bilish","Іс-шаралар туралы алдын ала білу"],
+  ["max","Уже участвую столько, сколько могу","I already take part as much as I can","Уже беру участь стільки, скільки можу","უკვე იმდენს ვმონაწილეობ, რამდენსაც შემიძლია","Qoʻlimdan kelgancha qatnashyapman","Онсыз да шамам келгенше қатысып жүрмін"],
+  ["other","Другое","Other","Інше","სხვა","Boshqa","Басқа"]], other:"other", exclusive:["max"] },
+q22: { type:"multi",
+  text:["Через какие каналы вам удобнее всего получать информацию о мероприятиях и программах?","What channels work best for you to hear about events and programs?","Через які канали вам найзручніше отримувати інформацію про заходи і програми?","რომელი არხებით გირჩევნიათ მიიღოთ ინფორმაცია ღონისძიებებსა და პროგრამებზე?","Tadbirlar va dasturlar haqidagi maʼlumotni qaysi kanallardan olish sizga qulayroq?","Іс-шаралар мен бағдарламалар туралы ақпаратты қай арналардан алған ыңғайлы?"],
+  hint:["Выберите все подходящие варианты.","Pick all that apply.","Виберіть усі відповідні варіанти.","მონიშნეთ ყველა შესაბამისი ვარიანტი.","Mos keladigan barcha variantlarni tanlang.","Сәйкес келетін барлық нұсқаны таңдаңыз."], opts:[
+  ["telegram","Телеграм","Telegram","Телеграм","ტელეგრამი","Telegram","Телеграм"],
+  ["instagram","Instagram","Instagram","Instagram","Instagram","Instagram","Instagram"],
+  ["facebook","Facebook","Facebook","Facebook","Facebook","Facebook","Facebook"],
+  ["website","Сайт QARAVAN","QARAVAN website","Сайт QARAVAN","QARAVAN-ის ვებგვერდი","QARAVAN sayti","QARAVAN сайты"],
+  ["email","Рассылки по электронной почте","Email newsletters","Розсилки електронною поштою","ელფოსტის გზავნილები","Elektron pochta xabarnomalari","Электрондық пошта таратылымы"],
+  ["partiful","Partiful — уведомления и приглашения","Partiful notifications and invites","Partiful — сповіщення і запрошення","Partiful — შეტყობინებები და მოწვევები","Partiful — bildirishnoma va takliflar","Partiful — хабарламалар мен шақырулар"],
+  ["friends","От друзей, знакомых или сообщества","From friends, acquaintances, or the community","Від друзів, знайомих чи спільноти","მეგობრებისგან, ნაცნობებისგან ან თემისგან","Doʻstlar, tanishlar yoki hamjamiyatdan","Достардан, таныстардан немесе қауымдастықтан"],
+  ["orgs","Через другие общественные организации","Through other community organizations","Через інші громадські організації","სხვა სათემო ორგანიზაციების მეშვეობით","Boshqa jamoat tashkilotlari orqali","Басқа қоғамдық ұйымдар арқылы"],
+  ["other","Другое","Other","Інше","სხვა","Boshqa","Басқа"]], other:"other" },
+q23: { type:"scale", min:1, max:5, positive:true,
+  text:["Насколько вероятно, что вы будете участвовать в программах QARAVAN в следующие 6 месяцев?","How likely are you to take part in QARAVAN programs in the next 6 months?","Наскільки ймовірно, що ви братимете участь у програмах QARAVAN у наступні 6 місяців?","რამდენად სავარაუდოა, რომ მომდევნო 6 თვეში QARAVAN-ის პროგრამებში მიიღებთ მონაწილეობას?","Kelgusi 6 oyda QARAVAN dasturlarida qatnashish ehtimolingiz qanchalik?","Алдағы 6 айда QARAVAN бағдарламаларына қатысу ықтималдығыңыз қандай?"],
+  hint:["Передвиньте ползунок или нажмите на подпись.","Drag the slider or tap a label.","Пересуньте повзунок або натисніть на підпис.","გადაადგილეთ სასრიალო ან დააჭირეთ წარწერას.","Slayderni suring yoki yozuvni bosing.","Жүгірткіні жылжытыңыз немесе жазуды басыңыз."],
+  ticks:[["Точно нет","Definitely not","Точно ні","ნამდვილად არა","Aniq yoʻq","Анық жоқ"],["Скорее нет","Probably not","Швидше ні","ალბათ არა","Balki yoʻq","Жоқ шығар"],["Не уверен(а)","Not sure","Не знаю","არ ვიცი","Bilmayman","Білмеймін"],["Скорее да","Probably yes","Швидше так","ალბათ კი","Balki ha","Иә шығар"],["Точно да","Definitely yes","Точно так","ნამდვილად კი","Aniq ha","Анық иә"]],
+  labels:{1:["Определённо нет","Definitely not","Точно ні","ნამდვილად არა","Aniq yoʻq","Анық жоқ"],2:["Скорее нет","Probably not","Швидше ні","ალბათ არა","Balki yoʻq","Жоқ шығар"],3:["Не уверен(а)","Not sure","Не впевнений(-а)","არ ვიცი","Bilmayman","Білмеймін"],4:["Скорее да","Probably yes","Швидше так","ალბათ კი","Balki ha","Иә шығар"],5:["Определённо да","Definitely yes","Точно так","ნამდვილად კი","Aniq ha","Анық иә"]} },
+q24: { type:"open",
+  text:["Есть ли что-то ещё, что вы хотели бы, чтобы QARAVAN знал о ваших потребностях или о том, как мы можем лучше поддержать вас?","Is there anything else you'd like QARAVAN to know about your needs or how we can support you better?","Чи є ще щось, що ви хотіли б, щоб QARAVAN знав про ваші потреби або про те, як ми можемо краще підтримати вас?","კიდევ არის რამე, რაც გინდათ, რომ QARAVAN-მა იცოდეს თქვენს საჭიროებებზე ან იმაზე, როგორ დაგიჭიროთ მხარი უკეთ?","QARAVAN ehtiyojlaringiz yoki sizni qanday yaxshiroq qoʻllab-quvvatlashimiz haqida yana nimani bilishini istardingiz?","QARAVAN қажеттіліктеріңіз немесе сізді қалай жақсырақ қолдай алатынымыз туралы тағы не білгенін қалайсыз?"],
+  hint:["Свободный ответ — необязательно.","Open answer — optional.","Вільна відповідь — необов'язково.","თავისუფალი პასუხი — არასავალდებულო.","Erkin javob — ixtiyoriy.","Еркін жауап — міндетті емес."], max:4000 },
 };
 
 const SECTIONS = [
-  { n:1, name:["Ваша связь с QARAVAN","Your connection to QARAVAN"], qs:["q1","q2","q3","q4","q5"] },
-  { n:2, name:["Кто вы","About you"], qs:["q6","q7","q8","q9","q10","q11","q12"],
-    intro:["Эти вопросы помогают понять, кто отвечал, и заметить, чьи потребности отличаются. Любой вопрос можно пропустить.","These questions help us understand who responded and notice whose needs differ. You can skip any of them."] },
-  { n:3, name:["Что вам нужно прямо сейчас","What you need right now"], qs:["q13","q14","q15","q16"] },
-  { n:4, name:["Безопасность и участие","Safety and participation"], qs:["q17","q18","q19","q20","q21","q22"],
-    intro:["Мы понимаем, что сейчас тревожное время. Эти ответы помогут нам делать участие безопаснее.","We know this is an anxious time. These answers will help us make participation safer."] },
-  { n:5, name:["Будущее участие","Future participation"], qs:["q23","q24"] },
+  { n:1, name:["Ваша связь с QARAVAN","Your connection to QARAVAN","Ваш зв'язок із QARAVAN","თქვენი კავშირი QARAVAN-თან","QARAVAN bilan aloqangiz","Сіздің QARAVAN-мен байланысыңыз"], qs:["q1","q2","q3","q4","q5"] },
+  { n:2, name:["Кто вы","About you","Хто ви","ვინ ხართ","Oʻzingiz haqingizda","Өзіңіз туралы"], qs:["q6","q7","q8","q9","q10","q11","q12"],
+    intro:["Эти вопросы помогают понять, кто отвечал, и заметить, чьи потребности отличаются. Любой вопрос можно пропустить.","These questions help us understand who responded and notice whose needs differ. You can skip any of them.","Ці запитання допомагають зрозуміти, хто відповідав, і помітити, чиї потреби відрізняються. Будь-яке запитання можна пропустити.","ეს კითხვები გვეხმარება გავიგოთ, ვინ გვიპასუხა, და შევამჩნიოთ, ვისი საჭიროებები განსხვავდება. ნებისმიერი კითხვის გამოტოვება შეიძლება.","Bu savollar kim javob berganini tushunishga va kimning ehtiyojlari farq qilishini payqashga yordam beradi. Istalgan savolni tashlab ketish mumkin.","Бұл сұрақтар кім жауап бергенін түсінуге және кімнің қажеттіліктері өзгеше екенін байқауға көмектеседі. Кез келген сұрақты өткізіп жіберуге болады."] },
+  { n:3, name:["Что вам нужно прямо сейчас","What you need right now","Що вам потрібно прямо зараз","რა გჭირდებათ ახლა","Hozir sizga nima kerak","Қазір сізге не қажет"], qs:["q13","q14","q15","q16"] },
+  { n:4, name:["Безопасность и участие","Safety and participation","Безпека та участь","უსაფრთხოება და მონაწილეობა","Xavfsizlik va ishtirok","Қауіпсіздік және қатысу"], qs:["q17","q18","q19","q20","q21","q22"],
+    intro:["Мы понимаем, что сейчас тревожное время. Эти ответы помогут нам делать участие безопаснее.","We know this is an anxious time. These answers will help us make participation safer.","Ми розуміємо, що зараз тривожний час. Ці відповіді допоможуть нам робити участь безпечнішою.","გვესმის, რომ ახლა შფოთვიანი დროა. ეს პასუხები დაგვეხმარება მონაწილეობა უფრო უსაფრთხო გავხადოთ.","Hozir tashvishli davr ekanini tushunamiz. Bu javoblar ishtirokni xavfsizroq qilishga yordam beradi.","Қазір алаңдатарлық кез екенін түсінеміз. Бұл жауаптар қатысуды қауіпсізірек етуге көмектеседі."] },
+  { n:5, name:["Будущее участие","Future participation","Участь надалі","მომავალი მონაწილეობა","Kelgusi ishtirok","Алдағы қатысу"], qs:["q23","q24"] },
 ];
 const SEC_COLORS = ["var(--q-red)","var(--q-orange)","var(--q-green)","var(--q-sky)","var(--q-purple)"];
 
-// ===== все тексты интерфейса =====
-const WIKI = {
-  ru: "https://ru.wikipedia.org/wiki/%D0%9D%D0%B8%D1%87%D0%B5%D0%B3%D0%BE_%D0%BE_%D0%BD%D0%B0%D1%81_%D0%B1%D0%B5%D0%B7_%D0%BD%D0%B0%D1%81",
-  en: "https://en.wikipedia.org/wiki/Nothing_about_us_without_us",
-};
+// ===== тексты интерфейса =====
+// Статья «Ничего о нас без нас» есть в ru- и en-Википедии; для остальных
+// языков ведём на английскую версию.
+const WIKI_RU = "https://ru.wikipedia.org/wiki/%D0%9D%D0%B8%D1%87%D0%B5%D0%B3%D0%BE_%D0%BE_%D0%BD%D0%B0%D1%81_%D0%B1%D0%B5%D0%B7_%D0%BD%D0%B0%D1%81";
+const WIKI_EN = "https://en.wikipedia.org/wiki/Nothing_about_us_without_us";
 const HELP_URL = "https://forms.monday.com/forms/5cefb350d61a65aaea40252c23c93f86?r=use1";
+const mottoLink = (url, text) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`;
+const helpLink = (pre, a, post) => `${pre}<a href="${HELP_URL}" target="_blank" rel="noopener">${a}</a>${post}`;
 const STRINGS = {
 ru: {
   title: "Исследование потребностей сообщества — QARAVAN",
@@ -503,7 +570,7 @@ ru: {
   card_time: "<b>Время.</b> В среднем занимает пять минут — 5 коротких разделов.",
   card_save: "<b>Ничего не потеряется.</b> Ответы сохраняются автоматически после каждого вопроса — можно прерваться и вернуться позже. А по личной ссылке (внизу каждого раздела) можно продолжить на другом устройстве.",
   card_skip: "<b>Любой вопрос можно пропустить.</b> Участие добровольное, «неудобных» обязательных вопросов здесь нет.",
-  motto: `<a href="${WIKI.ru}" target="_blank" rel="noopener">«Ничего о нас без нас!»</a>`,
+  motto: mottoLink(WIKI_RU, "«Ничего о нас без нас!»"),
   intro_sub2: "Ваши ответы помогут нам понять, какие программы и поддержка нужны сообществу в ближайшие месяцы.",
   start_btn: "Мне есть 18 лет — начать",
   start_fine: "Опрос для тех, кому 18 лет и больше. Нажимая кнопку, вы подтверждаете свой возраст и согласие участвовать.",
@@ -527,7 +594,7 @@ ru: {
   xfer_copy: "Скопировать ссылку", xfer_copied: "Скопировано ✓", xfer_aria: "Личная ссылка для продолжения",
   thanks_h1: "Спасибо!",
   thanks_sub: "Ваши ответы помогут делать программы, которые сообществу правда нужны.",
-  thanks_help: `Нужна помощь прямо сейчас? <a href="${HELP_URL}" target="_blank" rel="noopener">Заполните эту форму</a> — мы свяжемся с вами.`,
+  thanks_help: helpLink("Нужна помощь прямо сейчас? ", "Заполните эту форму", " — мы свяжемся с вами."),
   thanks_care: "Берегите себя. 🧡",
   again_btn: "Заполнить ещё раз",
 },
@@ -539,7 +606,7 @@ en: {
   card_time: "<b>Time.</b> Takes five minutes on average — 5 short sections.",
   card_save: "<b>Nothing gets lost.</b> Answers save automatically after every question — you can stop and come back later. A personal link (at the bottom of every section) lets you continue on another device.",
   card_skip: "<b>You can skip any question.</b> Participation is voluntary — nothing here is required.",
-  motto: `<a href="${WIKI.en}" target="_blank" rel="noopener">“Nothing about us without us!”</a>`,
+  motto: mottoLink(WIKI_EN, "“Nothing about us without us!”"),
   intro_sub2: "Your answers will help us understand what programs and support the community needs in the coming months.",
   start_btn: "I'm 18 or older — start",
   start_fine: "This survey is for people 18 and older. By tapping the button you confirm your age and agree to take part.",
@@ -563,9 +630,153 @@ en: {
   xfer_copy: "Copy link", xfer_copied: "Copied ✓", xfer_aria: "Personal link to continue",
   thanks_h1: "Thank you!",
   thanks_sub: "Your answers will help us build the programs our community actually needs.",
-  thanks_help: `Need help right now? <a href="${HELP_URL}" target="_blank" rel="noopener">Fill out this form</a> — we'll get in touch.`,
+  thanks_help: helpLink("Need help right now? ", "Fill out this form", " — we'll get in touch."),
   thanks_care: "Take care of yourself. 🧡",
   again_btn: "Fill it out again",
+},
+uk: {
+  title: "Дослідження потреб спільноти — QARAVAN",
+  intro_h1: "Дослідження потреб спільноти",
+  intro_sub: "Привіт! QARAVAN проводить це опитування, щоб краще зрозуміти, як ми можемо підтримати нашу спільноту в нинішній ситуації.",
+  card_privacy: "<b>Конфіденційність.</b> Ваші відповіді конфіденційні: ми дивимося лише на загальну картину, а не на окремі відповіді, і не передаємо їх нікому за межами команди QARAVAN. Ім'я, пошту й телефон ми не запитуємо.",
+  card_time: "<b>Час.</b> У середньому займає п'ять хвилин — 5 коротких розділів.",
+  card_save: "<b>Нічого не загубиться.</b> Відповіді зберігаються автоматично після кожного запитання — можна перерватися й повернутися пізніше. А за особистим посиланням (унизу кожного розділу) можна продовжити на іншому пристрої.",
+  card_skip: "<b>Будь-яке запитання можна пропустити.</b> Участь добровільна, «незручних» обов'язкових запитань тут немає.",
+  motto: mottoLink(WIKI_EN, "«Нічого про нас без нас!»"),
+  intro_sub2: "Ваші відповіді допоможуть нам зрозуміти, які програми й підтримка потрібні спільноті найближчими місяцями.",
+  start_btn: "Мені є 18 років — почати",
+  start_fine: "Опитування для тих, кому 18 років і більше. Натискаючи кнопку, ви підтверджуєте свій вік і згоду брати участь.",
+  resume_note: "Ми відновили ваші відповіді — продовжуйте з того місця, де зупинилися.",
+  restart_btn: "Почати заново",
+  confirm_restart: "Точно почати заново? Збережені відповіді буде стерто.",
+  confirm_adopt: "На цьому пристрої вже є незавершена відповідь на опитування. Відкрити чернетку за посиланням замість неї?",
+  section_of: n => `Розділ ${n} із ${SECTIONS.length}`,
+  completed: p => `Заповнено: ${p}%`,
+  nav_next: "Далі", nav_back: "Назад",
+  send: "Надіслати відповіді", sending: "Надсилаємо…",
+  err_net: "Не надіслалося. Відповіді збережено на цьому пристрої — перевірте інтернет і натисніть ще раз.",
+  save_saving: "Зберігається…", save_saved: "Збережено ✓", save_local: "Збережено на пристрої", save_restored: "Чернетку відновлено",
+  count_sel: (n, m) => `Вибрано: ${n} із ${m}`,
+  count_cap: m => `Можна вибрати до ${m === 3 ? "трьох" : m}`,
+  limit_hint: m => `Не більше ${m === 3 ? "трьох" : m}: щоб вибрати це, спершу зніміть один із вибраних.`,
+  other_ph: "Ваш варіант", other_aria: "Інше — уточніть",
+  no_answer: "Відповідь не вибрано",
+  xfer_link: "Продовжити на іншому пристрої",
+  xfer_note: "Відкрийте це посилання на іншому пристрої — збережена чернетка підтягнеться, і можна буде продовжити з того ж місця. Не діліться посиланням: за ним відкриваються ваші відповіді.",
+  xfer_copy: "Скопіювати посилання", xfer_copied: "Скопійовано ✓", xfer_aria: "Особисте посилання для продовження",
+  thanks_h1: "Дякуємо!",
+  thanks_sub: "Ваші відповіді допоможуть робити програми, які спільноті справді потрібні.",
+  thanks_help: helpLink("Потрібна допомога просто зараз? ", "Заповніть цю форму", " — ми зв'яжемося з вами."),
+  thanks_care: "Бережіть себе. 🧡",
+  again_btn: "Заповнити ще раз",
+},
+ka: {
+  title: "თემის საჭიროებების კვლევა — QARAVAN",
+  intro_h1: "თემის საჭიროებების კვლევა",
+  intro_sub: "გამარჯობა! QARAVAN ამ გამოკითხვას ატარებს, რომ უკეთ გავიგოთ, როგორ დავეხმაროთ ჩვენს თემს ახლანდელ ვითარებაში.",
+  card_privacy: "<b>კონფიდენციალურობა.</b> თქვენი პასუხები კონფიდენციალურია: ვუყურებთ მხოლოდ საერთო სურათს და არა ცალკეულ პასუხებს, და QARAVAN-ის გუნდის გარეთ არავის ვუზიარებთ. სახელს, ელფოსტას და ტელეფონს არ გკითხავთ.",
+  card_time: "<b>დრო.</b> საშუალოდ ხუთი წუთი სჭირდება — 5 მოკლე ნაწილი.",
+  card_save: "<b>არაფერი დაიკარგება.</b> პასუხები ყოველი კითხვის შემდეგ ავტომატურად ინახება — შეგიძლიათ შეისვენოთ და მოგვიანებით დაბრუნდეთ. პირადი ბმულით (ყოველი ნაწილის ბოლოში) სხვა მოწყობილობაზეც გააგრძელებთ.",
+  card_skip: "<b>ნებისმიერი კითხვის გამოტოვება შეიძლება.</b> მონაწილეობა ნებაყოფლობითია — სავალდებულო კითხვები აქ არ არის.",
+  motto: mottoLink(WIKI_EN, "„არაფერი ჩვენზე ჩვენ გარეშე!“"),
+  intro_sub2: "თქვენი პასუხები დაგვეხმარება გავიგოთ, რა პროგრამები და მხარდაჭერა სჭირდება თემს უახლოეს თვეებში.",
+  start_btn: "18 წლის ვარ — დაწყება",
+  start_fine: "გამოკითხვა 18 წლის და უფროსებისთვისაა. ღილაკზე დაჭერით ადასტურებთ თქვენს ასაკს და მონაწილეობაზე თანხმობას.",
+  resume_note: "თქვენი პასუხები აღვადგინეთ — გააგრძელეთ იქიდან, სადაც გაჩერდით.",
+  restart_btn: "თავიდან დაწყება",
+  confirm_restart: "ნამდვილად გსურთ თავიდან დაწყება? შენახული პასუხები წაიშლება.",
+  confirm_adopt: "ამ მოწყობილობაზე უკვე არის დაუსრულებელი პასუხი. მის ნაცვლად ბმულის მონახაზი გავხსნათ?",
+  section_of: n => `ნაწილი ${n} / ${SECTIONS.length}`,
+  completed: p => `შევსებულია: ${p}%`,
+  nav_next: "შემდეგი", nav_back: "უკან",
+  send: "პასუხების გაგზავნა", sending: "იგზავნება…",
+  err_net: "ვერ გაიგზავნა. პასუხები ამ მოწყობილობაზეა შენახული — შეამოწმეთ ინტერნეტი და კიდევ სცადეთ.",
+  save_saving: "ინახება…", save_saved: "შენახულია ✓", save_local: "შენახულია მოწყობილობაზე", save_restored: "მონახაზი აღდგენილია",
+  count_sel: (n, m) => `არჩეულია: ${n} / ${m}`,
+  count_cap: m => `შეგიძლიათ აირჩიოთ ${m}-მდე`,
+  limit_hint: m => `არაუმეტეს ${m}-ისა: ამის ასარჩევად ჯერ მოხსენით ერთ-ერთი არჩეული.`,
+  other_ph: "თქვენი ვარიანტი", other_aria: "სხვა — დააზუსტეთ",
+  no_answer: "პასუხი არ არის არჩეული",
+  xfer_link: "სხვა მოწყობილობაზე გაგრძელება",
+  xfer_note: "გახსენით ეს ბმული სხვა მოწყობილობაზე — შენახული მონახაზი ჩაიტვირთება და იმავე ადგილიდან გააგრძელებთ. ბმულს ნურავის გაუზიარებთ: მისით თქვენი პასუხები იხსნება.",
+  xfer_copy: "ბმულის კოპირება", xfer_copied: "დაკოპირდა ✓", xfer_aria: "პირადი ბმული გასაგრძელებლად",
+  thanks_h1: "მადლობა!",
+  thanks_sub: "თქვენი პასუხები დაგვეხმარება შევქმნათ პროგრამები, რომლებიც თემს ნამდვილად სჭირდება.",
+  thanks_help: helpLink("დახმარება ახლავე გჭირდებათ? ", "შეავსეთ ეს ფორმა", " — დაგიკავშირდებით."),
+  thanks_care: "გაუფრთხილდით საკუთარ თავს. 🧡",
+  again_btn: "კიდევ ერთხელ შევსება",
+},
+uz: {
+  title: "Hamjamiyat ehtiyojlari soʻrovi — QARAVAN",
+  intro_h1: "Hamjamiyat ehtiyojlarini oʻrganish",
+  intro_sub: "Salom! QARAVAN bu soʻrovni hozirgi vaziyatda hamjamiyatimizni qanday qoʻllab-quvvatlash mumkinligini yaxshiroq tushunish uchun oʻtkazmoqda.",
+  card_privacy: "<b>Maxfiylik.</b> Javoblaringiz maxfiy: biz alohida javoblarga emas, faqat umumiy manzaraga qaraymiz va ularni QARAVAN jamoasidan tashqarida hech kimga bermaymiz. Ism, pochta va telefon soʻralmaydi.",
+  card_time: "<b>Vaqt.</b> Oʻrtacha besh daqiqa oladi — 5 ta qisqa boʻlim.",
+  card_save: "<b>Hech narsa yoʻqolmaydi.</b> Javoblar har bir savoldan keyin avtomatik saqlanadi — toʻxtab, keyinroq qaytishingiz mumkin. Shaxsiy havola orqali (har boʻlim oxirida) boshqa qurilmada ham davom ettirasiz.",
+  card_skip: "<b>Istalgan savolni tashlab ketish mumkin.</b> Ishtirok ixtiyoriy — majburiy savollar bu yerda yoʻq.",
+  motto: mottoLink(WIKI_EN, "«Bizsiz biz haqimizda hech narsa!»"),
+  intro_sub2: "Javoblaringiz yaqin oylarda hamjamiyatga qanday dastur va koʻmak kerakligini tushunishga yordam beradi.",
+  start_btn: "Menga 18 yosh toʻlgan — boshlash",
+  start_fine: "Soʻrov 18 yosh va undan kattalar uchun. Tugmani bosish orqali yoshingizni va ishtirokka roziligingizni tasdiqlaysiz.",
+  resume_note: "Javoblaringizni tikladik — toʻxtagan joyingizdan davom eting.",
+  restart_btn: "Boshidan boshlash",
+  confirm_restart: "Rostdan boshidan boshlaysizmi? Saqlangan javoblar oʻchiriladi.",
+  confirm_adopt: "Bu qurilmada tugallanmagan javob bor. Uning oʻrniga havoladagi qoralamani ochamizmi?",
+  section_of: n => `Boʻlim ${n} / ${SECTIONS.length}`,
+  completed: p => `Toʻldirildi: ${p}%`,
+  nav_next: "Keyingi", nav_back: "Orqaga",
+  send: "Javoblarni yuborish", sending: "Yuborilmoqda…",
+  err_net: "Yuborilmadi. Javoblar bu qurilmada saqlangan — internetni tekshirib, yana bosing.",
+  save_saving: "Saqlanmoqda…", save_saved: "Saqlandi ✓", save_local: "Qurilmada saqlandi", save_restored: "Qoralama tiklandi",
+  count_sel: (n, m) => `Tanlandi: ${n} / ${m}`,
+  count_cap: m => `${m} tagacha tanlash mumkin`,
+  limit_hint: m => `Koʻpi bilan ${m} ta: buni tanlash uchun avval bittasini olib tashlang.`,
+  other_ph: "Oʻz variantingiz", other_aria: "Boshqa — aniqlashtiring",
+  no_answer: "Javob tanlanmagan",
+  xfer_link: "Boshqa qurilmada davom ettirish",
+  xfer_note: "Bu havolani boshqa qurilmada oching — saqlangan qoralama yuklanadi va oʻsha joydan davom etasiz. Havolani hech kimga bermang: u orqali javoblaringiz ochiladi.",
+  xfer_copy: "Havolani nusxalash", xfer_copied: "Nusxalandi ✓", xfer_aria: "Davom ettirish uchun shaxsiy havola",
+  thanks_h1: "Rahmat!",
+  thanks_sub: "Javoblaringiz hamjamiyatga chindan kerak dasturlarni yaratishga yordam beradi.",
+  thanks_help: helpLink("Hozir yordam kerakmi? ", "Mana bu formani toʻldiring", " — siz bilan bogʻlanamiz."),
+  thanks_care: "Oʻzingizni asrang. 🧡",
+  again_btn: "Yana bir bor toʻldirish",
+},
+kk: {
+  title: "Қауымдастық қажеттіліктерін зерттеу — QARAVAN",
+  intro_h1: "Қауымдастық қажеттіліктерін зерттеу",
+  intro_sub: "Сәлем! QARAVAN бұл сауалнаманы қазіргі жағдайда қауымдастығымызды қалай қолдай алатынымызды жақсырақ түсіну үшін жүргізіп отыр.",
+  card_privacy: "<b>Құпиялылық.</b> Жауаптарыңыз құпия: біз жеке жауаптарға емес, тек жалпы көрініске қараймыз және оларды QARAVAN командасынан тыс ешкімге бермейміз. Есіміңіз, поштаңыз бен телефоныңыз сұралмайды.",
+  card_time: "<b>Уақыт.</b> Орта есеппен бес минут алады — 5 қысқа бөлім.",
+  card_save: "<b>Ештеңе жоғалмайды.</b> Жауаптар әр сұрақтан кейін автоматты сақталады — үзіліс жасап, кейін оралуға болады. Жеке сілтеме арқылы (әр бөлімнің соңында) басқа құрылғыда да жалғастырасыз.",
+  card_skip: "<b>Кез келген сұрақты өткізіп жіберуге болады.</b> Қатысу ерікті — міндетті сұрақтар мұнда жоқ.",
+  motto: mottoLink(WIKI_EN, "«Бізсіз біз туралы ештеңе!»"),
+  intro_sub2: "Жауаптарыңыз алдағы айларда қауымдастыққа қандай бағдарламалар мен қолдау қажет екенін түсінуге көмектеседі.",
+  start_btn: "Маған 18 жас толды — бастау",
+  start_fine: "Сауалнама 18 жастан асқандарға арналған. Түймені басу арқылы жасыңызды және қатысуға келісіміңізді растайсыз.",
+  resume_note: "Жауаптарыңызды қалпына келтірдік — тоқтаған жерден жалғастырыңыз.",
+  restart_btn: "Қайта бастау",
+  confirm_restart: "Шынымен қайта бастайсыз ба? Сақталған жауаптар өшіріледі.",
+  confirm_adopt: "Бұл құрылғыда аяқталмаған жауап бар. Оның орнына сілтемедегі қараламаны ашайық па?",
+  section_of: n => `Бөлім ${n} / ${SECTIONS.length}`,
+  completed: p => `Толтырылды: ${p}%`,
+  nav_next: "Келесі", nav_back: "Артқа",
+  send: "Жауаптарды жіберу", sending: "Жіберілуде…",
+  err_net: "Жіберілмеді. Жауаптар осы құрылғыда сақталды — интернетті тексеріп, қайта басыңыз.",
+  save_saving: "Сақталуда…", save_saved: "Сақталды ✓", save_local: "Құрылғыда сақталды", save_restored: "Қаралама қалпына келтірілді",
+  count_sel: (n, m) => `Таңдалды: ${n} / ${m}`,
+  count_cap: m => `${m}-ге дейін таңдауға болады`,
+  limit_hint: m => `Ең көбі ${m}: мұны таңдау үшін алдымен біреуін алып тастаңыз.`,
+  other_ph: "Өз нұсқаңыз", other_aria: "Басқа — нақтылаңыз",
+  no_answer: "Жауап таңдалмаған",
+  xfer_link: "Басқа құрылғыда жалғастыру",
+  xfer_note: "Бұл сілтемені басқа құрылғыда ашыңыз — сақталған қаралама жүктеліп, сол жерден жалғастырасыз. Сілтемені ешкімге бермеңіз: ол арқылы жауаптарыңыз ашылады.",
+  xfer_copy: "Сілтемені көшіру", xfer_copied: "Көшірілді ✓", xfer_aria: "Жалғастыруға арналған жеке сілтеме",
+  thanks_h1: "Рақмет!",
+  thanks_sub: "Жауаптарыңыз қауымдастыққа шынымен қажет бағдарламалар жасауға көмектеседі.",
+  thanks_help: helpLink("Дәл қазір көмек керек пе? ", "Мына форманы толтырыңыз", " — сізбен хабарласамыз."),
+  thanks_care: "Өзіңізді күтіңіз. 🧡",
+  again_btn: "Тағы бір рет толтыру",
 },
 };
 const HTML_KEYS = new Set(["card_privacy", "card_time", "card_save", "card_skip", "motto", "thanks_help"]);
@@ -593,10 +804,11 @@ function load(){
 }
 S = load() || freshState();
 let A = S.A;
-let lang = S.lang === "en" || (!S.lang && new URLSearchParams(location.search).get("lang") === "en") ? "en" : "ru";
+const urlLang = new URLSearchParams(location.search).get("lang");
+let lang = LANGS.includes(S.lang) ? S.lang : (LANGS.includes(urlLang) ? urlLang : "ru");
 const STR = () => STRINGS[lang];
-const tx = v => Array.isArray(v) ? v[lang === "en" ? 1 : 0] : v;          // текст вопроса/подсказки
-const optLabel = o => (lang === "en" && o[2]) ? o[2] : o[1];              // подпись варианта
+const tx = v => Array.isArray(v) ? (v[LX[lang]] ?? v[0]) : v;               // текст вопроса/подсказки
+const optLabel = o => o[1 + LX[lang]] || o[1];                               // подпись варианта
 function persist(){ S.lang = lang; try { localStorage.setItem(LSKEY, JSON.stringify(S)); } catch (e) {} }
 const RID_RX = /^[0-9a-zA-Z-]{12,64}$/;
 const resumeURL = () => location.origin + location.pathname.replace(/\/index\.html$/, "") + "?r=" + S.rid;
@@ -834,15 +1046,14 @@ function applyVisibility(){
 function renderChrome(){
   document.documentElement.lang = lang;
   document.title = STR().title;
-  $("btnRu").setAttribute("aria-pressed", lang === "ru" ? "true" : "false");
-  $("btnEn").setAttribute("aria-pressed", lang === "en" ? "true" : "false");
+  $("langSel").value = lang;
   document.querySelectorAll("[data-i18n]").forEach(n => {
     const k = n.dataset.i18n;
     if (HTML_KEYS.has(k)) n.innerHTML = STR()[k]; else n.textContent = STR()[k];
   });
 }
 function setLang(l){
-  if (l === lang) return;
+  if (!LANGS.includes(l) || l === lang) return;
   lang = l;
   persist();
   renderChrome();
@@ -850,8 +1061,7 @@ function setLang(l){
   if (S.step >= 1){ $("stepLabel").textContent = STR().section_of(S.step); syncPct(); }
   schedule(); // язык заполнения — тоже данные, пусть уедет с автосейвом
 }
-$("btnRu").onclick = () => setLang("ru");
-$("btnEn").onclick = () => setLang("en");
+$("langSel").onchange = e => setLang(e.target.value);
 
 // ===== шаги и прогресс =====
 function goStep(n, focusHeading = true){
@@ -1042,7 +1252,7 @@ $("againBtn").onclick = resetAll;
           S.step = Math.min(Math.max(Math.round(Number(d.lastSection) || 1), 1), SECTIONS.length);
           S.maxSection = S.step;
         }
-        if (d && (d.lang === "en" || d.lang === "ru") && d.lang !== lang){ lang = d.lang; renderChrome(); }
+        if (d && LANGS.includes(d.lang) && d.lang !== lang){ lang = d.lang; renderChrome(); }
         persist();
         buildSteps(); // перерисовать с подтянутыми ответами
       }
@@ -1060,5 +1270,8 @@ $("againBtn").onclick = resetAll;
     goStep(0, false);
   }
 })();
+
+// для автотестов: проверка полноты всех шести языковых версий
+window.__QCONF = { Q, SECTIONS, STRINGS, LANGS };
 </script>
 </body></html>
