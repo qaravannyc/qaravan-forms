@@ -5,6 +5,9 @@
 <title>Исследование потребностей сообщества — QARAVAN</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#FFFDF5">
+<link rel="icon" href="/survey/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/survey/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/survey/apple-touch-icon.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
@@ -288,6 +291,7 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
   <div id="thanks">
     <h1 data-i18n="thanks_h1"></h1>
     <p class="sub" data-i18n="thanks_sub"></p>
+    <p class="motto" data-i18n="motto"></p>
     <div class="helpnow" style="margin-top:26px" data-i18n="thanks_help"></div>
     <p class="sub" style="margin-top:22px" data-i18n="thanks_care"></p>
     <button type="button" class="again" id="againBtn" data-i18n="again_btn"></button>
@@ -522,10 +526,10 @@ ru: {
   xfer_note: "Откройте эту ссылку на другом устройстве — сохранённый черновик подтянется, и можно будет продолжить с того же места. Не делитесь ссылкой: по ней открываются ваши ответы.",
   xfer_copy: "Скопировать ссылку", xfer_copied: "Скопировано ✓", xfer_aria: "Личная ссылка для продолжения",
   thanks_h1: "Спасибо!",
-  thanks_sub: `Ваши ответы отправлены. Они помогут нам делать программы, которые сообществу правда нужны. <a href="${WIKI.ru}" target="_blank" rel="noopener">«Ничего о нас без нас!»</a>`,
-  thanks_help: `Если вам нужна помощь прямо сейчас — <a href="${HELP_URL}" target="_blank" rel="noopener">заполните эту форму</a>, и мы свяжемся с вами.`,
+  thanks_sub: "Ваши ответы помогут делать программы, которые сообществу правда нужны.",
+  thanks_help: `Нужна помощь прямо сейчас? <a href="${HELP_URL}" target="_blank" rel="noopener">Заполните эту форму</a> — мы свяжемся с вами.`,
   thanks_care: "Берегите себя. 🧡",
-  again_btn: "Заполнить ещё раз (для другого человека на этом устройстве)",
+  again_btn: "Заполнить ещё раз",
 },
 en: {
   title: "Community Needs Survey — QARAVAN",
@@ -558,13 +562,13 @@ en: {
   xfer_note: "Open this link on another device — your saved draft will load and you can pick up where you left off. Don't share the link: it opens your answers.",
   xfer_copy: "Copy link", xfer_copied: "Copied ✓", xfer_aria: "Personal link to continue",
   thanks_h1: "Thank you!",
-  thanks_sub: `Your answers have been submitted. They'll help us build the programs our community actually needs. <a href="${WIKI.en}" target="_blank" rel="noopener">“Nothing about us without us!”</a>`,
-  thanks_help: `If you need help right now — <a href="${HELP_URL}" target="_blank" rel="noopener">fill out this form</a> and we'll get in touch.`,
+  thanks_sub: "Your answers will help us build the programs our community actually needs.",
+  thanks_help: `Need help right now? <a href="${HELP_URL}" target="_blank" rel="noopener">Fill out this form</a> — we'll get in touch.`,
   thanks_care: "Take care of yourself. 🧡",
-  again_btn: "Fill it out again (for another person on this device)",
+  again_btn: "Fill it out again",
 },
 };
-const HTML_KEYS = new Set(["card_privacy", "card_time", "card_save", "card_skip", "motto", "thanks_sub", "thanks_help"]);
+const HTML_KEYS = new Set(["card_privacy", "card_time", "card_save", "card_skip", "motto", "thanks_help"]);
 
 // Логика показа: вопрос виден, только когда он применим к человеку.
 // Скрытый вопрос не уходит на сервер и не считается в прогрессе.
