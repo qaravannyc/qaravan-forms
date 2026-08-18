@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Исследование потребностей сообщества — QARAVAN</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFFDF5">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Qaravan tokens — те же, что на форме отзыва */
+  --q-red:#FF3333; --q-orange:#FF9933; --q-yellow:#F8F36E;
+  --q-green:#66CC66; --q-sky:#0099CC; --q-purple:#7668AA;
+  --q-black:#000000; --q-ink:#333333; --q-gray:#6E6E6E;
+  --q-line:#ECE8DE; --q-paper:#FFFDF5; --q-white:#FFFFFF;
+  --q-red-tint:#FFE4E4; --q-orange-tint:#FFEDD9; --q-sky-tint:#DDF1F8;
+  --q-green-tint:#E3F6E3; --q-purple-tint:#EAE7F4;
+  --font-brand:'Montserrat','Helvetica Neue',Arial,sans-serif;
+  --radius-md:12px; --radius-lg:16px; --radius-pill:999px;
+  --shadow-card:0 2px 6px rgba(51,51,51,.05), 0 10px 28px rgba(51,51,51,.07);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--q-paper); color:var(--q-ink);
+  font-family:var(--font-brand); font-size:17px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--q-sky); font-weight:700; text-decoration-thickness:2px}
+a:hover{color:var(--q-purple)}
+.wrap{max-width:560px; margin:0 auto; padding:20px 20px 64px}
+
+/* header */
+.top{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:4px 0 18px}
+.wordmark{font-weight:900; font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap}
+a.wordmark{text-decoration:none}
+
+/* автосохранение: человек всегда видит, что его ответы не пропадут */
+.savechip{display:none; align-items:center; gap:7px; font-size:13px; font-weight:700; color:var(--q-gray); white-space:nowrap}
+.savechip.show{display:flex}
+.savechip .dot{width:9px; height:9px; border-radius:50%; background:var(--q-line); flex:none; transition:background .2s}
+.savechip.saving .dot{background:var(--q-orange)}
+.savechip.saved .dot{background:var(--q-green)}
+.savechip.local .dot{background:var(--q-gray)}
+
+/* progress */
+.progress{display:none; margin-bottom:26px}
+.progress.show{display:block}
+.progress-meta{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--q-gray); margin-bottom:8px}
+.bar{height:8px; border-radius:var(--radius-pill); background:var(--q-line); overflow:hidden}
+.bar i{display:block; height:100%; width:0; border-radius:var(--radius-pill);
+  background:linear-gradient(90deg,var(--q-red),var(--q-orange),var(--q-green),var(--q-sky),var(--q-purple));
+  transition:width .35s ease}
+@media (prefers-reduced-motion:reduce){ .bar i{transition:none} }
+
+/* hero / intro */
+.eyebrow{font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--q-sky)}
+h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-spacing:-.02em; margin:10px 0 8px; text-wrap:balance}
+h2.sec{font-weight:800; font-size:clamp(22px,6vw,30px); line-height:1.15; letter-spacing:-.02em; margin:8px 0 0; text-wrap:balance; outline:none}
+.sub{color:var(--q-gray); margin:0; text-wrap:pretty}
+.intro-card{background:var(--q-white); border:2px solid var(--q-ink); border-radius:var(--radius-lg); padding:22px; margin-top:24px}
+.intro-card ul{margin:0; padding:0; list-style:none; display:grid; gap:14px}
+.intro-card li{display:flex; gap:12px; align-items:flex-start; font-size:15.5px; text-wrap:pretty}
+.intro-card li .ico{flex:none; width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px}
+.motto{margin:22px 0 0; font-weight:800; font-size:17px}
+.helpnow{background:var(--q-sky-tint); border-radius:var(--radius-md); padding:14px 16px; font-size:14.5px; margin-top:22px; text-wrap:pretty}
+.start{margin-top:30px}
+.start button{
+  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink);
+  color:var(--q-white); font:inherit; font-size:18px; font-weight:700; padding:17px; cursor:pointer;
+  transition:transform .15s ease, opacity .15s ease;
+}
+.start button:active{transform:scale(.99)}
+.start .fine{color:var(--q-gray); font-size:13px; margin:12px 0 0; text-align:center; text-wrap:pretty}
+
+/* восстановленный черновик */
+.resume-note{display:none; background:var(--q-green-tint); border-radius:var(--radius-md); padding:14px 16px; font-size:14.5px; margin:0 0 24px; text-wrap:pretty}
+.resume-note.show{display:block}
+.resume-note button{border:0; background:none; padding:0; font:inherit; font-size:14px; font-weight:700; color:var(--q-gray); text-decoration:underline; text-underline-offset:3px; cursor:pointer; margin-top:6px}
+.resume-note button:hover{color:var(--q-ink)}
+
+/* sections */
+fieldset{border:0; padding:24px 0 0; margin:0}
+fieldset+fieldset{border-top:1px solid var(--q-line); margin-top:40px; padding-top:36px}
+fieldset.gone{display:none}
+legend{float:left; width:100%; padding:0; margin:0 0 20px; font-weight:700; font-size:19px; line-height:1.35; text-wrap:pretty}
+legend+*{clear:both}
+.hint{color:var(--q-gray); font-size:14px; font-weight:400; margin:8px 0 0; text-wrap:pretty}
+legend .hint{display:block; margin:6px 0 0}
+.sec-head{padding-top:6px}
+.sec-intro{color:var(--q-gray); font-size:15px; margin:10px 0 0; text-wrap:pretty}
+
+/* chips (мультивыбор) */
+.chips{display:flex; flex-wrap:wrap; gap:12px; margin-top:0}
+.chips button{
+  border:2px solid var(--q-ink); background:var(--q-white); border-radius:var(--radius-pill);
+  padding:12px 18px; font:inherit; font-size:15px; font-weight:700; line-height:1.25;
+  cursor:pointer; color:var(--q-ink); text-align:left;
+  transition:transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease;
+}
+.chips button:active{transform:scale(.97)}
+.chips button[aria-pressed="true"]{background:var(--q-sky); border-color:var(--q-sky); color:var(--q-white)}
+.chips button:nth-child(6n+1)[aria-pressed="true"]{background:var(--q-red); border-color:var(--q-red)}
+.chips button:nth-child(6n+2)[aria-pressed="true"]{background:var(--q-orange); border-color:var(--q-orange)}
+.chips button:nth-child(6n+3)[aria-pressed="true"]{background:var(--q-green); border-color:var(--q-green)}
+.chips button:nth-child(6n+4)[aria-pressed="true"]{background:var(--q-purple); border-color:var(--q-purple)}
+.chips button:nth-child(6n+5)[aria-pressed="true"]{background:var(--q-sky); border-color:var(--q-sky)}
+.chips button:nth-child(6n)[aria-pressed="true"]{background:var(--q-ink); border-color:var(--q-ink)}
+.chips button.dim{opacity:.38}
+.counter{font-size:13px; font-weight:700; color:var(--q-gray); margin:12px 0 0}
+.counter.maxed{color:var(--q-orange)}
+.limit-hint{display:none; color:var(--q-orange); font-size:14px; font-weight:700; margin:10px 0 0}
+.limit-hint.show{display:block}
+.other-input{display:none; margin-top:14px}
+.other-input.show{display:block}
+
+/* text fields */
+textarea,input[type="text"]{
+  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-md); background:var(--q-white);
+  padding:13px 16px; font:inherit; font-size:16px; color:var(--q-ink); margin-top:0;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+textarea{min-height:118px; resize:vertical; line-height:1.5}
+textarea:focus,input[type="text"]:focus{
+  outline:none; border-color:var(--q-sky); box-shadow:0 0 0 3px var(--q-sky-tint);
+}
+button:focus-visible,a:focus-visible,input[type="range"]:focus-visible{outline:3px solid var(--q-sky); outline-offset:2px}
+
+/* radio rows (один вариант) */
+.opts{display:grid; gap:12px; margin-top:0}
+.opts label{
+  display:flex; gap:12px; align-items:flex-start; border:2px solid var(--q-ink);
+  background:var(--q-white); border-radius:var(--radius-md); padding:14px 16px; cursor:pointer;
+  font-size:16px; line-height:1.4; transition:border-color .15s ease, background .15s ease;
+}
+.opts input{margin:4px 0 0; accent-color:var(--q-sky); width:19px; height:19px; flex:none}
+.opts label:has(input:checked){border-color:var(--q-sky); background:var(--q-sky-tint)}
+@media (min-width:480px){ .opts.cols2{grid-template-columns:1fr 1fr} }
+
+/* slider (шкалы) */
+.slider{margin-top:6px}
+.slider .readout{min-height:52px; display:flex; align-items:center; justify-content:center; text-align:center;
+  border:2px dashed var(--q-line); border-radius:var(--radius-md); background:var(--q-white);
+  font-size:16px; font-weight:700; color:var(--q-gray); padding:10px 14px; margin-bottom:18px;
+  transition:border-color .2s, color .2s, background .2s}
+.slider.answered .readout{border-style:solid; border-color:var(--q-ink); color:var(--q-ink); background:var(--q-yellow)}
+.slider input[type="range"]{
+  -webkit-appearance:none; appearance:none; width:100%; height:44px; margin:0; background:transparent; cursor:pointer;
+}
+.slider input[type="range"]::-webkit-slider-runnable-track{height:10px; border-radius:var(--radius-pill); background:var(--q-line)}
+.slider input[type="range"]::-moz-range-track{height:10px; border-radius:var(--radius-pill); background:var(--q-line)}
+.slider.answered input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(90deg,var(--q-green),var(--q-yellow),var(--q-orange),var(--q-red))}
+.slider.answered.pos input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(90deg,var(--q-red),var(--q-orange),var(--q-yellow),var(--q-green))}
+.slider.answered input[type="range"]::-moz-range-track{background:linear-gradient(90deg,var(--q-green),var(--q-yellow),var(--q-orange),var(--q-red))}
+.slider.answered.pos input[type="range"]::-moz-range-track{background:linear-gradient(90deg,var(--q-red),var(--q-orange),var(--q-yellow),var(--q-green))}
+.slider input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none; width:32px; height:32px; border-radius:50%;
+  background:var(--q-white); border:3px solid var(--q-gray); margin-top:-11px;
+  box-shadow:var(--shadow-card); transition:border-color .2s}
+.slider.answered input[type="range"]::-webkit-slider-thumb{border-color:var(--q-ink)}
+.slider input[type="range"]::-moz-range-thumb{
+  width:26px; height:26px; border-radius:50%; background:var(--q-white); border:3px solid var(--q-gray); box-shadow:var(--shadow-card)}
+.slider.answered input[type="range"]::-moz-range-thumb{border-color:var(--q-ink)}
+.ticks{display:grid; margin-top:6px}
+.ticks button{border:0; background:none; padding:8px 2px; font:inherit; font-size:12.5px; font-weight:700; color:var(--q-gray); cursor:pointer; line-height:1.25}
+.ticks button:first-child{text-align:left}
+.ticks button:last-child{text-align:right}
+.ticks button.on{color:var(--q-ink)}
+.na-link{border:0; background:none; color:var(--q-gray); font:inherit; font-size:14px; font-weight:700; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:0; margin-top:16px; display:block}
+.na-link:hover{color:var(--q-ink)}
+.na-link.on{color:var(--q-purple)}
+
+/* перенос на другое устройство */
+.xfer{margin-top:30px; text-align:center}
+.xfer > .na-link{display:inline; margin:0}
+.xfer-panel{display:none; text-align:left; background:var(--q-white); border:2px solid var(--q-ink); border-radius:var(--radius-md); padding:16px; margin-top:14px}
+.xfer-panel.show{display:block}
+.xfer-panel p{margin:0 0 10px; font-size:14px; color:var(--q-gray); text-wrap:pretty}
+.xfer-panel input{margin:0; font-size:14px}
+.xfer-copy{margin-top:10px; border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-white); color:var(--q-ink); font:inherit; font-size:14px; font-weight:700; padding:10px 18px; cursor:pointer; transition:transform .15s ease}
+.xfer-copy:active{transform:scale(.97)}
+
+/* steps */
+.step{display:none}
+.step.on{display:block; animation:stepin .3s ease-out}
+@keyframes stepin{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+@media (prefers-reduced-motion:reduce){ .step.on{animation:none} }
+.stepnav{margin-top:46px; display:flex; align-items:center; justify-content:space-between; gap:14px}
+.stepnav .next{border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink); color:var(--q-white); font:inherit; font-size:17px; font-weight:700; padding:15px 34px; cursor:pointer; transition:transform .15s ease}
+.stepnav .next:active{transform:scale(.97)}
+.stepnav .back{border:0; background:none; color:var(--q-gray); font:inherit; font-size:15px; font-weight:700; cursor:pointer; padding:10px 0}
+
+/* submit */
+.submit{margin-top:46px}
+.submit button[type="submit"]{
+  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink);
+  color:var(--q-white); font:inherit; font-size:18px; font-weight:700; padding:17px; cursor:pointer;
+  transition:transform .15s ease, opacity .15s ease;
+}
+.submit button[type="submit"]:active{transform:scale(.99)}
+.submit button[type="submit"]:disabled{opacity:.4; cursor:default; transform:none}
+.submit .back{border:0; background:none; color:var(--q-gray); font:inherit; font-size:15px; font-weight:700; cursor:pointer; padding:0; margin-top:22px}
+.err{
+  display:none; margin:0 0 14px; background:var(--q-red-tint); color:var(--q-ink);
+  border-radius:var(--radius-md); padding:14px 18px; font-size:15px; font-weight:500;
+}
+.err.show{display:block}
+
+/* thanks */
+#thanks{display:none; padding-top:6vh}
+#thanks.show{display:block}
+#thanks h1{margin-top:0}
+#thanks .again{border:0; background:none; color:var(--q-gray); font:inherit; font-size:14px; font-weight:700; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:0; margin-top:34px}
+
+.hp{position:absolute; left:-9999px; top:-9999px}
+footer{margin-top:56px; color:var(--q-gray); font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <noscript><p style="background:#FFE4E4;border-radius:12px;padding:14px 18px">Чтобы заполнить опрос, включите JavaScript в браузере.</p></noscript>
+  <div class="top">
+    <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></a>
+    <div class="savechip" id="saveChip" role="status" aria-live="polite"><span class="dot"></span><span id="saveText"></span></div>
+  </div>
+
+  <div class="progress" id="progress">
+    <div class="progress-meta"><span id="stepLabel"></span><span id="secName"></span></div>
+    <div class="bar"><i id="barFill"></i></div>
+  </div>
+
+  <div id="formView">
+    <p class="resume-note" id="resumeNote">Мы восстановили ваши ответы — продолжайте с того места, где остановились.
+      <button type="button" id="restartBtn">Начать заново</button>
+    </p>
+
+    <form id="f" novalidate="">
+      <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+      <!-- ШАГ 0: приглашение и согласие -->
+      <div class="step on" data-step="0">
+        <header>
+          <div class="eyebrow">QARAVAN · 2026</div>
+          <h1>Исследование потребностей сообщества</h1>
+          <p class="sub">Привет! QARAVAN проводит этот опрос, чтобы лучше понять, как мы можем поддержать наше сообщество в текущей ситуации.</p>
+        </header>
+        <div class="intro-card">
+          <ul>
+            <li><span class="ico" style="background:var(--q-sky-tint)">🔒</span><span><b>Конфиденциальность.</b> Ваши ответы конфиденциальны: мы смотрим только на общую картину, а не на отдельные ответы, и не передаём их никому за пределами команды QARAVAN. Имя, почту и телефон мы не спрашиваем.</span></li>
+            <li><span class="ico" style="background:var(--q-orange-tint)">⏱️</span><span><b>Время.</b> Займёт около 10 минут — 5 коротких разделов.</span></li>
+            <li><span class="ico" style="background:var(--q-green-tint)">💾</span><span><b>Ничего не потеряется.</b> Ответы сохраняются автоматически после каждого вопроса — можно прерваться и вернуться позже. А по личной ссылке (внизу каждого раздела) можно продолжить на другом устройстве.</span></li>
+            <li><span class="ico" style="background:var(--q-purple-tint)">🙌</span><span><b>Любой вопрос можно пропустить.</b> Участие добровольное, «неудобных» обязательных вопросов здесь нет.</span></li>
+          </ul>
+        </div>
+        <p class="motto">«Ничего о нас без нас!»</p>
+        <p class="sub" style="margin-top:8px">Ваши ответы помогут нам понять, какие программы и поддержка нужны сообществу в ближайшие месяцы.</p>
+        <div class="start">
+          <button type="button" id="startBtn">Мне есть 18 лет — начать</button>
+          <p class="fine">Опрос для тех, кому 18 лет и больше. Нажимая кнопку, вы подтверждаете свой возраст и согласие участвовать.</p>
+        </div>
+        <div class="helpnow">Если вам нужна помощь прямо сейчас — не ждите конца опроса, <a href="https://forms.monday.com/forms/5cefb350d61a65aaea40252c23c93f86?r=use1" target="_blank" rel="noopener">заполните эту форму</a>, и мы свяжемся с вами.</div>
+        <footer>qaravan.org</footer>
+      </div>
+
+      <!-- ШАГИ 1–5 рендерятся из конфига -->
+      <div class="step" data-step="1"></div>
+      <div class="step" data-step="2"></div>
+      <div class="step" data-step="3"></div>
+      <div class="step" data-step="4"></div>
+      <div class="step" data-step="5"></div>
+    </form>
+  </div>
+
+  <div id="thanks">
+    <h1>Спасибо!</h1>
+    <p class="sub">Ваши ответы отправлены. Они помогут нам делать программы, которые сообществу правда нужны. «Ничего о нас без нас!»</p>
+    <div class="helpnow" style="margin-top:26px">Если вам нужна помощь прямо сейчас — <a href="https://forms.monday.com/forms/5cefb350d61a65aaea40252c23c93f86?r=use1" target="_blank" rel="noopener">заполните эту форму</a>, и мы свяжемся с вами.</div>
+    <p class="sub" style="margin-top:22px">Берегите себя. 🧡</p>
+    <button type="button" class="again" id="againBtn">Заполнить ещё раз (для другого человека на этом устройстве)</button>
+    <footer>qaravan.org</footer>
+  </div>
+</div>
+
+<script>
+"use strict";
+// ============================================================================
+// Конфиг вопросов. Коды (первый элемент пары) — это язык обмена с сервером:
+// api/survey.mjs переводит их в английские метки колонок monday, а
+// survey/CODEBOOK.md документирует соответствие. Меняешь код здесь — меняй там.
+// ============================================================================
+const PNTS = "pnts"; // «Предпочитаю не отвечать»
+const NOPTS = "Предпочитаю не отвечать";
+
+const Q = {
+q1: { type:"single", text:"Как вы впервые узнали о QARAVAN?", hint:"Выберите один вариант.", opts:[
+  ["friends","Друзья или знакомые"], ["telegram","Телеграм"], ["social","Социальные сети (Instagram, Facebook и др.)"],
+  ["bbpride","Brighton Beach Pride"], ["org","Другая организация"], ["search","Поиск в интернете"], ["other","Другое"]], other:"other" },
+q2: { type:"multi", max:3, text:"Почему вы изначально решили участвовать в программах QARAVAN?", hint:"Выберите до 3-х вариантов.", opts:[
+  ["help","Искал(а) помощь (юридическую, медицинскую и т.д.)"], ["community","Хотел(а) найти друзей и сообщество"],
+  ["emosupport","Нужна была эмоциональная поддержка"], ["events","Интерес к мероприятиям"],
+  ["recommend","Рекомендация знакомых"], ["other","Другое"],
+  ["not_participated","Я пока не участвовал(а) в программах QARAVAN"]], other:"other", exclusive:["not_participated"] },
+q3: { type:"multi", text:"Как вы участвовали в жизни QARAVAN?", hint:"Выберите все подходящие варианты.", opts:[
+  ["inperson","Посещал(а) мероприятия лично"], ["chat","Участвую в телеграм-чате Qaravan Connects"],
+  ["referrals","Получал(а) через QARAVAN направления к специалистам (юристам, врачам и др.)"],
+  ["rainbow","Участвовал(а) в Rainbow Connections"], ["bbpride","Посещал(а) Brighton Beach Pride"],
+  ["groups","Участвовал(а) в группах поддержки"], ["volunteer","Волонтёрил(а)"], ["other","Другое"]], other:"other" },
+q4: { type:"single", text:"Как часто вы участвовали в мероприятиях или программах QARAVAN за последние 6 месяцев?", hint:"Выберите один вариант.", opts:[
+  ["weekly","Еженедельно или чаще"], ["fewmonth","Несколько раз в месяц"], ["monthly","Раз в месяц"],
+  ["few6mo","Несколько раз за 6 месяцев"], ["once","Один раз"],
+  ["before","Не участвовал(а) за последние 6 месяцев, но участвовал(а) раньше"], ["never","Никогда не участвовал(а)"]] },
+q5: { type:"multi", text:"Что мешает вам участвовать?", hint:"Выберите все подходящие варианты.", opts:[
+  ["time","Мало свободного времени"], ["moved","Переехал(а) в другой район или город"],
+  ["unsafe","Не чувствую себя в безопасности из-за политической ситуации"],
+  ["mismatch","Мероприятия не соответствуют моим потребностям"], ["unaware","Не знаю о предстоящих мероприятиях"],
+  ["belong","Не чувствую себя частью сообщества"], ["politics","Политические взгляды организации не совпадают с моими"],
+  ["other","Другое"]], other:"other" },
+q6: { type:"multi", text:"Что из этого лучше всего описывает вас?", hint:"Выберите все подходящие варианты.", opts:[
+  ["lgbtq","ЛГБТК+ человек"], ["immigrant","Иммигрант / беженец в США"],
+  ["usborn","Родился/вырос в США (русскоязычная семья)"], ["ally","Поддерживаю ЛГБТК+ сообщество, но не принадлежу к нему"],
+  ["other","Другое"], [PNTS,NOPTS]], other:"other", exclusive:[PNTS] },
+q7: { type:"single", text:"Считаете ли вы себя трансгендерным или небинарным человеком?", opts:[
+  ["yes","Да"], ["no","Нет"], [PNTS,NOPTS]] },
+q8: { type:"single", text:"Как давно вы живёте в США?", opts:[
+  ["lt6m","Менее 6 месяцев"], ["m6to12","От 6 месяцев до 1 года"], ["y1to3","От 1 года до 3 лет"],
+  ["y3to5","От 3 до 5 лет"], ["gt5y","Больше 5 лет"], ["usborn","Я родился/ась в США"], [PNTS,NOPTS]] },
+q9: { type:"single", cols2:true, text:"Откуда вы родом?", opts:[
+  ["az","Азербайджан"], ["am","Армения"], ["by","Беларусь"], ["ge","Грузия"], ["kz","Казахстан"],
+  ["kg","Кыргызстан"], ["md","Молдова"], ["ru","Россия"], ["tj","Таджикистан"], ["uz","Узбекистан"],
+  ["ua","Украина"], ["usborn","Родился/ась в США"], ["other","Другая страна"], [PNTS,NOPTS]], other:"other" },
+q10: { type:"single", cols2:true, text:"Ваш возраст?", opts:[
+  ["a18","18–24"], ["a25","25–34"], ["a35","35–44"], ["a45","45–54"], ["a55","55–64"], ["a65","65 и старше"], [PNTS,NOPTS]] },
+q11: { type:"single", cols2:true, text:"В какой части Нью-Йорка вы живёте?", opts:[
+  ["bk","Бруклин"], ["qn","Куинс"], ["mn","Манхэттен"], ["bx","Бронкс"], ["si","Стейтен-Айленд"],
+  ["outside","За пределами Нью-Йорка"], [PNTS,NOPTS]] },
+q12: { type:"single", text:"Что лучше всего описывает вашу жизнь в США сейчас?", opts:[
+  ["arrived","Только приехал(а) и осваиваюсь"], ["adapting","В процессе адаптации"],
+  ["settled","Устроился/ась, но есть сложности"], ["stable","Чувствую себя уверенно и стабильно"], [PNTS,NOPTS]] },
+q13: { type:"multi", max:3, text:"Какая помощь или поддержка вам сейчас нужнее всего?", hint:"Выберите до 3-х самых важных.", opts:[
+  ["immigration","Помощь с моим иммиграционным делом (убежище, статус, документы)"],
+  ["ice","Информация о правах при встрече с ICE (иммиграционной службой) и защите от депортации"],
+  ["health","Информация о медицинских услугах и страховании"], ["job","Помощь в поиске работы или развитии карьеры"],
+  ["housing","Помощь в поиске жилья"], ["money","Финансовая помощь (экстренная)"],
+  ["mental","Поддержка психического здоровья"], ["english","Изучение английского языка / языковая практика"],
+  ["social","Социальные связи и дружба"], ["docs","Помощь с документами и переводами"],
+  ["education","Информация об образовании и поступлении (колледж, магистратура и др.)"],
+  ["none","Не нуждаюсь в помощи прямо сейчас"], ["other","Другое"]], other:"other", exclusive:["none"] },
+q14: { type:"single", text:"Как изменились ваши потребности после января 2025 года?", opts:[
+  ["chg_big","Мои потребности значительно изменились — мне нужна другая поддержка"],
+  ["chg_some","Мои потребности немного изменились"], ["same","Мои потребности остались прежними"],
+  ["unsure","Не уверен(а)"], [PNTS,NOPTS]] },
+q15: { type:"open", text:"Что вам сейчас нужно больше всего?", hint:"2–3 предложения своими словами.", max:4000 },
+q16: { type:"multi", max:3, text:"Какие программы или мероприятия QARAVAN наиболее ценны для вас?",
+  hint:"Выберите до 3-х. Если вы ещё не участвовали — отметьте то, что кажется вам наиболее полезным.", opts:[
+  ["bbpride","Brighton Beach Pride"], ["social","Регулярные социальные/общественные мероприятия"],
+  ["rainbow","Rainbow Connections (программа наставничества один на один)"],
+  ["groups","Группы поддержки (психологическая поддержка, транс-группа)"], ["crisis","Поддержка в кризисной ситуации"],
+  ["referrals","Направления к проверенным юристам и специалистам"],
+  ["chat","Телеграм-чат Qaravan Connects (онлайн-сообщество)"], ["info","Информационные встречи и воркшопы"],
+  ["navigation","Помощь разобраться в медицинских и социальных услугах"],
+  ["none","Ничего из перечисленного мне не подходит"], ["other","Другое"]], other:"other", exclusive:["none"] },
+q17: { type:"scale", text:"Насколько вы беспокоитесь о своей безопасности, участвуя в ЛГБТК+ мероприятиях или программах в нынешней политической ситуации?",
+  hint:"Передвиньте ползунок или нажмите на подпись.",
+  min:1, max:4, pnts:true,
+  ticks:["Совсем нет","Не очень","Немного","Очень"],
+  labels:{1:"Совсем не обеспокоен(а)",2:"Не очень обеспокоен(а)",3:"Немного обеспокоен(а)",4:"Очень обеспокоен(а)"} },
+q18: { type:"single", text:"Как беспокойство о безопасности влияет на ваше участие?", opts:[
+  ["less","Участвую реже, чем раньше"], ["same","Участвую так же, как раньше"],
+  ["online","Выбираю онлайн-формат вместо личных встреч"], ["stopped","Совсем перестал(а) участвовать"], [PNTS,NOPTS]] },
+q19: { type:"multi", text:"Что помогло бы вам почувствовать себя в большей безопасности при участии в программах QARAVAN?", hint:"Выберите все подходящие варианты.", opts:[
+  ["protocols","Понятные правила безопасности на мероприятиях"], ["online","Больше онлайн-форматов (вместо личного присутствия)"],
+  ["private","Более приватные/закрытые встречи (не публичные)"],
+  ["data","Информация о том, какие данные собирает и не собирает QARAVAN"],
+  ["legal","Юридическая информация о моих правах"],
+  ["ice","Знать, что делать, если ICE (иммиграционная служба) появится на мероприятии"],
+  ["safe","Я уже чувствую себя в безопасности"], ["other","Другое"]], other:"other", exclusive:["safe"] },
+q20: { type:"single", text:"Какой формат мероприятий вы предпочитаете в нынешней ситуации?", opts:[
+  ["inperson","Личные встречи"], ["online","Онлайн-мероприятия"], ["hybrid","Смешанный формат (и онлайн, и лично)"],
+  ["depends","Зависит от типа мероприятия"], ["unsure","Не уверен(а)"]] },
+q21: { type:"multi", text:"Что могло бы помочь вам участвовать в программах QARAVAN чаще?", hint:"Выберите все подходящие варианты.", opts:[
+  ["weekend","Больше мероприятий на выходных"], ["online","Больше онлайн-форматов"], ["transport","Помощь с транспортом/проездом"],
+  ["childcare","Присмотр за детьми во время мероприятий"], ["boroughs","Мероприятия в других районах Нью-Йорка"],
+  ["announce","Узнавать о мероприятиях заранее"], ["max","Уже участвую столько, сколько могу"], ["other","Другое"]],
+  other:"other", exclusive:["max"] },
+q22: { type:"multi", text:"Через какие каналы вам удобнее всего получать информацию о мероприятиях и программах?", hint:"Выберите все подходящие варианты.", opts:[
+  ["telegram","Телеграм"], ["instagram","Instagram"], ["facebook","Facebook"], ["website","Сайт QARAVAN"],
+  ["email","Рассылки по электронной почте"], ["friends","От друзей, знакомых или сообщества"],
+  ["orgs","Через другие общественные организации"], ["other","Другое"]], other:"other" },
+q23: { type:"scale", text:"Насколько вероятно, что вы будете участвовать в программах QARAVAN в следующие 6 месяцев?",
+  hint:"Передвиньте ползунок или нажмите на подпись.",
+  min:1, max:5, positive:true,
+  ticks:["Точно нет","Скорее нет","Не уверен(а)","Скорее да","Точно да"],
+  labels:{1:"Определённо нет",2:"Скорее нет",3:"Не уверен(а)",4:"Скорее да",5:"Определённо да"} },
+q24: { type:"open", text:"Есть ли что-то ещё, что вы хотели бы, чтобы QARAVAN знал о ваших потребностях или о том, как мы можем лучше поддержать вас?", hint:"Свободный ответ — необязательно.", max:4000 },
+};
+
+const SECTIONS = [
+  { n:1, name:"Ваша связь с QARAVAN", qs:["q1","q2","q3","q4","q5"] },
+  { n:2, name:"Кто вы", qs:["q6","q7","q8","q9","q10","q11","q12"],
+    intro:"Эти вопросы помогают понять, кто отвечал, и заметить, чьи потребности отличаются. Любой вопрос можно пропустить." },
+  { n:3, name:"Что вам нужно прямо сейчас", qs:["q13","q14","q15","q16"] },
+  { n:4, name:"Безопасность и участие", qs:["q17","q18","q19","q20","q21","q22"],
+    intro:"Мы понимаем, что сейчас тревожное время. Эти ответы помогут нам делать участие безопаснее." },
+  { n:5, name:"Будущее участие", qs:["q23","q24"] },
+];
+const SEC_COLORS = ["var(--q-red)","var(--q-orange)","var(--q-green)","var(--q-sky)","var(--q-purple)"];
+
+// Логика показа: вопрос виден, только когда он применим к человеку.
+// Скрытый вопрос не уходит на сервер и не считается в прогрессе.
+const VISIBLE = {
+  q3: () => !(A.q2 || []).includes("not_participated"),
+  q5: () => ["few6mo","once","before","never"].includes(A.q4),
+  q15: () => ["chg_big","chg_some"].includes(A.q14),
+  q18: () => A.q17 === 3 || A.q17 === 4,
+};
+
+// ===== состояние + локальное сохранение =====
+const LSKEY = "qsurvey26.v1";
+const $ = id => document.getElementById(id);
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() :
+  "xxxx-xxxx-4xxx-yxxx-xxxx".replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==="x"?r:(r&0x3|0x8)).toString(16); }) + "-" + Date.now().toString(16));
+
+let S;
+function freshState(){ return { rid: uuid(), A: {}, step: 0, maxSection: 0, startedAt: 0, done: false }; }
+function load(){
+  try { const d = JSON.parse(localStorage.getItem(LSKEY) || "null"); if (d && d.rid && d.A) return d; } catch (e) {}
+  return null;
+}
+S = load() || freshState();
+let A = S.A;
+function persist(){ try { localStorage.setItem(LSKEY, JSON.stringify(S)); } catch (e) {} }
+const RID_RX = /^[0-9a-zA-Z-]{12,64}$/;
+const resumeURL = () => location.origin + location.pathname.replace(/\/index\.html$/, "") + "?r=" + S.rid;
+
+// ===== рендер вопросов =====
+function el(tag, cls, text){ const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+function fsWrap(qid, q){
+  const fs = el("fieldset"); fs.id = "fs_" + qid;
+  const lg = el("legend");
+  const t = el("span", null, q.text); lg.appendChild(t);
+  if (q.hint) lg.appendChild(el("span", "hint", q.hint));
+  fs.appendChild(lg);
+  return fs;
+}
+
+function renderSingle(qid, q){
+  const fs = fsWrap(qid, q);
+  const wrap = el("div", "opts" + (q.cols2 ? " cols2" : ""));
+  wrap.setAttribute("role", "radiogroup");
+  q.opts.forEach(([code, label]) => {
+    const l = el("label");
+    const r = document.createElement("input");
+    r.type = "radio"; r.name = qid; r.value = code; r.checked = A[qid] === code;
+    r.onchange = () => { A[qid] = code; onOther(qid, q, true); touched(qid); };
+    l.append(r, el("span", null, label));
+    wrap.appendChild(l);
+  });
+  fs.appendChild(wrap);
+  if (q.other) fs.appendChild(otherInput(qid));
+  return fs;
+}
+
+function renderMulti(qid, q){
+  const fs = fsWrap(qid, q);
+  const wrap = el("div", "chips");
+  q.opts.forEach(([code, label]) => {
+    const b = el("button", null, label);
+    b.type = "button"; b.dataset.code = code;
+    b.onclick = () => toggleChip(qid, q, code);
+    wrap.appendChild(b);
+  });
+  fs.appendChild(wrap);
+  if (q.max){
+    fs.appendChild(el("p", "counter", ""));
+    const lh = el("p", "limit-hint", `Не больше ${q.max === 3 ? "трёх" : q.max}: чтобы выбрать это, сначала снимите один из выбранных.`);
+    fs.appendChild(lh);
+  }
+  if (q.other) fs.appendChild(otherInput(qid));
+  syncMulti(qid, q);
+  return fs;
+}
+
+function toggleChip(qid, q, code){
+  const cur = new Set(A[qid] || []);
+  const excl = q.exclusive || [];
+  if (cur.has(code)) cur.delete(code);
+  else {
+    if (q.max && !cur.has(code) && [...cur].filter(c => !excl.includes(c)).length >= q.max && !excl.includes(code)){
+      const lh = document.querySelector(`#fs_${qid} .limit-hint`);
+      if (lh){ lh.classList.add("show"); setTimeout(() => lh.classList.remove("show"), 2600); }
+      return;
+    }
+    if (excl.includes(code)) cur.clear();          // «эксклюзивный» вариант снимает остальные
+    else excl.forEach(c => cur.delete(c));         // обычный вариант снимает «эксклюзивный»
+    cur.add(code);
+  }
+  A[qid] = [...cur];
+  syncMulti(qid, q);
+  onOther(qid, q, true);
+  touched(qid);
+}
+
+function syncMulti(qid, q){
+  const fs = $("fs_" + qid); if (!fs) return;
+  const cur = new Set(A[qid] || []);
+  const excl = q.exclusive || [];
+  const normal = [...cur].filter(c => !excl.includes(c)).length;
+  const maxed = q.max && normal >= q.max;
+  fs.querySelectorAll(".chips button").forEach(b => {
+    const on = cur.has(b.dataset.code);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    const blocked = maxed && !on && !excl.includes(b.dataset.code);
+    b.classList.toggle("dim", !!blocked);
+    if (blocked) b.setAttribute("aria-disabled", "true"); else b.removeAttribute("aria-disabled");
+  });
+  const c = fs.querySelector(".counter");
+  if (c){
+    c.textContent = cur.size ? `Выбрано: ${normal || cur.size} из ${q.max}` : `Можно выбрать до ${q.max === 3 ? "трёх" : q.max}`;
+    c.classList.toggle("maxed", !!maxed);
+  }
+}
+
+function otherInput(qid){
+  const w = el("div", "other-input"); w.id = "other_" + qid;
+  const i = document.createElement("input");
+  i.type = "text"; i.maxLength = 200; i.placeholder = "Ваш вариант"; i.value = A[qid + "_other"] || "";
+  i.setAttribute("aria-label", "Другое — уточните");
+  i.oninput = () => { A[qid + "_other"] = i.value; touched(); };
+  w.appendChild(i);
+  return w;
+}
+function onOther(qid, q, focus){
+  const w = $("other_" + qid); if (!w) return;
+  const v = A[qid];
+  const on = q.type === "single" ? v === q.other : (v || []).includes(q.other);
+  w.classList.toggle("show", !!on);
+  if (on && focus) w.querySelector("input").focus({ preventScroll: true });
+}
+
+function renderScale(qid, q){
+  const fs = fsWrap(qid, q);
+  const box = el("div", "slider" + (q.positive ? " pos" : ""));
+  const read = el("div", "readout", "Ответ не выбран");
+  const r = document.createElement("input");
+  r.type = "range"; r.min = q.min; r.max = q.max; r.step = 1;
+  r.value = Math.ceil((q.min + q.max) / 2);
+  r.setAttribute("aria-label", q.text);
+  const ticks = el("div", "ticks");
+  ticks.style.gridTemplateColumns = `repeat(${q.max - q.min + 1},1fr)`;
+  q.ticks.forEach((t, i) => {
+    const b = el("button", null, t); b.type = "button";
+    b.onclick = () => setScale(q.min + i);
+    ticks.appendChild(b);
+  });
+  const sync = () => {
+    const v = A[qid];
+    const answered = typeof v === "number";
+    box.classList.toggle("answered", answered);
+    if (answered){ r.value = v; read.textContent = q.labels[v]; r.setAttribute("aria-valuetext", q.labels[v]); }
+    else read.textContent = v === PNTS ? NOPTS : "Ответ не выбран";
+    [...ticks.children].forEach((b, i) => b.classList.toggle("on", answered && q.min + i === v));
+    if (q.pnts){ const na = fs.querySelector(".na-link"); if (na) na.classList.toggle("on", v === PNTS); }
+  };
+  const setScale = v => { A[qid] = v; sync(); touched(qid); };
+  r.oninput = () => setScale(Number(r.value));
+  box.append(read, r, ticks);
+  fs.appendChild(box);
+  if (q.pnts){
+    const na = el("button", "na-link", NOPTS);
+    na.type = "button";
+    na.onclick = () => { A[qid] = A[qid] === PNTS ? undefined : PNTS; if (A[qid] === undefined) delete A[qid]; sync(); touched(qid); };
+    fs.appendChild(na);
+  }
+  sync();
+  return fs;
+}
+
+function renderOpen(qid, q){
+  const fs = fsWrap(qid, q);
+  const t = document.createElement("textarea");
+  t.maxLength = q.max || 4000; t.value = A[qid] || "";
+  t.setAttribute("aria-label", q.text);
+  t.oninput = () => { A[qid] = t.value; touched(); };
+  fs.appendChild(t);
+  return fs;
+}
+
+const RENDER = { single: renderSingle, multi: renderMulti, scale: renderScale, open: renderOpen };
+
+function buildSteps(){
+  SECTIONS.forEach((sec, si) => {
+    const host = document.querySelector(`.step[data-step="${sec.n}"]`);
+    host.innerHTML = "";
+    const head = el("header", "sec-head");
+    const eb = el("div", "eyebrow", `Раздел ${sec.n} из ${SECTIONS.length}`);
+    eb.style.color = SEC_COLORS[si];
+    const h2 = el("h2", "sec", sec.name);
+    h2.id = "sech_" + sec.n; h2.tabIndex = -1;
+    head.append(eb, h2);
+    if (sec.intro) head.appendChild(el("p", "sec-intro", sec.intro));
+    host.appendChild(head);
+    sec.qs.forEach(qid => host.appendChild(RENDER[Q[qid].type](qid, Q[qid])));
+
+    const nav = el("div", "stepnav");
+    const back = el("button", "back", "Назад");
+    back.type = "button"; back.onclick = () => goStep(sec.n - 1);
+    nav.appendChild(back);
+    if (sec.n < SECTIONS.length){
+      const next = el("button", "next", "Дальше");
+      next.type = "button"; next.onclick = () => goStep(sec.n + 1);
+      nav.appendChild(next);
+    }
+    host.appendChild(nav);
+    if (sec.n === SECTIONS.length){
+      const sub = el("div", "submit");
+      const err = el("p", "err"); err.id = "err"; err.setAttribute("role", "alert");
+      const send = el("button", null, "Отправить ответы");
+      send.type = "submit"; send.id = "send";
+      sub.append(err, send, el("footer", null, "qaravan.org"));
+      host.appendChild(sub);
+    }
+    host.appendChild(xferBlock());
+    sec.qs.forEach(qid => { Q[qid].other && onOther(qid, Q[qid]); });
+  });
+  applyVisibility();
+}
+
+// «Продолжить на другом устройстве»: личная ссылка с response id. Открыв её
+// на другом устройстве, человек получает свой черновик с доски (GET /api/survey).
+function xferBlock(){
+  const box = el("div", "xfer");
+  const btn = el("button", "na-link", "Продолжить на другом устройстве");
+  btn.type = "button";
+  const panel = el("div", "xfer-panel");
+  const inp = document.createElement("input");
+  inp.type = "text"; inp.readOnly = true;
+  inp.setAttribute("aria-label", "Личная ссылка для продолжения");
+  inp.onfocus = () => inp.select();
+  const copy = el("button", "xfer-copy", "Скопировать ссылку");
+  copy.type = "button";
+  copy.onclick = async () => {
+    inp.value = resumeURL();
+    let ok = false;
+    try { await navigator.clipboard.writeText(inp.value); ok = true; }
+    catch (e) { inp.select(); try { ok = document.execCommand("copy"); } catch (e2) {} }
+    if (ok){ copy.textContent = "Скопировано ✓"; setTimeout(() => { copy.textContent = "Скопировать ссылку"; }, 2200); }
+  };
+  btn.onclick = () => { inp.value = resumeURL(); panel.classList.toggle("show"); };
+  panel.append(
+    el("p", null, "Откройте эту ссылку на другом устройстве — сохранённый черновик подтянется, и можно будет продолжить с того же места. Не делитесь ссылкой: по ней открываются ваши ответы."),
+    inp, copy);
+  box.append(btn, panel);
+  return box;
+}
+
+function applyVisibility(){
+  Object.keys(VISIBLE).forEach(qid => {
+    const fs = $("fs_" + qid);
+    if (fs) fs.classList.toggle("gone", !VISIBLE[qid]());
+  });
+}
+
+// ===== шаги и прогресс =====
+function goStep(n, focusHeading = true){
+  S.step = n;
+  document.querySelectorAll(".step").forEach(s => s.classList.toggle("on", s.dataset.step === String(n)));
+  if (n > S.maxSection) S.maxSection = n;
+  const p = $("progress");
+  p.classList.toggle("show", n >= 1);
+  if (n >= 1){
+    $("stepLabel").textContent = `Раздел ${n} из ${SECTIONS.length}`;
+    $("barFill").style.width = Math.max(4, Math.round((n - 1) / SECTIONS.length * 100)) + "%";
+    syncPct();
+  }
+  persist();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (n >= 1 && focusHeading){ const h = $("sech_" + n); if (h) h.focus({ preventScroll: true }); }
+  if (n >= 1) schedule();   // переход между разделами — тоже повод сохраниться
+}
+
+function syncPct(){ $("secName").textContent = `Заполнено: ${progressPct()}%`; }
+
+function applicable(){ return Object.keys(Q).filter(qid => !(qid in VISIBLE) || VISIBLE[qid]()); }
+function answered(qid){
+  const v = A[qid], q = Q[qid];
+  if (q.type === "multi") return Array.isArray(v) && v.length > 0;
+  if (q.type === "open") return typeof v === "string" && v.trim().length > 0;
+  if (q.type === "scale") return typeof v === "number" || v === PNTS;
+  return !!v;
+}
+function progressPct(){
+  const qs = applicable();
+  return Math.round(qs.filter(answered).length / qs.length * 100);
+}
+
+// ===== автосохранение =====
+// Локально — мгновенно при каждом изменении; на сервер (доска monday) — с
+// паузой 1200 мс, чтобы не бомбить API на каждую букву. Строка в monday
+// создаётся при первом содержательном ответе и дальше обновляется.
+let dirty = false, inflight = false, timer = 0;
+const chip = (mode, text) => {
+  const c = $("saveChip");
+  c.className = "savechip show " + mode;
+  $("saveText").textContent = text;
+};
+
+function touched(qid){
+  if (qid && Q[qid]) applyVisibility();
+  if (!S.startedAt) S.startedAt = Date.now();
+  persist();
+  syncPct();
+  schedule();
+}
+function schedule(){
+  if (S.done || !hasAnswers()) return;
+  dirty = true;
+  chip("saving", "Сохраняется…");
+  clearTimeout(timer);
+  timer = setTimeout(() => save("draft"), 1200);
+}
+function hasAnswers(){ return Object.keys(A).some(k => answered(k.replace(/_other$/, "")) ); }
+
+function payload(mode){
+  const qs = applicable();
+  const out = {};
+  qs.forEach(qid => {
+    if (!answered(qid)) return;
+    const q = Q[qid], v = A[qid];
+    if (q.type === "multi"){
+      let arr = v.slice(0, 12);
+      if (q.max){
+        const excl = q.exclusive || [];
+        arr = arr.filter(c => excl.includes(c)).concat(arr.filter(c => !excl.includes(c)).slice(0, q.max));
+      }
+      out[qid] = arr;
+    } else if (q.type === "open") out[qid] = v.trim().slice(0, q.max || 4000);
+    else out[qid] = v;
+    if (q.other){
+      const picked = q.type === "single" ? v === q.other : v.includes(q.other);
+      const txt = (A[qid + "_other"] || "").trim();
+      if (picked && txt) out[qid + "_other"] = txt.slice(0, 200);
+    }
+  });
+  return {
+    rid: S.rid, mode,
+    answers: out,
+    progress: progressPct(),
+    lastSection: Math.min(S.maxSection, SECTIONS.length),
+    startedAt: S.startedAt || Date.now(),
+    website: document.querySelector(".hp").value,
+  };
+}
+
+async function save(mode){
+  if (inflight){ dirty = true; return; }        // очередь: следующий заход подхватит
+  inflight = true; dirty = false;
+  try {
+    const r = await fetch("/api/survey", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload(mode)),
+    });
+    if (!r.ok) throw new Error("http " + r.status);
+    chip("saved", "Сохранено ✓");
+  } catch (e) {
+    dirty = true;                                // локально всё есть; сервер догоним позже
+    chip("local", "Сохранено на устройстве");
+  } finally {
+    inflight = false;
+    if (dirty && !S.done){ clearTimeout(timer); timer = setTimeout(() => save("draft"), 4000); }
+  }
+}
+
+// последний шанс: уход со страницы — добросить несохранённое одним маячком
+window.addEventListener("pagehide", () => {
+  if (S.done || !dirty || !hasAnswers()) return;
+  try {
+    navigator.sendBeacon("/api/survey", new Blob([JSON.stringify(payload("draft"))], { type: "application/json" }));
+  } catch (e) {}
+});
+window.addEventListener("online", () => { if (dirty && !S.done) schedule(); });
+
+// ===== отправка =====
+$("f").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const err = $("err"), send = $("send");
+  err.classList.remove("show");
+  send.disabled = true; send.textContent = "Отправляем…";
+  clearTimeout(timer);
+  const waitIdle = () => new Promise(res => { const t = () => inflight ? setTimeout(t, 150) : res(); t(); });
+  await waitIdle();
+  inflight = true;
+  try {
+    const r = await fetch("/api/survey", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload("submit")),
+    });
+    if (!r.ok) throw new Error("http " + r.status);
+    inflight = false;
+    S.done = true; dirty = false; persist();
+    $("formView").style.display = "none";
+    $("progress").classList.remove("show");
+    $("saveChip").classList.remove("show");
+    $("thanks").classList.add("show");
+    window.scrollTo({ top: 0 });
+  } catch (e) {
+    inflight = false;
+    err.textContent = "Не отправилось. Ответы сохранены на этом устройстве — проверьте интернет и нажмите ещё раз.";
+    err.classList.add("show");
+    send.disabled = false; send.textContent = "Отправить ответы";
+  }
+});
+
+// ===== старт, восстановление, «ещё раз» =====
+$("startBtn").onclick = () => goStep(1);
+function resetAll(){
+  try { localStorage.removeItem(LSKEY); } catch (e) {}
+  S.done = true;            // заглушить pagehide-маячок со старыми ответами
+  dirty = false;
+  location.reload();
+}
+$("restartBtn").onclick = () => {
+  if (!confirm("Точно начать заново? Сохранённые ответы будут стёрты.")) return;
+  resetAll();
+};
+$("againBtn").onclick = resetAll;
+
+(async function boot(){
+  buildSteps();
+  // ?r=<rid> — переход по личной ссылке «продолжить на другом устройстве»:
+  // забираем черновик с доски и принимаем его rid, чтобы писать в ту же строку.
+  const r = (new URLSearchParams(location.search).get("r") || "").trim();
+  if (r && RID_RX.test(r)){
+    if (r !== S.rid){
+      const localBusy = hasAnswers() && !S.done;
+      const adopt = !localBusy || confirm("На этом устройстве уже есть незаконченный ответ на опрос. Открыть черновик по ссылке вместо него?");
+      if (adopt){
+        let d = null;
+        try {
+          const resp = await fetch("/api/survey?rid=" + encodeURIComponent(r));
+          if (resp.ok) d = await resp.json();
+        } catch (e) {}
+        S = freshState(); S.rid = r; A = S.A;
+        if (d && d.found && d.submitted) S.done = true;
+        else if (d && d.found){
+          if (d.answers && typeof d.answers === "object") Object.assign(A, d.answers);
+          S.startedAt = Number(d.startedAt) || Date.now();
+          S.step = Math.min(Math.max(Math.round(Number(d.lastSection) || 1), 1), SECTIONS.length);
+          S.maxSection = S.step;
+        }
+        persist();
+        buildSteps(); // перерисовать с подтянутыми ответами
+      }
+    }
+    history.replaceState(null, "", location.pathname); // личную ссылку из адресной строки убираем
+  }
+  if (S.done){
+    $("formView").style.display = "none";
+    $("thanks").classList.add("show");
+  } else if (S.step >= 1 && hasAnswers()){
+    $("resumeNote").classList.add("show");
+    goStep(Math.min(S.step, SECTIONS.length), false);
+    chip("saved", "Черновик восстановлен");
+  } else {
+    goStep(0, false);
+  }
+})();
+</script>
+</body></html>
