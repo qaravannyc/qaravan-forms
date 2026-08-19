@@ -235,6 +235,9 @@ async function clearOwnedGroups() {
 async function writeItems(all) {
   // Пакетами по 10 алиасами — иначе ~80 последовательных create_item не
   // укладываются в лимит времени серверлес-функции.
+  // Порядок массива = порядок строк на доске: create_item дописывает В КОНЕЦ
+  // группы, а compute() отдаёт варианты от популярных к редким — поэтому
+  // партии нельзя пускать параллельно или в другом порядке.
   for (let i = 0; i < all.length; i += 10) {
     const batch = all.slice(i, i + 10);
     const defs = batch.map((_, k) => `$n${k}: String!, $v${k}: JSON!`).join(", ");
