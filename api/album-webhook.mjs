@@ -1,8 +1,13 @@
 // POST /api/album-webhook — monday шлёт сюда вебхук с календаря событий,
-// когда колонка «Date and Time» изменилась — событию проставили дату: если она
-//     в альбомном окне (21 день назад … конец месяца, с 29-го — конец
-//     следующего) и альбома ещё нет, создаём сразу, не дожидаясь утреннего
-//     робота (events-robot/robot/albums.mjs — он же подчищает пропуски).
+// когда изменилась колонка «Date and Time» или «Registration link»:
+//   • проставили дату в альбомном окне (21 день назад … конец месяца,
+//     с 29-го — конец следующего) — альбом создаётся сразу;
+//   • вставили Partiful-ссылку — альбом создаётся сразу при любой будущей
+//     дате, окна не ждём: ссылки на месяц вставляются пачкой 26-го–27-го,
+//     и все альбомы месяца появляются в тот же момент, чтобы человек открыл
+//     доступ одной посадкой, а не по одному перед каждым событием.
+// Утренний робот (events-robot/robot/albums.mjs) подчищает пропуски по тем же
+// правилам.
 //
 // Данные из вебхука не значат ничего: пришедший id — только повод перечитать
 // строку из monday и решить по её РЕАЛЬНОМУ состоянию (подделать вебхук может
@@ -13,6 +18,7 @@ import { createEventAlbum, infoFingerprint } from "../lib/album.mjs";
 const MONDAY = "https://api.monday.com/v2";
 const EVENTS_BOARD = "4774572020";
 const DATE_COL = "date4";
+const REG_LINK_COL = "link";              // «Registration link» — Partiful
 const ALBUM_COL = "text_mm64mt8q";        // «⚙️ Photos album id»
 const ALBUM_LINK_COL = "link_mm64zqrk";   // «Photo album»
 const ALBUM_STATUS_COL = "color_mm6470za"; // «Album status»
@@ -32,6 +38,7 @@ async function monday(query, variables = {}) {
 }
 
 const urlFrom = (t) => (String(t || "").match(/https?:\/\/\S+/) || [""])[0];
+const isPartiful = (u) => /partiful\.com\/e\//.test(String(u || ""));
 const isShareUrl = (u) => /photos\.app\.goo\.gl|photos\.google\.com\/(?:u\/\d+\/)?share\//.test(u);
 const idFromOwnerLink = (u) => (String(u).match(/photos\.google\.com\/(?:u\/\d+\/)?lr\/album\/([\w-]+)/) || [])[1] || "";
 
@@ -105,19 +112,22 @@ export default async function handler(req, res) {
 
   const evt = b.event || {};
   if (String(evt.boardId) !== EVENTS_BOARD || !evt.pulseId) return res.end('{"ok":true}');
-  if (evt.columnId !== DATE_COL) return res.end('{"ok":true}');
+  if (evt.columnId !== DATE_COL && evt.columnId !== REG_LINK_COL) return res.end('{"ok":true}');
 
   const ev = await getEventRow(evt.pulseId).catch(() => null);
   if (!ev) return res.end('{"ok":true}');
 
   try {
-    // Смена даты: альбом сразу, если дата в окне и событию альбом положен.
+    // Смена даты или ссылки: альбом сразу, если событию альбом положен.
+    // Partiful-ссылка снимает верхнюю границу окна — событие реально,
+    // альбом нужен заранее, каким бы далёким оно ни было.
     if (ev.albumId || isShareUrl(ev.albumLink)) return res.end('{"ok":true}');
     if (ev.eventStatus === "cancelled" || ev.surveyStatus === "No survey" || ev.type === "INTERNAL_MEETING") return res.end('{"ok":true}');
     if (isPrivate(ev)) return res.end('{"ok":true}');
     const d = ev.date.slice(0, 10);
     const w = albumWindow();
-    if (!d || d < w.start || d > w.end) return res.end('{"ok":true}');
+    if (!d || d < w.start) return res.end('{"ok":true}');
+    if (d > w.end && !isPartiful(ev.partiful)) return res.end('{"ok":true}');
     await createAndRecord(ev);
     return res.end('{"ok":true}');
   } catch (e) {
