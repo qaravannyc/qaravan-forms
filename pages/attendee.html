@@ -807,8 +807,6 @@ $("f").addEventListener("submit", async ev => {
     discomfort: pick(low, "low", $("lowOther").value),
     moment: $("moment").value.trim(),
     why_come: pick(why, "whycome", $("whyOther").value),
-    stay: "",
-    age: "",
     consent: consent === "" ? "" : STRINGS.ru.consent[consent],
     name: consent === 0 ? $("respName").value.trim() : "",
     email: contactOk === 0 ? $("respEmail").value.trim() : "",
