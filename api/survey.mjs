@@ -68,7 +68,9 @@ const C = {
 // Код ответа → метка на доске. Метки должны СИМВОЛ В СИМВОЛ совпадать с
 // настройками колонок (включая длинные тире и «…»), иначе monday наплодит
 // дубликаты меток и сломает аналитику.
-const L = {
+// Экспортируется для tools/aggregate-survey.mjs — подписи категорий в
+// агрегатах берутся отсюда, чтобы не разъезжаться с доской.
+export const L = {
   q1: { friends: "Friends or acquaintances", telegram: "Telegram", social: "Social media", bbpride: "Brighton Beach Pride", org: "Another organization", search: "Internet search", other: "Other" },
   q2: { help: "Sought help (legal, medical…)", community: "Friends & community", emosupport: "Emotional support", events: "Interest in events", recommend: "Recommended by friends", other: "Other", not_participated: "Hasn't participated yet" },
   q3: { inperson: "In-person events", chat: "Qaravan Connects chat", referrals: "Specialist referrals", rainbow: "Rainbow Connections", bbpride: "Brighton Beach Pride", groups: "Support groups", volunteer: "Volunteering", other: "Other" },

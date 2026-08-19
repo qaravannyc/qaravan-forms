@@ -1,4 +1,7 @@
 {
+  "crons": [
+    { "path": "/api/aggregate", "schedule": "0 6 * * 1" }
+  ],
   "rewrites": [
     { "source": "/survey", "destination": "/survey/index.html" },
     { "source": "/feedback/:id(\\d+)/lead", "destination": "/api/page?id=:id&lead=1" },
