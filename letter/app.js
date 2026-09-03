@@ -266,6 +266,22 @@ function stepIsEmpty(id) {
     default: return false;
   }
 }
+// A step counts as answered by what is in it, not by whether the person passed it.
+function stepAnswered(id) {
+  const a = S.a;
+  switch (id) {
+    case "name": return !!(a.firstName.trim() && a.lastName.trim());
+    case "birth": return !!(a.dobD && a.dobM && a.dobY.length === 4);
+    case "contact": return !!(a.phone.trim() && a.email.trim());
+    case "proceeding": return !!a.proceeding;
+    case "country": return !!a.country1;
+    case "claim": return Object.values(a.claim).some(Boolean);
+    case "attorney": return a.noAttorney || !!(a.attFirst.trim() || a.attLast.trim() || a.attEmail.trim());
+    case "events": return Object.keys(a.events).length > 0 || !!a.eventsNone.all || Object.values(a.eventsOther).some((v) => v && String(v).trim());
+    case "consent": return !!(a.consent.truth && a.consent.share && a.consent.contact);
+    default: return !stepIsEmpty(id);
+  }
+}
 function maxReached() { let m = S.step; for (const l of S.log) { const i = stepIdx(l.s); if (i > m) m = i; } return m; }
 async function next() {
   const id = STEPS[S.step][0], isLast = S.step === STEPS.length - 1;
@@ -338,10 +354,10 @@ function renderRail() {
   const secSteps = STEPS.filter((x) => x[1] === secIdx), pos = secSteps.findIndex((x) => x[0] === id) + 1;
   let html = '<nav class="railnav" aria-label="Sections"><div class="rail-p"><div class="top"><span class="cap">' + t("your_progress") + '</span><span style="font-size:13px;font-weight:800">' + esc(t("q_of", { n: S.step + 1, total: STEPS.length })) + '</span></div><div class="bar"><i style="width:' + Math.max(pct, 3) + '%"></i></div></div><div>';
   for (let i = 0; i < SECTIONS; i++) {
-    const items = STEPS.filter((x) => x[1] === i), first = stepIdx(items[0][0]), last = stepIdx(items[items.length - 1][0]);
-    const cur = i === secIdx, done = mr >= last && !cur, expand = cur && id !== "events";
+    const items = STEPS.filter((x) => x[1] === i), first = stepIdx(items[0][0]);
+    const cur = i === secIdx, done = items.every((x) => stepAnswered(x[0])) && !cur, expand = cur && id !== "events";
     html += '<div class="rsec' + (cur ? "" : " go") + '"' + (cur ? "" : ' data-act="go" data-v="' + first + '" data-dir="' + (first > mr ? "peek" : "jump") + '"') + '><span class="dotcol"><span class="rdot' + (done ? " done" : cur ? " cur" : "") + '">' + (done ? svgTick("#fff") : i + 1) + "</span>" + (i < SECTIONS - 1 ? '<span class="rline' + (done ? " done" : "") + '"></span>' : "") + '</span><span class="rbody"><span class="rname"><b' + (cur ? ' class="cur"' : "") + ">" + esc(sec(i)) + "</b><span>" + esc(cur ? t("n_of_m", { n: pos, m: items.length }) : tn("n_questions", items.length)) + "</span></span>";
-    if (expand) html += '<span class="ritems">' + items.map((x) => { const ii = stepIdx(x[0]), isCur = ii === S.step, isDone = ii < S.step; return '<span class="ritem' + (isCur ? " cur" : isDone ? " done" : "") + '"' + (isCur ? "" : ' data-act="go" data-v="' + ii + '" data-dir="' + (ii > mr ? "peek" : "jump") + '"') + "><i></i><span>" + esc(cap(stepLabel(x[0]))) + "</span></span>"; }).join("") + "</span>";
+    if (expand) html += '<span class="ritems">' + items.map((x) => { const ii = stepIdx(x[0]), isCur = ii === S.step, isDone = stepAnswered(x[0]); return '<span class="ritem' + (isCur ? " cur" : isDone ? " done" : "") + '"' + (isCur ? "" : ' data-act="go" data-v="' + ii + '" data-dir="' + (ii > mr ? "peek" : "jump") + '"') + "><i></i><span>" + esc(cap(stepLabel(x[0]))) + "</span></span>"; }).join("") + "</span>";
     html += "</span></div>";
   }
   return html + '</div><div class="rail-f">' + t("rail_foot") + "</div></nav>";
@@ -363,11 +379,10 @@ function renderSavedScreen() {
 }
 function renderDone() {
   const a = S.a, name = a.firstName || t("friend");
-  const att = a.noAttorney ? t("d_noatt") : t("d_att", { who: (a.attFirst || a.attLast ? (a.attFirst + " " + a.attLast).trim() : t("d_your_attorney")) + (a.attEmail ? " (" + a.attEmail + ")" : "") });
   const later = a.caseLater && !filesOk("caseFiles");
-  return '<div class="stack fade">' + wordmark(44) + '<h1 class="big">' + esc(t("d_title", { name })) + "</h1><p>" + esc(t("d_body", { email: a.email, phone: a.phone ? t("d_or_call", { phone: a.phone }) : "" })) + " " + esc(att) + "</p>" +
+  return '<div class="stack fade">' + wordmark(44) + '<h1 class="big">' + esc(t("d_title", { name })) + "</h1><p>" + esc(t("d_body", { email: a.email, phone: a.phone ? t("d_or_call", { phone: a.phone }) : "" })) + "</p>" +
     (later ? '<div class="card"><div style="display:flex;align-items:center;gap:12px"><span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#FFEDD9;color:#C4691A;font-weight:800;font-size:16px;flex:none">1</span><span class="eyebrow orange">' + t("d_doc_title") + '</span></div><p style="font-size:15px">' + t("d_doc_body", { email: "<strong>" + esc(a.email) + "</strong>" }) + '</p><button type="button" class="btn md" data-act="openAttach">' + t("d_doc_btn") + "</button></div>" : "") +
-    '<p style="font-weight:800;font-size:20px;letter-spacing:-.01em">' + t("d_luck") + '</p><p class="small">' + t("d_close") + "</p></div>";
+    '<p style="font-weight:800;font-size:20px;letter-spacing:-.01em">' + t("d_luck") + '</p><p class="small">' + t("d_close") + "</p>" + renderTrBlock() + "</div>";
 }
 function renderAttach() {
   const a = S.a;
@@ -431,9 +446,9 @@ const STEP_RENDER = {
   },
   attorney() {
     const a = S.a;
-    return "<h1>" + t("q9_title") + '</h1><p class="help">' + t("q9_help") + "</p>" + rowCheck(a.noAttorney, "toggle", "noAttorney", t("q9_none"), t("q9_none_sub")) +
+    return "<h1>" + t("q9_title") + "</h1>" + rowCheck(a.noAttorney, "toggle", "noAttorney", t("q9_none")) +
       (a.noAttorney ? "" : '<div class="flex"><label class="field grow"><span class="lbl">' + t("q9_first") + "</span>" + input("attFirst", { ac: "off" }) + ferr("attFirst") + '</label><label class="field grow"><span class="lbl">' + t("q9_last") + "</span>" + input("attLast", { ac: "off" }) + ferr("attLast") + "</label></div>" +
-        field(t("q9_email") + ' <span class="opt">' + t("q9_email_note") + "</span>", "attEmail", { type: "email", mode: "email", nocap: true }) + field(t("q9_phone") + opt(), "attPhone", { type: "tel", mode: "tel", fmt: "phone" }) + field(t("q9_firm") + opt(), "attFirm", { ac: "organization", max: 120 }));
+        field(t("q9_email"), "attEmail", { type: "email", mode: "email", nocap: true }) + field(t("q9_phone") + opt(), "attPhone", { type: "tel", mode: "tel", fmt: "phone" }) + field(t("q9_firm") + opt(), "attFirm", { ac: "organization", max: 120 }));
   },
   deadline() {
     const a = S.a; let cal = "";
@@ -500,7 +515,7 @@ const STEP_RENDER = {
       tl += '<div class="stack" style="gap:10px;margin-top:4px"><div class="lrow m0' + (otherOn ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + otherOn + '" data-act="eventOther" data-v="' + yr.y + '">' + cb(otherOn) + '<span style="color:var(--q-gray)">' + esc(t("something_else", { year: yr.y })) + "</span></div>" + (otherOn ? '<textarea class="in" data-f="eventsOther.' + yr.y + '" rows="3" maxlength="400" aria-label="' + esc(t("describe")) + '" placeholder="' + esc(t("something_else_ph")) + '" style="min-height:90px">' + esc(a.eventsOther[yr.y] || "") + "</textarea>" : "") + "</div></section>";
     });
     const noneOn = !!a.eventsNone.all;
-    return "<h1>" + t("q16_title") + '</h1><p class="help">' + t("q16_help") + '</p><label class="field"><span class="lbl">' + t("q16_search") + opt() + '</span><input class="in" id="evfilter" value="' + esc(S.filter) + '" autocomplete="off" placeholder="' + esc(t("q16_search_ph")) + '"></label>' +
+    return "<h1>" + t("q16_title") + '</h1><p class="help">' + t("q16_help") + '</p><label class="field"><span class="lbl">' + t("q16_search") + '</span><input class="in" id="evfilter" value="' + esc(S.filter) + '" autocomplete="off" placeholder="' + esc(t("q16_search_ph")) + '"></label>' +
       '<div class="stack" style="gap:8px"><span class="card-t">' + t("jump_year") + '</span><div class="yearpills">' + pills + "</div></div>" +
       '<div class="picked"><div class="eyebrow">' + esc(picked.length ? tn("selected_so_far", picked.length) : t("nothing_selected")) + "</div>" + (picked.length ? '<div class="chips" style="gap:8px">' + picked.join("") + "</div>" : "") + "</div>" +
       (f && !any ? '<p class="help">' + esc(t("q16_nomatch", { q: S.filter })) + "</p>" : "") + '<div class="timeline">' + tl + "</div>" +
@@ -518,7 +533,7 @@ const STEP_RENDER = {
   },
   consent() {
     const a = S.a;
-    return "<h1>" + t("q20_title") + '</h1><p class="help">' + t("q20_help") + '</p><div class="card plain">' + [["truth", "c_truth", "c_truth_sub"], ["share", "c_share", "c_share_sub"], ["contact", "c_contact", "c_contact_sub"]].map(([v, tk, sk]) => '<div class="consent' + (a.consent[v] ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + !!a.consent[v] + '" data-act="consent" data-v="' + v + '"><span class="txt"><span class="t">' + t(tk) + '</span><span class="s">' + t(sk) + '</span></span><span style="flex:none;padding-top:2px">' + cb(!!a.consent[v], true) + "</span></div>").join("") + "</div>" + ferr("consent") +
+    return "<h1>" + t("q20_title") + '</h1><p class="help">' + t("q20_help") + '</p><div class="card plain">' + [["truth", "c_truth", "c_truth_sub"], ["share", "c_share", ""], ["contact", "c_contact", "c_contact_sub"]].map(([v, tk, sk]) => '<div class="consent' + (a.consent[v] ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + !!a.consent[v] + '" data-act="consent" data-v="' + v + '"><span class="txt"><span class="t">' + t(tk) + "</span>" + (sk ? '<span class="s">' + t(sk) + "</span>" : "") + '</span><span style="flex:none;padding-top:2px">' + cb(!!a.consent[v], true) + "</span></div>").join("") + "</div>" + ferr("consent") +
       '<label class="field"><span class="lbl">' + t("q20_else") + opt() + '</span><textarea class="in" data-f="anythingElse" rows="4" maxlength="2000" style="min-height:110px">' + esc(a.anythingElse) + "</textarea></label>";
   }
 
@@ -555,9 +570,17 @@ function renderStep() {
   foot += '<button type="button" id="nextbtn" class="btn full' + (isLast ? " green" : "") + '" data-act="next">' + esc(label) + "</button>";
   if (OPTIONAL.has(id) && stepIsEmpty(id)) foot += '<button type="button" class="textbtn" data-act="skip">' + t("skip") + "</button>";
   foot += '<div class="stamp" id="stamp">' + esc(stampText()) + "</div></div>";
-  return html + foot + "</div>";
+  return html + foot + renderTrBlock() + "</div>";
 }
 const resumeURL = () => location.origin + "/letter?r=" + S.rid;
+// «Заметили ошибку в переводе?» — как в опросе: только на версиях, переведённых с помощью ИИ (все, кроме ru и en).
+// Текст уходит в колонку Translation feedback той же строки на доске.
+function renderTrBlock() {
+  if (lang === "ru" || lang === "en") return "";
+  const open = !!S.trOpen, st = S.trState || "";
+  return '<div class="trfb"><button type="button" class="trfb-link' + (open ? " on" : "") + '" data-act="trToggle" aria-expanded="' + open + '">' + esc(t("tr_link")) + "</button>" +
+    (open ? '<div class="trfb-panel"><p>' + esc(t("tr_note")) + '</p><textarea class="in" id="trtext" rows="3" maxlength="2000" placeholder="' + esc(t("tr_ph")) + '" aria-label="' + esc(t("tr_link")) + '">' + esc(S.trText || "") + '</textarea><button type="button" class="btn outline md" data-act="trSend"' + (st === "sending" ? " disabled" : "") + ">" + esc(st === "sent" ? t("tr_sent") : st === "err" ? t("tr_err") : t("tr_send")) + "</button></div>" : "") + "</div>";
+}
 
 function render() {
   document.documentElement.lang = lang; document.title = t("title");
@@ -621,6 +644,18 @@ const ACT = {
   consent(el) { const c = Object.assign({}, S.a.consent); c[el.dataset.v] = !c[el.dataset.v]; setA({ consent: c }); },
   openAttach() { S.view = "attach"; S.attachSaved = false; addLog("attach-later", "open"); render(); window.scrollTo({ top: 0 }); },
   async attachDone() { const btn = document.querySelector('[data-act="attachDone"]'); if (btn) btn.disabled = true; S.a.caseLater = false; persist(); const out = await save("doc"); S.attachSaved = !!(out && out.ok); if (!S.attachSaved) S.errs.net = t("e_net"); addLog("attach-later", S.attachSaved ? "attached" : "error"); render(); },
+  trToggle() { const ta = $("trtext"); if (ta) S.trText = ta.value; S.trOpen = !S.trOpen; S.trState = ""; render(); },
+  async trSend() {
+    const ta = $("trtext"), text = ta ? ta.value.trim() : ""; S.trText = ta ? ta.value : "";
+    if (!text) { if (ta) ta.focus(); return; }
+    S.trState = "sending"; render();
+    try {
+      const r = await fetch("/api/letter", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rid: S.rid, mode: "feedback", lang, step: inStep() ? S.step + 1 : 0, text: text.slice(0, 2000), website: ($("hp") || {}).value || "" }) });
+      if (!r.ok) throw new Error("http " + r.status);
+      S.trText = ""; S.trState = "sent"; render();
+      setTimeout(() => { S.trState = ""; S.trOpen = false; render(); }, 2000);
+    } catch (e) { S.trState = "err"; render(); setTimeout(() => { S.trState = ""; render(); }, 2400); }
+  },
   copyLink() { const v = resumeURL(); navigator.clipboard && navigator.clipboard.writeText(v).catch(() => {}); const b = document.querySelector('[data-act="copyLink"]'); if (b) b.textContent = t("copied"); }
 };
 function calView() { const a = S.a; if (S.calView) return S.calView; const sel = a.deadline ? new Date(a.deadline + "T00:00:00") : new Date(); return { y: sel.getFullYear(), m: sel.getMonth() }; }
@@ -638,6 +673,7 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("input", (e) => {
   const el = e.target;
   if (el.id === "evfilter") { S.filter = el.value; S.filterFocus = true; render(); return; }
+  if (el.id === "trtext") { S.trText = el.value; return; }
   if (el.dataset && el.dataset.f && el.tagName !== "SELECT") onInput(el);
 });
 document.addEventListener("change", (e) => {

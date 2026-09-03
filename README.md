@@ -84,7 +84,9 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
   вопросе, сколько минут, язык), Proceeding, Case document, Files (все файлы:
   case-…, id-…), Identities & experiences, Roles at QARAVAN,
   Attorney email, Key events at home, Other support letters, References at
-  QARAVAN, Partner, Consents given, Anything else; всё про
+  QARAVAN, Partner, Consents given, Anything else, Translation feedback (что
+  написали в «Заметили ошибку в переводе?» — блок есть только на uk/ka/uz/kk,
+  как в опросе); всё про
   участие (частота, первый контакт, события, вклад) собирается в существующую
   Involvement Summary. Каждый ответ — одна строка; ключ — «⚙️ Intake id» (UUID,
   который придумывает браузер). «⚙️ Raw answers» — JSON для личной ссылки,

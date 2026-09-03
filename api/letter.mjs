@@ -129,7 +129,7 @@ function othersText(a) {
 }
 const pronounsText = (a) => (a.pronouns === "other" ? a.pronounsText : L.pronouns[a.pronouns] || "");
 const countryName = (code) => { try { return code && code !== "XK" ? new Intl.DisplayNames(["en"], { type: "region" }).of(code) : code === "XK" ? "Kosovo" : ""; } catch { return code; } };
-const attorneyText = (a) => (a.noAttorney ? "No attorney yet (letter goes to the person)" : [[a.attFirst, a.attLast].filter(Boolean).join(" "), a.attFirm, a.attEmail, a.attPhone].filter(Boolean).join(" · "));
+const attorneyText = (a) => (a.noAttorney ? "No attorney yet" : [[a.attFirst, a.attLast].filter(Boolean).join(" "), a.attFirm, a.attEmail, a.attPhone].filter(Boolean).join(" · "));
 const firstContact = (a) => [a.cameM && a.cameY ? `${MONTHS[+a.cameM - 1]} ${a.cameY}` : a.cameY || "", a.found ? `via ${L.found[a.found]}${a.found === "other" && a.foundText ? ` (${a.foundText})` : ""}` : ""].filter(Boolean).join(" · ");
 
 
@@ -191,7 +191,7 @@ export function involvementSummary(a) {
 
 // The raw JSON is what the resume link reads back; trimmed only at the very end.
 function rawJson(a, meta) {
-  const body = { rid: meta.rid, savedAt: new Date().toISOString(), lang: meta.lang, step: Math.max(0, meta.lastQ - 1), progress: meta.progress, startedAt: meta.startedAt, submitted: !!meta.submitted || meta.mode === "submit", submittedAt: meta.submittedAt || null, minutes: meta.minutes ?? null, emailSent: meta.emailSent || null, docLater: !!meta.docLater, files: meta.files, a };
+  const body = { rid: meta.rid, feedback: meta.feedback, savedAt: new Date().toISOString(), lang: meta.lang, step: Math.max(0, meta.lastQ - 1), progress: meta.progress, startedAt: meta.startedAt, submitted: !!meta.submitted || meta.mode === "submit", submittedAt: meta.submittedAt || null, minutes: meta.minutes ?? null, emailSent: meta.emailSent || null, docLater: !!meta.docLater, files: meta.files, a };
   let s = JSON.stringify(body);
   if (s.length > RAW_MAX) { body.a = { ...a, anythingElse: a.anythingElse.slice(0, 300), incidents: a.incidents }; s = JSON.stringify(body); }
   return s.slice(0, RAW_MAX);
@@ -257,6 +257,23 @@ export default async function handler(req, res) {
   if (b.website) return res.end('{"ok":true}'); // honeypot: agree politely, write nothing
   const rid = String(b.rid || "").trim();
   if (!RID_RX.test(rid)) { res.statusCode = 400; return res.end("{}"); }
+  // «Заметили ошибку в переводе?» — текст ложится в колонку Translation feedback той же строки
+  // (строку создаём, если человек ещё ничего не отвечал); история хранится в raw.feedback.
+  if (b.mode === "feedback") {
+    const text = String(b.text || "").trim().slice(0, 2000);
+    if (!text) return res.end('{"ok":true}');
+    const q = Math.min(20, Math.max(0, Math.round(Number(b.step) || 0)));
+    try {
+      const existing = await findByRid(rid);
+      const prev = existing && existing.raw ? existing.raw : { rid, files: {} };
+      const list = [...(Array.isArray(prev.feedback) ? prev.feedback : []), { at: new Date().toISOString(), lang: langOf(b.lang), q, text }].slice(-20);
+      const col = list.map((f) => `[${f.at.slice(0, 16).replace("T", " ")} · ${f.lang.toUpperCase()}${f.q ? ` · Q${f.q}` : ""}] ${f.text}`).join("\n\n").slice(0, 9000);
+      const cv = { [C.translationFeedback]: { text: col }, [C.raw]: { text: JSON.stringify({ ...prev, rid, feedback: list }).slice(0, 9000) } };
+      const itemId = existing ? existing.id : await createRow(rid, `Intake ${rid.slice(0, 8)}`);
+      await monday(`mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b, item_id:$i, column_values:$v) { id } }`, { b: "18429448469", i: String(itemId), v: JSON.stringify(cv) });
+      return res.end('{"ok":true}');
+    } catch (e) { console.error("translation feedback failed:", e.message); res.statusCode = 502; return res.end("{}"); }
+  }
   const mode = ["draft", "submit", "doc"].includes(b.mode) ? b.mode : "draft";
   const a = cleanAnswers(b.a);
   const log = cleanLog(b.log);
@@ -278,6 +295,7 @@ export default async function handler(req, res) {
       progress: Math.min(100, Math.max(0, Math.round(Number(b.progress) || 0))),
       minutes: mode === "submit" ? Math.min(1440, Math.max(0, Math.round((Date.now() - startedAt) / 6000) / 10)) : (prev.minutes ?? null),
       emailSent: prev.emailSent || null,
+      feedback: Array.isArray(prev.feedback) ? prev.feedback : [],
       submittedAt: mode === "submit" ? new Date().toISOString() : prev.submittedAt || null,
     };
     // In "doc" mode only the file list changed; answers stay as they were.
@@ -304,7 +322,7 @@ export default async function handler(req, res) {
     if (mode === "submit") {
       if (!existing || existing.group !== GROUP_ANSWERS) await monday(`mutation ($i: ID!) { move_item_to_group(item_id:$i, group_id:"${GROUP_ANSWERS}") { id } }`, { i: String(itemId) }).catch((e) => console.error("move failed:", e.message));
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t) { id } }`, { i: String(itemId), t: updateText(answers, { ...meta, repeat: wasSubmitted }) }).catch((e) => console.error("update failed:", e.message));
-      if (EMAIL_RX.test(answers.email)) await sendSubmitEmail({ to: answers.email, name: answers.firstName, lang: meta.lang, link: `${FORM_BASE}/letter?r=${rid}&doc=1`, docLater: answers.caseLater && !files.caseFiles.length, attorney: answers.noAttorney ? "" : answers.attEmail }).catch((e) => console.error("submit email failed:", e.message));
+      if (EMAIL_RX.test(answers.email)) await sendSubmitEmail({ to: answers.email, name: answers.firstName, lang: meta.lang, link: `${FORM_BASE}/letter?r=${rid}&doc=1`, docLater: answers.caseLater && !files.caseFiles.length }).catch((e) => console.error("submit email failed:", e.message));
     }
     if (mode === "doc") {
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t) { id } }`, { i: String(itemId), t: `Case document added later through the personal link: ${files.caseFiles.join(", ") || "(see Case documents)"}` }).catch((e) => console.error("doc update failed:", e.message));
