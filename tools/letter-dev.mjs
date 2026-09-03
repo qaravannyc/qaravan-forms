@@ -1,5 +1,5 @@
 // Local dev/test server for the letter intake form: serves the repo's static
-// files and mounts api/letter.mjs + api/letter-file.mjs against an in-memory
+// files and mounts api/letter.mjs against an in-memory
 // fake of the monday API (no token needed). Usage: node tools/letter-dev.mjs [port]
 // Not used in production — Vercel serves the real thing.
 import http from "node:http";
@@ -38,14 +38,12 @@ globalThis.fetch = async (url, opts = {}) => {
 };
 
 const letter = (await import("../api/letter.mjs")).default;
-const letterFile = (await import("../api/letter-file.mjs")).default;
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".json": "application/json" };
 
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
     if (u.pathname === "/api/letter") return await letter(req, res);
-    if (u.pathname === "/api/letter-file") return await letterFile(req, res);
     if (u.pathname === "/__db") { res.setHeader("Content-Type", "application/json"); return res.end(JSON.stringify(DB, null, 1)); }
     let p = u.pathname === "/letter" ? "/letter/index.html" : u.pathname;
     const f = join(root, p);

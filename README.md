@@ -13,7 +13,7 @@ Vercel на плане Hobby не деплоит приватные репози
 - `/<monday-item-id>/lead` — форма для волонтёра-ведущего
 - `/feedback/<monday-item-id>` и `/feedback/<monday-item-id>/lead` — те же формы, старый вид ссылки
 - `/survey` — исследование потребностей сообщества 2026 (папка `survey/`, отправка через `api/survey.mjs`)
-- `/letter` — анкета на письмо поддержки для иммиграционного дела (папка `letter/`, приём через `api/letter.mjs` и `api/letter-file.mjs`)
+- `/letter` — анкета на письмо поддержки для иммиграционного дела (папка `letter/`, приём через `api/letter.mjs`)
 
 ID в ссылке — это id строки события на доске Event Calendar в monday.
 
@@ -70,8 +70,9 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
   `letter/countries.js` (ISO-коды, имена локализует браузер).
 - `api/letter.mjs` — автосохранение после каждого ответа (`mode: draft`),
   отправка (`submit`), досылка документа (`doc`), выдача черновика по личной
-  ссылке (`GET ?rid=`). `api/letter-file.mjs` — файлы (документ из дела, фото
-  документа, личная история) прямо в файловые колонки строки. Общий код и
+  ссылке (`GET ?rid=`) и приём файлов (`POST ?file=1`: документ из дела, фото
+  документа, личная история — в колонку Files). Всё в одной функции: на плане
+  Hobby Vercel не собирает деплой больше чем с 12 функциями в `api/`. Общий код и
   карта колонок — `lib/letter-board.mjs`, письма — `lib/letter-mail.mjs`.
 - Ответы ложатся на приватную доску monday **Letters of Support — Immigration
   Cases** (id `18429448469`): черновики — в группу «Form — started, not
