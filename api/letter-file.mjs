@@ -1,7 +1,7 @@
 // POST /api/letter-file?rid=<intake id>&kind=caseFiles|idFiles|declFiles&name=<filename>
 // Body: the file bytes. Files from the letter intake form go straight into
-// the matching file column on the person's row (Case documents / ID photo /
-// Personal statement file). The row is created on the spot if the person
+// the Files column on the person's row; which file is which (case document,
+// ID, personal statement) is remembered in the row's raw JSON and the update. The row is created on the spot if the person
 // uploads before the first autosave landed.
 //
 // Vercel caps request bodies at 4.5 MB, so the page shrinks photos before
@@ -10,7 +10,7 @@
 // off the person's list, so staff may see a replaced photo next to the new one.
 import { C, RID_RX, MONDAY_FILE, monday, findByRid, createRow } from "../lib/letter-board.mjs";
 
-const KIND = { caseFiles: C.fDocs, idFiles: C.fId, declFiles: C.fPs };
+const KIND = { caseFiles: C.files, idFiles: C.files, declFiles: C.files }; // one Files column; the kind is kept in the row's raw JSON
 const MAX_BYTES = 4 * 1024 * 1024;
 
 export default async function handler(req, res) {
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     const form = new FormData();
     form.append("query", `mutation ($file: File!) { add_file_to_column (item_id: ${itemId}, column_id: "${KIND[kind]}", file: $file) { id } }`);
     form.append("map", '{"f":"variables.file"}');
-    form.append("f", new Blob([buf]), name);
+    form.append("f", new Blob([buf]), ({ caseFiles: "case-", idFiles: "id-", declFiles: "statement-" }[kind] || "") + name);
     const up = await fetch(MONDAY_FILE, { method: "POST", headers: { Authorization: process.env.MONDAY_TOKEN, "API-Version": "2024-10" }, body: form }).then((r) => r.json());
     if (!up.data?.add_file_to_column?.id) { console.error("letter file upload failed:", JSON.stringify(up).slice(0, 300)); res.statusCode = 502; return res.end('{"ok":false,"error":"upload failed"}'); }
 

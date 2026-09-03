@@ -77,7 +77,13 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
   Cases** (id `18429448469`): черновики — в группу «Form — started, not
   finished» (Form status = In progress), отправленные — в «Form — answers
   received» (Letter Status = Answers received) плюс апдейт с полным читаемым
-  текстом ответов. Каждый ответ — одна строка; ключ — «⚙️ Intake id» (UUID,
+  текстом ответов. Колонок немного: Form status и Form progress (на каком
+  вопросе, сколько минут, язык), Proceeding, Case document, Files (все файлы:
+  case-…, id-…, statement-…), Identities & experiences, Roles at QARAVAN,
+  Attorney email, Key events at home, Other support letters, References at
+  QARAVAN, Partner, Consents given, Anything else, Personal statement; всё про
+  участие (частота, первый контакт, события, вклад) собирается в существующую
+  Involvement Summary. Каждый ответ — одна строка; ключ — «⚙️ Intake id» (UUID,
   который придумывает браузер). «⚙️ Raw answers» — JSON для личной ссылки,
   «⚙️ Path log» — путь по анкете (шаги, время, направление: next / back / jump /
   peek / skip / error / submit…) — по нему видно, кто дошёл до последнего шага,

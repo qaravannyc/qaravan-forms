@@ -133,54 +133,63 @@ const firstContact = (a) => [a.cameM && a.cameY ? `${MONTHS[+a.cameM - 1]} ${a.c
 // Every column the form fills. `files` = names uploaded so far (from the row's raw JSON).
 export function columnValues(a, meta) {
   const submitted = meta.mode === "submit" || meta.submitted;
+  const messengers = [a.telegram && `Telegram ${a.telegram}`, a.whatsapp && `WhatsApp ${a.whatsapp}`, a.instagram && `Instagram ${a.instagram}`].filter(Boolean).join(" · ");
+  const known = [a.knownAs.filter(Boolean).join(", "), pronounsText(a)].filter(Boolean).join(" · ");
+  const partner = a.partner ? [L.partner[a.partner], partnerText(a)].filter(Boolean).join("\n") : "";
+  const other = othersText(a);
+  const anything = [a.anythingElse, other ? `Details for “Other”:\n${other}` : ""].filter(Boolean).join("\n\n");
+  const progress = submitted
+    ? `Submitted ${(meta.submittedAt || new Date().toISOString()).slice(0, 10)} · ${meta.minutes != null ? meta.minutes + " min" : "time unknown"} · ${L.lang[meta.lang]}`
+    : `Q ${meta.lastQ} of 21 · ${meta.progress}% · ${L.lang[meta.lang]}`;
   const cv = {
     [C.rid]: meta.rid,
     [C.formStatus]: { label: submitted ? "Submitted" : "In progress" },
-    [C.formLang]: { label: L.lang[meta.lang] },
-    [C.progress]: String(meta.progress), [C.lastQ]: String(meta.lastQ),
-    [C.firstName]: a.firstName, [C.lastName]: a.lastName, [C.known]: a.knownAs.filter(Boolean).join(", "),
-    [C.dob]: dateVal(dob(a)), [C.pronouns]: pronounsText(a),
-    [C.phone]: phoneVal(a.phone), [C.email]: emailVal(a.email), [C.telegram]: a.telegram, [C.whatsapp]: a.whatsapp, [C.instagram]: a.instagram,
+    [C.progress]: progress,
+    [C.firstName]: a.firstName, [C.lastName]: a.lastName, [C.known]: known,
+    [C.dob]: dateVal(dob(a)),
+    [C.phone]: phoneVal(a.phone), [C.email]: emailVal(a.email), [C.messengers]: messengers,
     [C.followLang]: a.followLang ? { label: L.followLang[a.followLang] } : "",
     [C.proceeding]: a.proceeding ? { label: L.proceeding[a.proceeding] } : "",
     [C.caseType]: a.proceeding ? { label: L.caseType[a.proceeding] } : "", [C.venue]: a.proceeding ? { label: L.venue[a.proceeding] } : "",
     [C.country]: countryName(a.country1), [C.aNumber]: a.anumber,
     [C.caseDoc]: meta.files.caseFiles.length ? { label: meta.docLater ? "Added later" : "Uploaded" } : a.caseLater ? { label: "Will send later" } : "",
     [C.identities]: Object.keys(a.claim).length ? { labels: Object.keys(a.claim).map((k) => L.identities[k]) } : "",
-    [C.noAttorney]: check(a.noAttorney), [C.attorney]: attorneyText(a),
-    [C.attEmail]: a.noAttorney ? "" : emailVal(a.attEmail), [C.attPhone]: a.noAttorney ? "" : phoneVal(a.attPhone), [C.attFirm]: a.noAttorney ? "" : a.attFirm,
+    [C.attorney]: attorneyText(a), [C.attEmail]: a.noAttorney ? "" : emailVal(a.attEmail),
     [C.deadline]: dateVal(a.deadlineUnknown ? "" : a.deadline),
     [C.keyEvents]: a.incidents ? { text: a.incidents } : "",
     [C.otherLetters]: lettersText(a) ? { text: lettersText(a) } : "",
-    [C.firstContact]: firstContact(a), [C.firstCame]: dateVal(a.cameY ? `${a.cameY}-${(a.cameM || "1").padStart(2, "0")}-01` : ""),
-    [C.foundVia]: a.found ? { label: L.found[a.found] } : "",
+    [C.firstContact]: firstContact(a),
     [C.refs]: refsText(a) ? { text: refsText(a) } : "",
-    [C.freq]: a.frequency ? { label: L.freq[a.frequency] } : "",
-    [C.evList]: eventsText(a) ? { text: eventsText(a).slice(0, RAW_MAX) } : "", [C.evCount]: String(eventsCount(a)),
-    [C.involvementForm]: involvementText(a) ? { text: involvementText(a) } : "",
     [C.roles]: Object.keys(a.role).length ? { labels: Object.keys(a.role).map((k) => L.roles[k]) } : "",
-    [C.partner]: a.partner ? { label: L.partner[a.partner] } : "", [C.partnerDetails]: partnerText(a) ? { text: partnerText(a) } : "",
-    [C.cTrue]: check(a.consent.truth), [C.cShare]: check(a.consent.share), [C.cContact]: check(a.consent.contact),
-    [C.anythingElse]: a.anythingElse ? { text: a.anythingElse } : "",
-    [C.others]: othersText(a) ? { text: othersText(a) } : "",
+    [C.partner]: partner ? { text: partner } : "",
+    [C.consents]: check(a.consent.truth && a.consent.share && a.consent.contact),
+    [C.anythingElse]: anything ? { text: anything } : "",
     [C.ps]: a.declChoice ? { label: L.ps[a.declChoice] } : submitted ? { label: "Not reached" } : "",
     [C.resumeLink]: { url: `${FORM_BASE}/letter?r=${meta.rid}`, text: "Open this person's form" },
     [C.source]: `Intake form (feedback.qaravan.org/letter)${a.found ? ` · found us via ${L.found[a.found]}` : ""}`,
-    [C.involvement]: { text: [a.frequency ? `Takes part: ${L.freq[a.frequency]}` : "", firstContact(a) ? `First came: ${firstContact(a)}` : "", eventsCount(a) ? `Events ticked: ${eventsCount(a)}` : "", Object.keys(a.role).length ? `Roles: ${Object.keys(a.role).map((k) => L.roles[k]).join(", ")}` : "", involvementText(a) ? `Involvement:\n${involvementText(a)}` : ""].filter(Boolean).join("\n") },
+    [C.involvement]: { text: involvementSummary(a).slice(0, RAW_MAX) },
     [C.path]: { text: pathText(meta.log).slice(0, RAW_MAX) },
     [C.raw]: { text: rawJson(a, meta) },
   };
-  if (submitted) {
-    cv[C.letterStatus] = { label: "Answers received" };
-    const now = new Date(); cv[C.submittedAt] = { date: now.toISOString().slice(0, 10), time: now.toISOString().slice(11, 19) };
-    if (meta.minutes != null) cv[C.minutes] = String(meta.minutes);
-  }
+  if (submitted) cv[C.letterStatus] = { label: "Answers received" };
   return cv;
+}
+
+// Everything about the person's life in the community, in one column staff can read top to bottom.
+export function involvementSummary(a) {
+  const n = eventsCount(a);
+  return [
+    a.frequency ? `Takes part: ${L.freq[a.frequency]}` : "",
+    firstContact(a) ? `First came: ${firstContact(a)}` : "",
+    Object.keys(a.role).length ? `Roles: ${Object.keys(a.role).map((k) => L.roles[k]).join(", ")}` : "",
+    eventsText(a) ? `\nEvents and programs${n ? ` (${n})` : ""}:\n${eventsText(a)}` : "",
+    involvementText(a) ? `\nCommunity involvement:\n${involvementText(a)}` : "",
+  ].filter(Boolean).join("\n");
 }
 
 // The raw JSON is what the resume link reads back; trimmed only at the very end.
 function rawJson(a, meta) {
-  const body = { rid: meta.rid, savedAt: new Date().toISOString(), lang: meta.lang, step: Math.max(0, meta.lastQ - 1), progress: meta.progress, startedAt: meta.startedAt, submitted: !!meta.submitted || meta.mode === "submit", emailSent: meta.emailSent || null, docLater: !!meta.docLater, files: meta.files, a };
+  const body = { rid: meta.rid, savedAt: new Date().toISOString(), lang: meta.lang, step: Math.max(0, meta.lastQ - 1), progress: meta.progress, startedAt: meta.startedAt, submitted: !!meta.submitted || meta.mode === "submit", submittedAt: meta.submittedAt || null, minutes: meta.minutes ?? null, emailSent: meta.emailSent || null, docLater: !!meta.docLater, files: meta.files, a };
   let s = JSON.stringify(body);
   if (s.length > RAW_MAX) { body.a = { ...a, anythingElse: a.anythingElse.slice(0, 300), incidents: a.incidents }; s = JSON.stringify(body); }
   return s.slice(0, RAW_MAX);
@@ -206,6 +215,7 @@ export function updateText(a, meta) {
     line("Country", countryName(a.country1)), line("A-number", a.anumber),
     line("Case document", meta.files.caseFiles.length ? meta.files.caseFiles.join(", ") : a.caseLater ? "will send later (personal link emailed)" : "—"),
     line("ID photo", meta.files.idFiles.join(", ")),
+    "(files are in the Files column, prefixed case- / id- / statement-)",
     line("Identities & experiences", Object.keys(a.claim).map((k) => L.identities[k] + (a.claimWhich[k] ? ` (${a.claimWhich[k]})` : "")).join("; ")),
     line("Attorney", attorneyText(a)), line("Letter needed by", a.deadlineUnknown ? "date not known yet" : a.deadline),
     line("Key events at home", a.incidents), line("Other support letters", lettersText(a)),
@@ -265,8 +275,9 @@ export default async function handler(req, res) {
       docLater: mode === "doc" ? true : !!prev.docLater,
       lastQ: Math.min(21, Math.max(0, Math.round(Number(b.step) || 0) + 1)),
       progress: Math.min(100, Math.max(0, Math.round(Number(b.progress) || 0))),
-      minutes: mode === "submit" ? Math.min(1440, Math.max(0, Math.round((Date.now() - startedAt) / 6000) / 10)) : null,
+      minutes: mode === "submit" ? Math.min(1440, Math.max(0, Math.round((Date.now() - startedAt) / 6000) / 10)) : (prev.minutes ?? null),
       emailSent: prev.emailSent || null,
+      submittedAt: mode === "submit" ? new Date().toISOString() : prev.submittedAt || null,
     };
     // In "doc" mode only the file list changed; answers stay as they were.
     const answers = mode === "doc" && prev.a ? { ...cleanAnswers(prev.a), caseLater: false } : a;
