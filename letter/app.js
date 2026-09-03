@@ -448,7 +448,7 @@ const STEP_RENDER = {
     return "<h1>" + t("q16_title") + '</h1><p class="help">' + t("q16_help") + '</p><label class="field"><span class="lbl">' + t("q16_search") + '</span><input class="in" id="evfilter" value="' + esc(S.filter) + '" autocomplete="off" placeholder="' + esc(t("q16_search_ph")) + '"></label>' +
       '<div class="stack" style="gap:8px"><span class="card-t">' + t("jump_year") + '</span><div class="yearpills">' + pills + "</div></div>" +
       '<div class="picked"><div class="eyebrow">' + esc(picked.length ? tn("selected_so_far", picked.length) : t("nothing_selected")) + "</div>" + (picked.length ? '<div class="chips" style="gap:8px">' + picked.join("") + "</div>" : "") + "</div>" +
-      (f && !any ? '<p class="help">' + esc(t("q16_nomatch", { q: S.filter })) + "</p>" : "") + '<div class="timeline">' + tl + "</div>" +
+      '<div id="evbody">' + (f && !any ? '<p class="help">' + esc(t("q16_nomatch", { q: S.filter })) + "</p>" : "") + '<div class="timeline">' + tl + "</div></div>" +
       '<div class="divider"><div class="lrow m0' + (noneOn ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + noneOn + '" data-act="eventsNone">' + cb(noneOn) + '<span class="col"><span>' + t("q16_none") + '</span><span class="det" style="font-weight:500">' + t("q16_none_sub") + "</span></span></div></div>";
   },
   beyond() {
@@ -526,7 +526,6 @@ function render() {
   else if (S.view === "done") main = renderDone();
   else main = renderStep();
   app.innerHTML = (rail ? renderRail() : "") + "<main>" + main + "</main>";
-  const ef = $("evfilter"); if (ef && S.filterFocus) { ef.focus(); ef.setSelectionRange(ef.value.length, ef.value.length); S.filterFocus = false; }
 }
 
 // ---------- events (delegated) ----------
@@ -600,7 +599,7 @@ document.addEventListener("keydown", (e) => {
 });
 document.addEventListener("input", (e) => {
   const el = e.target;
-  if (el.id === "evfilter") { S.filter = el.value; S.filterFocus = true; render(); return; }
+  if (el.id === "evfilter") { S.filter = el.value; const tpl = document.createElement("template"); tpl.innerHTML = STEP_RENDER.events(); const nb = tpl.content.querySelector("#evbody"), ob = $("evbody"); if (nb && ob) ob.replaceWith(nb); else render(); return; }
   if (el.id === "trtext") { S.trText = el.value; return; }
   if (el.dataset && el.dataset.f && el.tagName !== "SELECT") onInput(el);
 });
@@ -608,7 +607,19 @@ document.addEventListener("change", (e) => {
   const el = e.target;
   if (el.tagName === "SELECT" && el.dataset.f) { setA({ [el.dataset.f]: el.value }); return; }
 });
-let rw = 0; window.addEventListener("resize", () => { clearTimeout(rw); rw = setTimeout(render, 120); });
+// Re-render on resize only when the layout really changes (phone ↔ laptop rail). A phone keyboard
+// changes just the height; re-rendering then would replace the focused field and close the keyboard.
+let rw = 0, lastWide = wide();
+window.addEventListener("resize", () => {
+  clearTimeout(rw);
+  rw = setTimeout(() => {
+    if (wide() === lastWide) return;
+    lastWide = wide();
+    const ae = document.activeElement, f = ae && ae.dataset ? ae.dataset.f || ae.id : "";
+    render();
+    if (f) { const n = document.querySelector('[data-f="' + f + '"], #' + f); if (n) n.focus({ preventScroll: true }); }
+  }, 120);
+});
 
 // ---------- boot: local draft, personal link (?r=) ----------
 (async function boot() {
