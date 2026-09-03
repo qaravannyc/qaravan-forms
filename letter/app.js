@@ -56,7 +56,7 @@ const tn = (k, n, vars) => {
 const months = () => t("months").split("|");
 const stepLabel = (id) => t("st_" + id);
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-const eventName = (id, en) => (EVI[lang] && EVI[lang][id]) || en;
+const eventName = (id, en) => { const v = EVI[lang] && EVI[lang][id]; return Array.isArray(v) ? v[0] : v || en; };
 let dnCache = {};
 function countryName(code, en) {
   try { if (!dnCache[lang]) dnCache[lang] = new Intl.DisplayNames([lang], { type: "region" }); const n = dnCache[lang].of(code); if (n && n !== code) return n; } catch (e) {}
