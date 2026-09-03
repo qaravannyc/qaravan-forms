@@ -57,8 +57,9 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
 ## Анкета на письмо поддержки (`/letter`)
 
 Форма для участников сообщества, которым нужно письмо-декларация от QARAVAN
-для иммиграционного дела: `feedback.qaravan.org/letter`. 21 вопрос в пяти
-разделах, по одному вопросу на экран, шесть языков (по умолчанию английский;
+для иммиграционного дела: `feedback.qaravan.org/letter`. 20 вопросов в четырёх
+разделах (по решению команды форма не спрашивает A-number и не просит личную
+историю / personal statement), по одному вопросу на экран, шесть языков (по умолчанию английский;
 переключатель — в шапке). Дизайн и тексты — из прототипа Claude Design
 «Letter Intake Form» (папка `letter/`, спецификация — в описании коммита и в
 комментариях к файлам).
@@ -71,7 +72,7 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
 - `api/letter.mjs` — автосохранение после каждого ответа (`mode: draft`),
   отправка (`submit`), досылка документа (`doc`), выдача черновика по личной
   ссылке (`GET ?rid=`) и приём файлов (`POST ?file=1`: документ из дела, фото
-  документа, личная история — в колонку Files). Всё в одной функции: на плане
+  документа — в колонку Files). Всё в одной функции: на плане
   Hobby Vercel не собирает деплой больше чем с 12 функциями в `api/`. Общий код и
   карта колонок — `lib/letter-board.mjs`, письма — `lib/letter-mail.mjs`.
 - Ответы ложатся на приватную доску monday **Letters of Support — Immigration
@@ -80,9 +81,9 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
   received» (Letter Status = Answers received) плюс апдейт с полным читаемым
   текстом ответов. Колонок немного: Form status и Form progress (на каком
   вопросе, сколько минут, язык), Proceeding, Case document, Files (все файлы:
-  case-…, id-…, statement-…), Identities & experiences, Roles at QARAVAN,
+  case-…, id-…), Identities & experiences, Roles at QARAVAN,
   Attorney email, Key events at home, Other support letters, References at
-  QARAVAN, Partner, Consents given, Anything else, Personal statement; всё про
+  QARAVAN, Partner, Consents given, Anything else; всё про
   участие (частота, первый контакт, события, вклад) собирается в существующую
   Involvement Summary. Каждый ответ — одна строка; ключ — «⚙️ Intake id» (UUID,
   который придумывает браузер). «⚙️ Raw answers» — JSON для личной ссылки,
