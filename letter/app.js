@@ -303,7 +303,7 @@ function renderRail() {
   let html = '<nav class="railnav" aria-label="Sections"><div class="rail-p"><div class="top"><span class="cap">' + t("your_progress") + '</span><span style="font-size:13px;font-weight:800">' + esc(t("q_of", { n: S.step + 1, total: STEPS.length })) + '</span></div><div class="bar"><i style="width:' + Math.max(pct, 3) + '%"></i></div></div><div>';
   for (let i = 0; i < SECTIONS; i++) {
     const items = STEPS.filter((x) => x[1] === i), first = stepIdx(items[0][0]);
-    const cur = i === secIdx, done = items.every((x) => stepAnswered(x[0])) && !cur, expand = cur && id !== "events";
+    const cur = i === secIdx, done = items.every((x) => stepAnswered(x[0])) && !cur, expand = cur;
     html += '<div class="rsec' + (cur ? "" : " go") + '"' + (cur ? "" : ' data-act="go" data-v="' + first + '" data-dir="' + (first > mr ? "peek" : "jump") + '"') + '><span class="dotcol"><span class="rdot' + (done ? " done" : cur ? " cur" : "") + '">' + (done ? svgTick("#fff") : i + 1) + "</span>" + (i < SECTIONS - 1 ? '<span class="rline' + (done ? " done" : "") + '"></span>' : "") + '</span><span class="rbody"><span class="rname"><b' + (cur ? ' class="cur"' : "") + ">" + esc(sec(i)) + "</b><span>" + esc(cur ? t("n_of_m", { n: pos, m: items.length }) : tn("n_questions", items.length)) + "</span></span>";
     if (expand) html += '<span class="ritems">' + items.map((x) => { const ii = stepIdx(x[0]), isCur = ii === S.step, isDone = stepAnswered(x[0]); return '<span class="ritem' + (isCur ? " cur" : isDone ? " done" : "") + '"' + (isCur ? "" : ' data-act="go" data-v="' + ii + '" data-dir="' + (ii > mr ? "peek" : "jump") + '"') + "><i></i><span>" + esc(cap(stepLabel(x[0]))) + "</span></span>"; }).join("") + "</span>";
     html += "</span></div>";
@@ -454,7 +454,8 @@ const STEP_RENDER = {
       '<div class="stack" style="gap:8px"><span class="card-t">' + t("jump_year") + '</span><div class="yearpills">' + pills + "</div></div>" +
       '<div class="picked"><div class="eyebrow">' + esc(picked.length ? tn("selected_so_far", picked.length) : t("nothing_selected")) + "</div>" + (picked.length ? '<div class="chips" style="gap:8px">' + picked.join("") + "</div>" : "") + "</div>" +
       '<div id="evbody">' + (f && !any ? '<p class="help">' + esc(t("q16_nomatch", { q: S.filter })) + "</p>" : "") + '<div class="timeline">' + tl + "</div></div>" +
-      '<div class="divider"><div class="lrow m0' + (noneOn ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + noneOn + '" data-act="eventsNone">' + cb(noneOn) + '<span class="col"><span>' + t("q16_none") + '</span><span class="det" style="font-weight:500">' + t("q16_none_sub") + "</span></span></div></div>";
+      '<button type="button" class="tojump" id="tojump" data-act="jumpEnd" hidden><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>' + t("jump_end") + "</span></button>" +
+      '<div class="divider" id="evend"><div class="lrow m0' + (noneOn ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + noneOn + '" data-act="eventsNone">' + cb(noneOn) + '<span class="col"><span>' + t("q16_none") + '</span><span class="det" style="font-weight:500">' + t("q16_none_sub") + "</span></span></div></div>";
   },
   beyond() {
     const b = S.a.beyond;
@@ -510,6 +511,16 @@ function renderStep() {
   return html + foot + renderTrBlock() + "</div>";
 }
 const resumeURL = () => location.origin + "/letter?r=" + S.rid;
+// «К концу списка» on the events step: visible while the Next button is out of view.
+let jumpIO = null;
+function watchJump() {
+  if (jumpIO) { jumpIO.disconnect(); jumpIO = null; }
+  const btn = $("tojump"), target = $("nextbtn");
+  if (!btn || !target) return;
+  if (!("IntersectionObserver" in window)) { btn.hidden = false; return; }
+  jumpIO = new IntersectionObserver((es) => { btn.hidden = es.some((e) => e.isIntersecting); }, { rootMargin: "0px 0px -40px 0px" });
+  jumpIO.observe(target);
+}
 // «Заметили ошибку в переводе?» — как в опросе, но на всех шести языках: все версии анкеты написаны с помощью ИИ.
 // Текст уходит в колонку Translation feedback той же строки на доске.
 function renderTrBlock() {
@@ -531,6 +542,7 @@ function render() {
   else if (S.view === "done") main = renderDone();
   else main = renderStep();
   app.innerHTML = (rail ? renderRail() : "") + "<main>" + main + "</main>";
+  watchJump();
 }
 
 // ---------- events (delegated) ----------
@@ -569,6 +581,7 @@ const ACT = {
   calNext() { const v = calView(); S.calView = { y: v.m === 11 ? v.y + 1 : v.y, m: (v.m + 1) % 12 }; render(); },
   calPick(el) { setA({ deadline: el.dataset.v }); },
   clearDeadline() { setA({ deadline: "" }); },
+  jumpEnd() { const n = $("evend"); if (!n) return; const top = n.getBoundingClientRect().top + window.scrollY - (wide() ? 88 : 128); window.scrollTo({ top, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); addLog("events", "jump-end"); },
   jumpYear(el) { const y = el.dataset.v; const n = document.getElementById("year-" + y); if (!n) return; const top = n.getBoundingClientRect().top + window.scrollY - (wide() ? 88 : 128); window.scrollTo({ top, behavior: "smooth" }); addLog("events", "jump-year:" + y); },
   event(el) { toggleEvent(el.dataset.v); },
   count(el) { const c = Object.assign({}, S.a.eventCounts); c[el.dataset.i] = el.dataset.v; setA({ eventCounts: c }); },
