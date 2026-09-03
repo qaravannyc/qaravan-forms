@@ -214,7 +214,7 @@ export function updateText(a, meta) {
     line("Key events at home", a.incidents), line("Other support letters", lettersText(a)),
     "", "YOU AND QARAVAN",
     line("First came", firstContact(a)), line("Who knows them", refsText(a)), line("Takes part", L.freq[a.frequency]),
-    line("Events and programs", eventsText(a) ? "\n" + eventsText(a) : ""), line("Community involvement", involvementText(a) ? "\n" + involvementText(a) : ""),
+    line("Events and programs", eventsText(a) ? "\n" + eventsText(a) : ""), line("Volunteering at QARAVAN", involvementText(a) ? "\n" + involvementText(a) : ""),
     line("Roles", Object.keys(a.role).map((k) => L.roles[k]).join(", ")),
     line("Partner", a.partner ? L.partner[a.partner] + (partnerText(a) ? "\n" + partnerText(a) : "") : ""),
     "", "CONSENT",
