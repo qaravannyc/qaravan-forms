@@ -290,7 +290,7 @@ function renderHeader() {
   const pct = progressPct();
   const cur = LANGS.find((l) => l[0] === lang);
   $("hdr").innerHTML = '<div class="hdr-in">' + wordmark(26) + '<div class="hdr-r">' +
-    (showSave ? '<button type="button" class="linkbtn" data-act="saveLater">' + t("save_later") + "</button>" : "") +
+    (showSave ? '<button type="button" class="linkbtn" data-act="saveLater"><span class="full">' + t("save_later") + '</span><span class="short">' + t("save_short") + "</span></button>" : "") +
     '<div class="langwrap"><button type="button" class="langbtn" data-act="toggleLang" aria-haspopup="listbox" aria-expanded="' + S.langOpen + '"><span>' + cur[1] + "</span>" + svgDown + "</button>" +
     (S.langOpen ? '<div class="langbg" data-act="closeLang"></div><div class="langlist" role="listbox" aria-label="Language">' + LANGS.map((l) => '<div class="langopt' + (l[0] === lang ? " on" : "") + '" role="option" tabindex="0" aria-selected="' + (l[0] === lang) + '" data-act="lang" data-v="' + l[0] + '"><span class="tick">' + (l[0] === lang ? svgTick("#0099CC") : "") + "</span><span>" + l[1] + "</span></div>").join("") + "</div>" : "") +
     "</div></div></div>" +

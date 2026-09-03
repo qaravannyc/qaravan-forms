@@ -40,7 +40,9 @@ button:focus-visible,[role=button]:focus-visible,[role=radio]:focus-visible,[rol
 .wordmark{font-weight:900;letter-spacing:-.03em;line-height:1;white-space:nowrap;text-decoration:none;font-size:26px}
 .wordmark .q{color:var(--q-black)}.wordmark .a1{color:var(--q-red)}.wordmark .r{color:var(--q-orange)}.wordmark .a2{color:var(--q-gold)}.wordmark .v{color:var(--q-sky)}.wordmark .a3{color:var(--q-green)}.wordmark .n{color:var(--q-purple)}
 .hdr-r{display:flex;align-items:center;gap:6px;min-width:0}
-.linkbtn{border:0;background:transparent;color:var(--q-ink);font-weight:700;font-size:14px;padding:10px;min-height:44px;cursor:pointer;border-radius:999px;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;line-height:1.2;text-align:right}
+.linkbtn{border:0;background:transparent;color:var(--q-ink);font-weight:700;font-size:14px;padding:10px;min-height:44px;cursor:pointer;border-radius:999px;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;line-height:1.2;text-align:right;white-space:nowrap}
+.linkbtn .short{display:none}
+@media (max-width:520px){.linkbtn .full{display:none}.linkbtn .short{display:inline}}
 .langwrap{position:relative;flex:none}
 .langbtn{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--q-ink);background:#fff;border-radius:999px;padding:0 14px 0 16px;min-height:44px;font-weight:700;font-size:14px;color:var(--q-ink);cursor:pointer;line-height:1.2}
 .langbg{position:fixed;inset:0;z-index:29}
