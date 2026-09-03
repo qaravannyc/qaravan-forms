@@ -9,19 +9,13 @@ import { join, extname } from "node:path";
 const root = new URL("..", import.meta.url).pathname;
 const port = +(process.argv[2] || 3999);
 process.env.MONDAY_TOKEN = "fake";
-const DB = { items: {}, seq: 1, updates: [], files: [] };
+const DB = { items: {}, seq: 1, updates: [] };
 globalThis.__LETTER_DB = DB;
 
 // Fake monday: enough GraphQL to run the handlers end to end.
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, opts = {}) => {
   const u = String(url);
-  if (u.startsWith("https://api.monday.com/v2/file")) {
-    const fd = opts.body; const f = fd.get("f"); const q = fd.get("query");
-    const m = /item_id: (\d+), column_id: "([^"]+)"/.exec(q);
-    DB.files.push({ item: m[1], col: m[2], name: f.name, size: f.size });
-    return new Response(JSON.stringify({ data: { add_file_to_column: { id: "asset" + DB.files.length } } }));
-  }
   if (u.startsWith("https://api.monday.com/v2")) {
     const { query, variables: v } = JSON.parse(opts.body);
     if (query.includes("items_page_by_column_values")) {
