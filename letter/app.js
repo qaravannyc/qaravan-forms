@@ -17,7 +17,7 @@ const STEPS = [
 const WEIGHT = { name: 1, birth: 1, contact: 2, proceeding: 1, country: 1, caseDoc: 3, idDoc: 2, claim: 1, attorney: 2, deadline: 1, incidents: 3, otherLetters: 1, firstCame: 1, knows: 3, frequency: 1, events: 6, beyond: 3, role: 1, partner: 1, consent: 1 };
 const SECTIONS = 4;
 const TOTAL_WEIGHT = STEPS.reduce((t, x) => t + WEIGHT[x[0]], 0);
-const OPTIONAL = new Set(["incidents", "otherLetters", "beyond", "partner", "deadline", "knows", "frequency", "firstCame", "role"]);
+const OPTIONAL = new Set(["caseDoc", "idDoc", "incidents", "otherLetters", "beyond", "partner", "deadline", "knows", "frequency", "firstCame", "role"]);
 const KEY = "qaravan-intake-draft-v1";
 const MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const COUNTS = ["1-2", "3-5", "6-10", "10+"];
@@ -241,8 +241,8 @@ function validate() {
   if (id === "contact") { req("phone", t("e_phone")); if (a.phone && a.phone.replace(/\D/g, "").length < 10) e.phone = t("e_phoneshort"); if (!EMAIL_RX.test(a.email.trim())) e.email = t("e_email"); }
   if (id === "proceeding" && !a.proceeding) e.proceeding = t("e_proc");
   if (id === "country") req("country1", t("e_country"));
-  if (id === "caseDoc" && !filesOk("caseFiles") && !a.caseLater) e.caseDoc = a.caseFiles.some((f) => f.up === "wait") ? t("e_wait") : t("e_casedoc");
-  if (id === "idDoc" && !filesOk("idFiles")) e.idDoc = a.idFiles.some((f) => f.up === "wait") ? t("e_wait") : t("e_iddoc");
+  if (id === "caseDoc" && a.caseFiles.some((f) => f.up === "wait")) e.caseDoc = t("e_wait");
+  if (id === "idDoc" && a.idFiles.some((f) => f.up === "wait")) e.idDoc = t("e_wait");
   if (id === "claim" && !Object.values(a.claim).some(Boolean)) e.claim = t("e_claim");
   if (id === "attorney" && !a.noAttorney) { req("attFirst", t("e_attfirst")); req("attLast", t("e_attlast")); if (!EMAIL_RX.test(a.attEmail.trim())) e.attEmail = t("e_attemail"); }
   if (id === "knows") a.knowsPeople.forEach((k, i) => { if (k.name.trim() && !k.phone.trim()) e["knowsPhone" + i] = t("e_knowsphone", { name: k.name.trim() }); });
@@ -252,12 +252,13 @@ function validate() {
 }
 function missingRequired() {
   const a = S.a;
-  const checks = { name: a.firstName.trim() && a.lastName.trim(), birth: a.dobD && a.dobM && a.dobY.length === 4 && !dobError(a), contact: a.phone.trim() && EMAIL_RX.test(a.email.trim()), proceeding: !!a.proceeding, country: !!a.country1, caseDoc: filesOk("caseFiles") || a.caseLater, idDoc: filesOk("idFiles"), claim: Object.values(a.claim).some(Boolean), attorney: a.noAttorney || (a.attFirst.trim() && a.attLast.trim() && EMAIL_RX.test(a.attEmail.trim())), consent: a.consent.truth && a.consent.share && a.consent.contact };
+  const checks = { name: a.firstName.trim() && a.lastName.trim(), birth: a.dobD && a.dobM && a.dobY.length === 4 && !dobError(a), contact: a.phone.trim() && EMAIL_RX.test(a.email.trim()), proceeding: !!a.proceeding, country: !!a.country1, claim: Object.values(a.claim).some(Boolean), attorney: a.noAttorney || (a.attFirst.trim() && a.attLast.trim() && EMAIL_RX.test(a.attEmail.trim())), consent: a.consent.truth && a.consent.share && a.consent.contact };
   return STEPS.filter((x) => x[0] in checks && !checks[x[0]]).map((x) => ({ id: x[0], idx: stepIdx(x[0]) }));
 }
 function stepIsEmpty(id) {
   const a = S.a;
   switch (id) {
+    case "caseDoc": return !a.caseFiles.length && !a.caseLater; case "idDoc": return !a.idFiles.length;
     case "incidents": return !a.incidents.trim(); case "otherLetters": return !a.otherLetters;
     case "deadline": return !a.deadline && !a.deadlineUnknown; case "beyond": return a.beyond.every((b) => !b.what.trim());
     case "partner": return !a.partner; case "knows": return a.knowsPeople.every((k) => !k.name.trim() && !k.phone.trim()) && !Object.values(a.knowsVia).some(Boolean);
@@ -375,7 +376,7 @@ function renderAttach() {
     (S.attachSaved ? '<div class="note green">' + esc(t("at_saved", { email: a.email })) + "</div>" : "") + "</div>";
 }
 
-// ---------- the 21 steps ----------
+// ---------- the 20 steps ----------
 const STEP_RENDER = {
   name() {
     const kn = S.a.knownAs;
@@ -414,12 +415,12 @@ const STEP_RENDER = {
   },
   caseDoc() {
     const a = S.a;
-    return "<h1>" + t("q6_title") + '</h1><p class="help">' + t("q6_help") + "</p>" +
+    return '<div class="eyebrow gray">' + t("optional_skip") + "</div><h1>" + t("q6_title") + '</h1><p class="help">' + t("q6_help") + "</p>" +
       '<div><span class="lbl">' + t("q6_upload") + "</span>" + fileList("caseFiles", "image/*,.pdf", true) + ferr("caseDoc") + "</div>" +
       '<div class="divider">' + rowCheck(a.caseLater, "toggle", "caseLater", t("q6_later"), t("q6_later_sub")) + "</div>";
   },
   idDoc() {
-    return "<h1>" + t("q7_title") + '</h1><p class="help">' + t("q7_help") + "</p>" + fileList("idFiles", "image/*,.pdf", false) + ferr("idDoc") + '<p class="small">' + t("q7_privacy") + "</p>";
+    return '<div class="eyebrow gray">' + t("optional_skip") + "</div><h1>" + t("q7_title") + '</h1><p class="help">' + t("q7_help") + "</p>" + fileList("idFiles", "image/*,.pdf", false) + ferr("idDoc") + '<p class="small">' + t("q7_privacy") + "</p>";
   },
   claim() {
     const a = S.a;
@@ -448,7 +449,7 @@ const STEP_RENDER = {
         const iso = view.y + "-" + String(view.m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
         cells += '<button type="button"' + (past ? " disabled" : "") + ' class="' + (on ? "on" : isToday ? "today" : past ? "past" : "") + '" data-act="calPick" data-v="' + iso + '" aria-label="' + esc(fmtDate(iso)) + '" aria-pressed="' + !!on + '">' + d + "</button>";
       }
-      cal = '<div class="stack" style="gap:12px"><span class="lbl" style="margin:0">' + t("q10_date") + '</span><div class="cal"><div class="cal-h"><button type="button" class="iconbtn sm" data-act="calPrev" aria-label="' + esc(t("prev_month")) + '">' + svgLeft + "</button><span>" + esc(months()[view.m] + " " + view.y) + '</span><button type="button" class="iconbtn sm" data-act="calNext" aria-label="' + esc(t("next_month")) + '">' + svgRight + '</button></div><div class="cal-g">' + cells + '</div><div class="cal-f"><span>' + esc(sel ? t("q10_needed_by", { date: fmtDate(a.deadline) }) : t("q10_nodate")) + "</span>" + (sel ? '<button type="button" class="textbtn sm" data-act="clearDeadline">' + t("clear") + "</button>" : "") + "</div></div></div>";
+      cal = '<div class="stack" style="gap:12px"><span class="lbl" style="margin:0">' + t("q10_date") + '</span><div class="cal"><div class="cal-h"><button type="button" class="iconbtn sm" data-act="calPrev" aria-label="' + esc(t("prev_month")) + '">' + svgLeft + "</button><span>" + esc(cap(months()[view.m]) + " " + view.y) + '</span><button type="button" class="iconbtn sm" data-act="calNext" aria-label="' + esc(t("next_month")) + '">' + svgRight + '</button></div><div class="cal-g">' + cells + '</div><div class="cal-f"><span>' + esc(sel ? t("q10_needed_by", { date: fmtDate(a.deadline) }) : t("q10_nodate")) + "</span>" + (sel ? '<button type="button" class="textbtn sm" data-act="clearDeadline">' + t("clear") + "</button>" : "") + "</div></div></div>";
     }
     return "<h1>" + t("q10_title") + '</h1><p class="help">' + t("q10_help") + "</p>" + cal + rowCheck(a.deadlineUnknown, "toggleDeadline", "", t("q10_unknown"));
   },
@@ -507,7 +508,7 @@ const STEP_RENDER = {
   },
   beyond() {
     const b = S.a.beyond;
-    return "<h1>" + t("q17_title") + '</h1><p class="help">' + t("q17_help") + "</p>" + b.map((x, i) => '<div class="card"><div class="card-h"><span class="card-t">' + esc(b.length > 1 ? t("q17_activity_n", { n: i + 1 }) : t("q17_activity")) + "</span>" + (b.length > 1 ? '<button type="button" class="textbtn sm" data-act="rmBeyond" data-v="' + i + '">' + t("remove") + "</button>" : "") + '</div><label class="field"><span class="lbl">' + t("q17_what") + "</span>" + input("beyond." + i + ".what", { max: 200 }) + '</label><div class="flex"><label class="field grow" style="flex-basis:140px"><span class="lbl">' + t("q17_since") + "</span>" + input("beyond." + i + ".since", { max: 60 }) + '</label><label class="field grow"><span class="lbl">' + t("q17_often") + "</span>" + input("beyond." + i + ".howOften", { max: 120 }) + "</label></div></div>").join("") + '<button type="button" class="btn outline md" data-act="addBeyond">' + t("add_another") + "</button>";
+    return '<div class="eyebrow gray">' + t("optional_skip") + "</div><h1>" + t("q17_title") + '</h1><p class="help">' + t("q17_help") + "</p>" + b.map((x, i) => '<div class="card"><div class="card-h"><span class="card-t q">' + esc(b.length > 1 ? t("q17_activity_n", { n: i + 1 }) : t("q17_activity")) + "</span>" + (b.length > 1 ? '<button type="button" class="textbtn sm" data-act="rmBeyond" data-v="' + i + '">' + t("remove") + "</button>" : "") + '</div><label class="field"><span class="lbl">' + t("q17_what") + "</span>" + input("beyond." + i + ".what", { max: 200 }) + '</label><label class="field"><span class="lbl">' + t("q17_since") + "</span>" + input("beyond." + i + ".since", { max: 60 }) + '</label><label class="field"><span class="lbl">' + t("q17_often") + "</span>" + input("beyond." + i + ".howOften", { max: 200 }) + "</label></div>").join("") + '<button type="button" class="btn outline md" data-act="addBeyond">' + t("add_another") + "</button>";
   },
   role() { return "<h1>" + t("q18_title") + '</h1><p class="help">' + t("select_all") + "</p>" + chips([["volunteer", t("r_volunteer")], ["lead", t("r_lead")], ["facilitator", t("r_facilitator")], ["board", t("r_board")], ["none", t("r_none")]], "role", { multi: true, tall: true }); },
   partner() {

@@ -58,7 +58,7 @@ export function cleanAnswers(src) {
     knowsVia: Object.fromEntries(keys(L.activities, s.knowsVia).map((k) => [k, true])), knowsViaText: str(s.knowsViaText, 200),
     frequency: pick(L.freq, s.frequency),
     events: {}, eventCounts: {}, eventsOther: {}, eventsNone: bool(s.eventsNone && s.eventsNone.all) ? { all: true } : {},
-    beyond: list(s.beyond, 8, (b) => b && typeof b === "object" ? { what: str(b.what, 200), since: str(b.since, 60), howOften: str(b.howOften, 120) } : null),
+    beyond: list(s.beyond, 8, (b) => b && typeof b === "object" ? { what: str(b.what, 200), since: str(b.since, 60), howOften: str(b.howOften, 200) } : null),
     role: Object.fromEntries(keys(L.roles, s.role).map((k) => [k, true])),
     partner: pick(L.partner, s.partner), partnerIn: pick(L.yesno, s.partnerIn), partnerStmt: pick(L.pstatement, s.partnerStmt), partnerName: str(s.partnerName, 80), partnerContact: str(s.partnerContact, 120),
     consent: { truth: bool(s.consent && s.consent.truth), share: bool(s.consent && s.consent.share), contact: bool(s.consent && s.consent.contact) },
