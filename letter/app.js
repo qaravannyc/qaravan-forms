@@ -211,7 +211,7 @@ async function addFiles(kind, files) {
       const f = await shrinkImage(e.f);
       if (f.size > 4 * 1024 * 1024) msg = t("e_filebig");
       else {
-        const r = await fetch("/api/letter-file?rid=" + encodeURIComponent(S.rid) + "&kind=" + kind + "&name=" + encodeURIComponent(f.name), { method: "POST", headers: { "Content-Type": f.type || "application/octet-stream" }, body: f });
+        const r = await fetch("/api/letter?file=1&rid=" + encodeURIComponent(S.rid) + "&kind=" + kind + "&name=" + encodeURIComponent(f.name), { method: "POST", headers: { "Content-Type": f.type || "application/octet-stream" }, body: f });
         const j = await r.json().catch(() => ({}));
         ok = r.ok && j.ok; if (!ok) msg = t("e_upload");
       }
