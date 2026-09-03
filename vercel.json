@@ -1,15 +1,46 @@
 {
   "crons": [
-    { "path": "/api/aggregate", "schedule": "0 6 * * 1" }
+    {
+      "path": "/api/aggregate",
+      "schedule": "0 6 * * 1"
+    }
   ],
   "rewrites": [
-    { "source": "/survey", "destination": "/survey/index.html" },
-    { "source": "/feedback/:id(\\d+)/lead", "destination": "/api/page?id=:id&lead=1" },
-    { "source": "/feedback/:id(\\d+)/photos", "destination": "/api/page?id=:id&photos=1" },
-    { "source": "/feedback/:id(\\d+)", "destination": "/api/page?id=:id" },
-    { "source": "/multi", "destination": "/api/page?multi=1" },
-    { "source": "/:id(\\d+)/lead", "destination": "/api/page?id=:id&lead=1" },
-    { "source": "/:id(\\d+)/photos", "destination": "/api/page?id=:id&photos=1" },
-    { "source": "/:id(\\d+)", "destination": "/api/page?id=:id" }
+    {
+      "source": "/survey",
+      "destination": "/survey/index.html"
+    },
+    {
+      "source": "/letter",
+      "destination": "/letter/index.html"
+    },
+    {
+      "source": "/feedback/:id(\\d+)/lead",
+      "destination": "/api/page?id=:id&lead=1"
+    },
+    {
+      "source": "/feedback/:id(\\d+)/photos",
+      "destination": "/api/page?id=:id&photos=1"
+    },
+    {
+      "source": "/feedback/:id(\\d+)",
+      "destination": "/api/page?id=:id"
+    },
+    {
+      "source": "/multi",
+      "destination": "/api/page?multi=1"
+    },
+    {
+      "source": "/:id(\\d+)/lead",
+      "destination": "/api/page?id=:id&lead=1"
+    },
+    {
+      "source": "/:id(\\d+)/photos",
+      "destination": "/api/page?id=:id&photos=1"
+    },
+    {
+      "source": "/:id(\\d+)",
+      "destination": "/api/page?id=:id"
+    }
   ]
 }
