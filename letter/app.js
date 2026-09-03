@@ -9,25 +9,24 @@
 "use strict";
 const LANGS = [["ru", "Русский"], ["en", "English"], ["uk", "Українська"], ["ka", "ქართული"], ["uz", "O‘zbekcha"], ["kk", "Қазақша"]];
 const STEPS = [
-  ["name", 0], ["birth", 0], ["contact", 0],
-  ["proceeding", 1], ["country", 1], ["caseDoc", 1], ["idDoc", 1], ["claim", 1], ["attorney", 1], ["deadline", 1], ["incidents", 1], ["otherLetters", 1],
+  ["name", 0], ["age", 0], ["contact", 0],
+  ["proceeding", 1], ["country", 1], ["claim", 1], ["attorney", 1], ["deadline", 1], ["incidents", 1], ["otherLetters", 1],
   ["firstCame", 2], ["knows", 2], ["frequency", 2], ["events", 2], ["beyond", 2], ["role", 2], ["partner", 2],
-  ["consent", 3]
+  ["consent", 3], ["anything", 3]
 ];
-const WEIGHT = { name: 1, birth: 1, contact: 2, proceeding: 1, country: 1, caseDoc: 3, idDoc: 2, claim: 1, attorney: 2, deadline: 1, incidents: 3, otherLetters: 1, firstCame: 1, knows: 3, frequency: 1, events: 6, beyond: 3, role: 1, partner: 1, consent: 1 };
+const WEIGHT = { name: 1, age: 1, contact: 2, proceeding: 1, country: 1, claim: 1, attorney: 2, deadline: 1, incidents: 3, otherLetters: 1, firstCame: 1, knows: 3, frequency: 1, events: 6, beyond: 3, role: 1, partner: 1, consent: 1, anything: 1 };
 const SECTIONS = 4;
 const TOTAL_WEIGHT = STEPS.reduce((t, x) => t + WEIGHT[x[0]], 0);
-const OPTIONAL = new Set(["caseDoc", "idDoc", "incidents", "otherLetters", "beyond", "partner", "deadline", "knows", "frequency", "firstCame", "role"]);
-const KEY = "qaravan-intake-draft-v1";
+const OPTIONAL = new Set(["anything", "incidents", "otherLetters", "beyond", "partner", "deadline", "knows", "frequency", "firstCame", "role"]);
+const KEY = "qaravan-intake-draft-v2"; // v2: age instead of date of birth, no document steps
 const MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const COUNTS = ["1-2", "3-5", "6-10", "10+"];
 const EMAIL_RX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const RID_RX = /^[0-9a-zA-Z-]{12,64}$/;
 const A0 = () => ({
-  firstName: "", lastName: "", knownAs: [""], dobD: "", dobM: "", dobY: "", pronouns: "", pronounsText: "",
+  firstName: "", lastName: "", knownAs: [""], age: "", pronouns: "", pronounsText: "",
   phone: "", email: "", telegram: "", whatsapp: "", instagram: "", followLang: "",
   proceeding: "", proceedingText: "", country1: "",
-  caseFiles: [], caseLater: false, idFiles: [],
   claim: {}, claimWhich: {}, noAttorney: false, attFirst: "", attLast: "", attEmail: "", attPhone: "", attFirm: "",
   deadline: "", deadlineUnknown: false, incidents: "", otherLetters: "", otherLettersList: [{ name: "", status: "" }],
   cameM: "", cameY: "", found: "", foundText: "", knowsPeople: [{ name: "", phone: "", email: "", handle: "" }, { name: "", phone: "", email: "", handle: "" }], knowsVia: {}, knowsViaText: "", frequency: "",
@@ -67,7 +66,7 @@ const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</
 
 // ---------- state ----------
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => { const r = (Math.random() * 16) | 0; return (c === "x" ? r : (r & 3) | 8).toString(16); }));
-let S = { view: "welcome", step: 0, langOpen: false, filter: "", a: A0(), errs: {}, log: [], rid: uuid(), savedAt: null, startedAt: 0, linkNotice: null, submitted: false, attachSaved: false, calView: null, saveState: "" };
+let S = { view: "welcome", step: 0, langOpen: false, filter: "", a: A0(), errs: {}, log: [], rid: uuid(), savedAt: null, startedAt: 0, linkNotice: null, submitted: false, calView: null, saveState: "" };
 let saved = null;
 try { saved = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
 if (saved && typeof saved === "object") {
@@ -104,7 +103,7 @@ function payload(mode) {
 }
 function hasAnswers() { const a = S.a; return !!(a.firstName || a.lastName || a.phone || a.email || a.proceeding || a.country1 || Object.keys(a.claim).length || Object.keys(a.events).length || a.incidents); }
 function schedule() {
-  if (S.submitted && S.view !== "attach") return;
+  if (S.submitted) return;
   if (!hasAnswers() && !S.log.length) return;
   dirty = true; setSaveState("saving");
   clearTimeout(timer); timer = setTimeout(() => save("draft"), 1200);
@@ -139,9 +138,6 @@ function getPath(obj, path) { return path.split(".").reduce((o, k) => (o == null
 function clearErr(path) {
   const k = path.split(".")[0];
   delete S.errs[path]; delete S.errs[k];
-  if (k.startsWith("dob")) delete S.errs.dob;
-  if (k === "caseFiles" || k === "caseLater") delete S.errs.caseDoc;
-  if (k === "idFiles") delete S.errs.idDoc;
   if (k === "knowsPeople") { const i = path.split(".")[1]; delete S.errs["knowsPhone" + i]; }
 }
 function touched() { if (!S.startedAt) S.startedAt = Date.now(); persist(); schedule(); }
@@ -155,16 +151,11 @@ function fmtPhone(raw) {
   if (plus && s.startsWith("1")) return "+1 " + [s.slice(1, 4), s.slice(4, 7), s.slice(7, 11)].filter(Boolean).join("-") + (s.length > 11 ? " " + s.slice(11, 15) : "");
   return (plus ? "+" : "") + s.replace(/(\d{1,3})(?=\d)/g, "$1 ").slice(0, 20);
 }
-function dobError(a) {
-  const d = +a.dobD, m = +a.dobM, y = +a.dobY, filled = a.dobD && a.dobM && a.dobY.length === 4;
-  if (a.dobD && !(d >= 1 && d <= 31)) return t("e_day");
-  if (a.dobM && !(m >= 1 && m <= 12)) return t("e_month");
-  if (filled) {
-    const dt = new Date(y, m - 1, d), now = new Date();
-    if (dt.getDate() !== d || dt.getMonth() !== m - 1) return t("e_nodate");
-    if (y < 1920 || dt > now) return t("e_year");
-    if ((now - dt) / 3.15576e10 < 14) return t("e_young");
-  }
+function ageError(a) {
+  if (!a.age) return "";
+  const n = +a.age;
+  if (!/^\d{1,3}$/.test(a.age) || n < 1 || n > 110) return t("e_age");
+  if (n < 14) return t("e_young");
   return "";
 }
 // Typing: update the answer without re-rendering the whole screen (keeps the caret).
@@ -174,53 +165,18 @@ function onInput(el) {
   if (el.dataset.fmt === "digits") { v = v.replace(/\D/g, "").slice(0, +el.maxLength || 4); el.value = v; }
   if (el.maxLength > 0 && v.length > el.maxLength) { v = v.slice(0, el.maxLength); el.value = v; }
   setPath(S.a, path, v); clearErr(path);
-  if (path.startsWith("dob")) { const e = dobError(S.a); if (e) S.errs.dob = e; }
+  if (path === "age") { const e = ageError(S.a); if (e) S.errs.age = e; }
   touched();
   // small dependent bits
   const errEl = document.querySelector('[data-err="' + path.split(".")[0] + '"]'); if (errEl && !S.errs[path.split(".")[0]]) { errEl.textContent = ""; }
-  const dobEl = document.querySelector('[data-err="dob"]'); if (dobEl) dobEl.textContent = S.errs.dob || "";
+  const ageEl = document.querySelector('[data-err="age"]'); if (ageEl) ageEl.textContent = S.errs.age || "";
   if (path === "incidents") { const c = document.getElementById("inc-count"); if (c) c.textContent = tn("chars_left", 300 - v.length); }
+  if (path === "anythingElse") { const c = document.getElementById("any-count"); if (c) c.textContent = tn("chars_left", 1000 - v.length); }
   document.querySelectorAll("[data-err]").forEach((n) => { if (!S.errs[n.dataset.err]) n.textContent = ""; });
-  document.querySelectorAll(".in.err").forEach((n) => { const k = (n.dataset.f || "").split(".")[0]; if (!S.errs[k] && !(k.startsWith("dob") && S.errs.dob)) n.classList.remove("err"); });
+  document.querySelectorAll(".in.err").forEach((n) => { const k = (n.dataset.f || "").split(".")[0]; if (!S.errs[k]) n.classList.remove("err"); });
   const stamp = document.getElementById("stamp"); if (stamp) stamp.textContent = stampText();
 }
 
-// Files: photos are shrunk in the browser (phones make 5–12 MB photos; the API accepts 4 MB), PDFs go as they are.
-async function shrinkImage(file) {
-  if (!/^image\//.test(file.type) || file.size < 1.2e6) return file;
-  try {
-    const bmp = await createImageBitmap(file);
-    const scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
-    const c = document.createElement("canvas"); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
-    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
-    const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.85));
-    if (!blob) return file;
-    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
-  } catch (e) { return file; }
-}
-async function addFiles(kind, files) {
-  const list = kind === "idFiles" ? [] : S.a[kind].slice();
-  const entries = Array.from(files).map((f) => ({ name: f.name, up: "wait", f }));
-  entries.forEach((e) => list.push({ name: e.name, up: "wait" }));
-  S.a[kind] = list; clearErr(kind); persist(); render();
-  for (const e of entries) {
-    let ok = false, msg = "";
-    try {
-      const f = await shrinkImage(e.f);
-      if (f.size > 4 * 1024 * 1024) msg = t("e_filebig");
-      else {
-        const r = await fetch("/api/letter?file=1&rid=" + encodeURIComponent(S.rid) + "&kind=" + kind + "&name=" + encodeURIComponent(f.name), { method: "POST", headers: { "Content-Type": f.type || "application/octet-stream" }, body: f });
-        const j = await r.json().catch(() => ({}));
-        ok = r.ok && j.ok; if (!ok) msg = t("e_upload");
-      }
-    } catch (err) { msg = t("e_upload"); }
-    const row = S.a[kind].find((x) => x.name === e.name && x.up === "wait");
-    if (row) { row.up = ok ? true : "err"; row.msg = msg; }
-    persist(); render();
-  }
-  touched();
-}
-const filesOk = (kind) => S.a[kind].some((f) => f.up === true);
 
 // ---------- navigation, validation ----------
 const stepIdx = (id) => STEPS.findIndex((x) => x[0] === id);
@@ -237,12 +193,10 @@ function validate() {
   const a = S.a, id = STEPS[S.step][0], e = {};
   const req = (k, msg) => { if (!String(a[k] || "").trim()) e[k] = msg; };
   if (id === "name") { req("firstName", t("e_first")); req("lastName", t("e_last")); }
-  if (id === "birth") { const err = dobError(a); const d = +a.dobD, m = +a.dobM, y = +a.dobY; if (err) e.dob = err; else if (!(d >= 1 && m >= 1 && a.dobY.length === 4 && y >= 1920)) e.dob = t("e_dob"); }
+  if (id === "age") { const err = ageError(a); if (err) e.age = err; else if (!a.age) e.age = t("e_age"); }
   if (id === "contact") { req("phone", t("e_phone")); if (a.phone && a.phone.replace(/\D/g, "").length < 10) e.phone = t("e_phoneshort"); if (!EMAIL_RX.test(a.email.trim())) e.email = t("e_email"); }
   if (id === "proceeding" && !a.proceeding) e.proceeding = t("e_proc");
   if (id === "country") req("country1", t("e_country"));
-  if (id === "caseDoc" && a.caseFiles.some((f) => f.up === "wait")) e.caseDoc = t("e_wait");
-  if (id === "idDoc" && a.idFiles.some((f) => f.up === "wait")) e.idDoc = t("e_wait");
   if (id === "claim" && !Object.values(a.claim).some(Boolean)) e.claim = t("e_claim");
   if (id === "attorney" && !a.noAttorney) { req("attFirst", t("e_attfirst")); req("attLast", t("e_attlast")); if (!EMAIL_RX.test(a.attEmail.trim())) e.attEmail = t("e_attemail"); }
   if (id === "knows") a.knowsPeople.forEach((k, i) => { if (k.name.trim() && !k.phone.trim()) e["knowsPhone" + i] = t("e_knowsphone", { name: k.name.trim() }); });
@@ -252,14 +206,13 @@ function validate() {
 }
 function missingRequired() {
   const a = S.a;
-  const checks = { name: a.firstName.trim() && a.lastName.trim(), birth: a.dobD && a.dobM && a.dobY.length === 4 && !dobError(a), contact: a.phone.trim() && EMAIL_RX.test(a.email.trim()), proceeding: !!a.proceeding, country: !!a.country1, claim: Object.values(a.claim).some(Boolean), attorney: a.noAttorney || (a.attFirst.trim() && a.attLast.trim() && EMAIL_RX.test(a.attEmail.trim())), consent: a.consent.truth && a.consent.share && a.consent.contact };
+  const checks = { name: a.firstName.trim() && a.lastName.trim(), age: !!a.age && !ageError(a), contact: a.phone.trim() && EMAIL_RX.test(a.email.trim()), proceeding: !!a.proceeding, country: !!a.country1, claim: Object.values(a.claim).some(Boolean), attorney: a.noAttorney || (a.attFirst.trim() && a.attLast.trim() && EMAIL_RX.test(a.attEmail.trim())), consent: a.consent.truth && a.consent.share && a.consent.contact };
   return STEPS.filter((x) => x[0] in checks && !checks[x[0]]).map((x) => ({ id: x[0], idx: stepIdx(x[0]) }));
 }
 function stepIsEmpty(id) {
   const a = S.a;
   switch (id) {
-    case "caseDoc": return !a.caseFiles.length && !a.caseLater; case "idDoc": return !a.idFiles.length;
-    case "incidents": return !a.incidents.trim(); case "otherLetters": return !a.otherLetters;
+    case "anything": return !a.anythingElse.trim(); case "incidents": return !a.incidents.trim(); case "otherLetters": return !a.otherLetters;
     case "deadline": return !a.deadline && !a.deadlineUnknown; case "beyond": return a.beyond.every((b) => !b.what.trim());
     case "partner": return !a.partner; case "knows": return a.knowsPeople.every((k) => !k.name.trim() && !k.phone.trim()) && !Object.values(a.knowsVia).some(Boolean);
     case "frequency": return !a.frequency; case "firstCame": return !a.cameM && !a.cameY && !a.found; case "role": return !Object.values(a.role).some(Boolean);
@@ -271,7 +224,7 @@ function stepAnswered(id) {
   const a = S.a;
   switch (id) {
     case "name": return !!(a.firstName.trim() && a.lastName.trim());
-    case "birth": return !!(a.dobD && a.dobM && a.dobY.length === 4);
+    case "age": return !!a.age;
     case "contact": return !!(a.phone.trim() && a.email.trim());
     case "proceeding": return !!a.proceeding;
     case "country": return !!a.country1;
@@ -330,11 +283,6 @@ const field = (label, path, o, hint) => '<label class="field"><span class="lbl">
 const chips = (list, key, o) => '<div class="chips" role="' + (o && o.multi ? "group" : "radiogroup") + '">' + list.map(([v, label], i) => { const on = o && o.multi ? !!S.a[key][v] : S.a[key] === v; return '<button type="button" class="chip' + (on ? " on" : "") + (o && o.tall ? " tall" : "") + (o && o.color ? " c" + (i % 5) : "") + '" role="' + (o && o.multi ? "checkbox" : "radio") + '" aria-checked="' + on + '" data-act="' + (o && o.multi ? "check" : "chip") + '" data-k="' + key + '" data-v="' + v + '">' + esc(label) + "</button>"; }).join("") + "</div>";
 const rowCheck = (on, act, arg, title, sub) => '<div class="row' + (on ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + on + '" data-act="' + act + '"' + (arg ? ' data-v="' + arg + '"' : "") + ">" + cb(on) + '<span class="col"><span>' + title + "</span>" + (sub ? '<span class="sub">' + sub + "</span>" : "") + "</span></div>";
 const addBtn = (act, label) => '<button type="button" class="btn outline md" data-act="' + act + '">' + svgPlus + "<span>" + esc(label) + "</span></button>";
-function fileList(kind, accept, multiple) {
-  const rows = S.a[kind].map((f, i) => '<div class="filerow' + (f.up === "wait" ? " wait" : f.up === "err" ? " bad" : "") + '"><span>' + esc(f.name) + (f.up === "wait" ? " — " + t("uploading") : f.up === "err" ? " — " + esc(f.msg || t("e_upload")) : "") + '</span><button type="button" data-act="rmfile" data-k="' + kind + '" data-v="' + i + '" aria-label="' + esc(t("remove_file")) + '">' + t("remove") + "</button></div>").join("");
-  const label = S.a[kind].length ? (kind === "idFiles" ? t("up_replace") : t("up_another")) : t("up_first");
-  return '<div class="stack" style="gap:10px">' + rows + '<label class="upload"><input type="file" accept="' + accept + '"' + (multiple ? " multiple" : "") + ' data-kind="' + kind + '"><span>' + esc(label) + "</span></label></div>";
-}
 const sec = (i) => t("sec_" + i);
 
 function renderHeader() {
@@ -367,7 +315,7 @@ function renderWelcome() {
   const has = isSaved();
   const where = has ? sec(STEPS[S.savedStep][1]) + ", " + stepLabel(STEPS[S.savedStep][0]) : "";
   return '<div class="stack fade"><div class="eyebrow">' + t("w_eyebrow") + '</div><h1 class="big">' + t("w_title") + "</h1><p>" + t("w_p1") + "</p><p>" + t("w_p2") + '</p><div class="card ink">' +
-    [1, 2, 3].map((n) => '<div class="li"><span class="n">' + n + "</span><span>" + t("w_card" + n) + "</span></div>").join("") +
+    [1, 2].map((n) => '<div class="li"><span class="n">' + n + "</span><span>" + t("w_card" + n) + "</span></div>").join("") +
     '</div><p class="small">' + t("w_disclaimer") + "</p>" +
     (has ? '<div class="note green">' + esc(t("w_started", { where })) + "</div>" : "") +
     '<div class="stack" style="gap:10px;margin-top:4px">' + (has ? '<button type="button" class="btn full" data-act="resume">' + t("w_resume") + '</button><button type="button" class="textbtn" data-act="startOver">' + t("w_startover") + "</button>" : '<button type="button" class="btn full" data-act="start">' + t("w_start") + "</button>") + "</div>" +
@@ -379,19 +327,11 @@ function renderSavedScreen() {
 }
 function renderDone() {
   const a = S.a, name = a.firstName || t("friend");
-  const later = a.caseLater && !filesOk("caseFiles");
   return '<div class="stack fade">' + wordmark(44) + '<h1 class="big">' + esc(t("d_title", { name })) + "</h1><p>" + esc(t("d_body", { email: a.email, phone: a.phone ? t("d_or_call", { phone: a.phone }) : "" })) + "</p>" +
-    (later ? '<div class="card"><div style="display:flex;align-items:center;gap:12px"><span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#FFEDD9;color:#C4691A;font-weight:800;font-size:16px;flex:none">1</span><span class="eyebrow orange">' + t("d_doc_title") + '</span></div><p style="font-size:15px">' + t("d_doc_body", { email: "<strong>" + esc(a.email) + "</strong>" }) + '</p><button type="button" class="btn md" data-act="openAttach">' + t("d_doc_btn") + "</button></div>" : "") +
     '<p style="font-weight:800;font-size:20px;letter-spacing:-.01em">' + t("d_luck") + '</p><p class="small">' + t("d_close") + "</p>" + renderTrBlock() + "</div>";
 }
-function renderAttach() {
-  const a = S.a;
-  return '<div class="stack fade"><div class="eyebrow">' + t("at_eyebrow") + "</div><h1>" + esc(t("at_title", { name: a.firstName || t("friend") })) + "</h1><p>" + t("at_body") + "</p>" + fileList("caseFiles", "image/*,.pdf", true) +
-    (filesOk("caseFiles") && !S.attachSaved ? '<button type="button" class="btn full green" data-act="attachDone">' + t("at_btn") + "</button>" : "") +
-    (S.attachSaved ? '<div class="note green">' + esc(t("at_saved", { email: a.email })) + "</div>" : "") + "</div>";
-}
 
-// ---------- the 20 steps ----------
+// ---------- the 19 steps ----------
 const STEP_RENDER = {
   name() {
     const kn = S.a.knownAs;
@@ -401,10 +341,9 @@ const STEP_RENDER = {
       kn.map((v, i) => '<div style="display:flex;gap:8px;align-items:center">' + input("knownAs." + i, { ac: "nickname", aria: t("q1_known_aria", { n: i + 1 }), style: "flex:1;min-width:0" }) + (kn.length > 1 ? '<button type="button" class="iconbtn" data-act="rmKnown" data-v="' + i + '" aria-label="' + esc(t("q1_known_rm")) + '">' + svgX() + "</button>" : "") + "</div>").join("") +
       '</div><span class="hint">' + t("q1_known_hint") + '</span><div style="margin-top:12px">' + addBtn("addKnown", t("q1_known_add")) + "</div></div>";
   },
-  birth() {
-    const a = S.a, bad = !!S.errs.dob;
-    const box = (k, label, max, ac, w) => '<label style="flex:0 0 ' + w + 'px"><span class="hint" style="margin:0 0 4px;font-size:13px">' + label + '</span><input class="in' + (bad ? " err" : "") + '" data-f="' + k + '" data-fmt="digits" value="' + esc(a[k]) + '" inputmode="numeric" autocomplete="' + ac + '" maxlength="' + max + '"' + (bad ? ' aria-invalid="true"' : "") + ' style="padding:13px 14px"></label>';
-    return "<h1>" + t("q2_title") + '</h1><p class="help">' + t("q2_help") + '</p><div><span class="lbl">' + t("q2_dob") + '</span><div style="display:flex;gap:10px">' + box("dobD", t("q2_day"), 2, "bday-day", 84) + box("dobM", t("q2_month"), 2, "bday-month", 96) + box("dobY", t("q2_year"), 4, "bday-year", 120) + '</div><span class="hint">' + t("q2_example") + "</span>" + ferr("dob") + "</div>" +
+  age() {
+    const a = S.a, bad = !!S.errs.age;
+    return "<h1>" + t("q2_title") + '</h1><p class="help">' + t("q2_help") + '</p><label class="field" style="max-width:220px"><span class="lbl">' + t("q2_age") + '</span><input class="in' + (bad ? " err" : "") + '" data-f="age" data-fmt="digits" value="' + esc(a.age) + '" inputmode="numeric" autocomplete="off" maxlength="3"' + (bad ? ' aria-invalid="true"' : "") + ">" + ferr("age") + "</label>" +
       '<div><span class="lbl">' + t("q2_pronouns") + opt() + "</span>" + chips([["he", "he/him"], ["she", "she/her"], ["they", "they/them"], ["hethey", "he/they"], ["shethey", "she/they"], ["any", t("pr_any")], ["none", t("pr_none")], ["other", t("pr_other")]], "pronouns") +
       (a.pronouns === "other" ? '<div style="margin-top:12px">' + input("pronounsText", { aria: t("q2_pronouns"), max: 60 }) + "</div>" : "") + "</div>";
   },
@@ -427,15 +366,6 @@ const STEP_RENDER = {
     const loc = (list) => list.map(([c, en]) => [c, countryName(c, en)]).sort((p, q) => p[1].localeCompare(q[1], lang));
     const opts = (list) => list.map(([c, n]) => '<option value="' + c + '"' + (S.a.country1 === c ? " selected" : "") + ">" + esc(n) + "</option>").join("");
     return "<h1>" + t("q5_title") + '</h1><p class="help">' + t("q5_help") + '</p><label class="field"><span class="lbl">' + t("q5_country") + '</span><span class="selwrap"><select class="in' + (S.errs.country1 ? " err" : "") + '" data-f="country1" autocomplete="country"' + (S.errs.country1 ? ' aria-invalid="true"' : "") + '><option value="">' + t("q5_choose") + '</option><optgroup label="' + esc(t("q5_region")) + '">' + opts(loc(C.region)) + '</optgroup><optgroup label="' + esc(t("q5_others")) + '">' + opts(loc(C.others)) + "</optgroup></select>" + svgDown + "</span>" + ferr("country1") + "</label>";
-  },
-  caseDoc() {
-    const a = S.a;
-    return '<div class="eyebrow gray">' + t("optional_skip") + "</div><h1>" + t("q6_title") + '</h1><p class="help">' + t("q6_help") + "</p>" +
-      '<div><span class="lbl">' + t("q6_upload") + "</span>" + fileList("caseFiles", "image/*,.pdf", true) + ferr("caseDoc") + "</div>" +
-      '<div class="divider">' + rowCheck(a.caseLater, "toggle", "caseLater", t("q6_later"), t("q6_later_sub")) + "</div>";
-  },
-  idDoc() {
-    return '<div class="eyebrow gray">' + t("optional_skip") + "</div><h1>" + t("q7_title") + '</h1><p class="help">' + t("q7_help") + "</p>" + fileList("idFiles", "image/*,.pdf", false) + ferr("idDoc") + '<p class="small">' + t("q7_privacy") + "</p>";
   },
   claim() {
     const a = S.a;
@@ -533,8 +463,10 @@ const STEP_RENDER = {
   },
   consent() {
     const a = S.a;
-    return "<h1>" + t("q20_title") + '</h1><p class="help">' + t("q20_help") + '</p><div class="card plain">' + [["truth", "c_truth", "c_truth_sub"], ["share", "c_share", ""], ["contact", "c_contact", "c_contact_sub"]].map(([v, tk, sk]) => '<div class="consent' + (a.consent[v] ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + !!a.consent[v] + '" data-act="consent" data-v="' + v + '"><span class="txt"><span class="t">' + t(tk) + "</span>" + (sk ? '<span class="s">' + t(sk) + "</span>" : "") + '</span><span style="flex:none;padding-top:2px">' + cb(!!a.consent[v], true) + "</span></div>").join("") + "</div>" + ferr("consent") +
-      '<label class="field"><span class="lbl">' + t("q20_else") + opt() + '</span><textarea class="in" data-f="anythingElse" rows="4" maxlength="2000" style="min-height:110px">' + esc(a.anythingElse) + "</textarea></label>";
+    return "<h1>" + t("q20_title") + '</h1><div class="card plain">' + [["truth", "c_truth", "c_truth_sub"], ["share", "c_share", ""], ["contact", "c_contact", "c_contact_sub"]].map(([v, tk, sk]) => '<div class="consent' + (a.consent[v] ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + !!a.consent[v] + '" data-act="consent" data-v="' + v + '"><span class="txt"><span class="t">' + t(tk) + "</span>" + (sk ? '<span class="s">' + t(sk) + "</span>" : "") + '</span><span style="flex:none;padding-top:2px">' + cb(!!a.consent[v], true) + "</span></div>").join("") + "</div>" + ferr("consent");
+  },
+  anything() {
+    return '<div class="eyebrow gray">' + t("optional_skip") + "</div><h1>" + t("q21_title") + '</h1><p class="help">' + t("q21_help") + '</p><textarea class="in" data-f="anythingElse" rows="6" maxlength="1000" aria-label="' + esc(t("q21_title")) + '">' + esc(S.a.anythingElse) + '</textarea><span class="hint" id="any-count" style="margin-top:-14px">' + tn("chars_left", 1000 - S.a.anythingElse.length) + "</span>";
   }
 
 };
@@ -573,16 +505,16 @@ function renderStep() {
   return html + foot + renderTrBlock() + "</div>";
 }
 const resumeURL = () => location.origin + "/letter?r=" + S.rid;
-// «Заметили ошибку в переводе?» — как в опросе: только на версиях, переведённых с помощью ИИ (все, кроме ru и en).
+// «Заметили ошибку в переводе?» — как в опросе, но на всех шести языках: все версии анкеты написаны с помощью ИИ.
 // Текст уходит в колонку Translation feedback той же строки на доске.
 function renderTrBlock() {
-  if (lang === "ru" || lang === "en") return "";
   const open = !!S.trOpen, st = S.trState || "";
   return '<div class="trfb"><button type="button" class="trfb-link' + (open ? " on" : "") + '" data-act="trToggle" aria-expanded="' + open + '">' + esc(t("tr_link")) + "</button>" +
     (open ? '<div class="trfb-panel"><p>' + esc(t("tr_note")) + '</p><textarea class="in" id="trtext" rows="3" maxlength="2000" placeholder="' + esc(t("tr_ph")) + '" aria-label="' + esc(t("tr_link")) + '">' + esc(S.trText || "") + '</textarea><button type="button" class="btn outline md" data-act="trSend"' + (st === "sending" ? " disabled" : "") + ">" + esc(st === "sent" ? t("tr_sent") : st === "err" ? t("tr_err") : t("tr_send")) + "</button></div>" : "") + "</div>";
 }
 
 function render() {
+  S.step = Math.min(Math.max(S.step | 0, 0), STEPS.length - 1); if (S.savedStep != null) S.savedStep = Math.min(S.savedStep, STEPS.length - 1);
   document.documentElement.lang = lang; document.title = t("title");
   renderHeader();
   const app = $("app");
@@ -592,7 +524,6 @@ function render() {
   if (S.view === "welcome") main = renderWelcome();
   else if (S.view === "saved") main = renderSavedScreen();
   else if (S.view === "done") main = renderDone();
-  else if (S.view === "attach") main = renderAttach();
   else main = renderStep();
   app.innerHTML = (rail ? renderRail() : "") + "<main>" + main + "</main>";
   const ef = $("evfilter"); if (ef && S.filterFocus) { ef.focus(); ef.setSelectionRange(ef.value.length, ef.value.length); S.filterFocus = false; }
@@ -630,7 +561,6 @@ const ACT = {
   rmPerson(el) { setA({ knowsPeople: S.a.knowsPeople.filter((_, j) => j !== +el.dataset.v) }); },
   addBeyond() { setA({ beyond: S.a.beyond.concat([{ what: "", since: "", howOften: "" }]) }); },
   rmBeyond(el) { setA({ beyond: S.a.beyond.filter((_, j) => j !== +el.dataset.v) }); },
-  rmfile(el) { const k = el.dataset.k; const list = S.a[k].filter((_, j) => j !== +el.dataset.v); const p = {}; p[k] = list; setA(p); },
   calPrev() { const v = calView(); S.calView = { y: v.m === 0 ? v.y - 1 : v.y, m: (v.m + 11) % 12 }; render(); },
   calNext() { const v = calView(); S.calView = { y: v.m === 11 ? v.y + 1 : v.y, m: (v.m + 1) % 12 }; render(); },
   calPick(el) { setA({ deadline: el.dataset.v }); },
@@ -642,8 +572,6 @@ const ACT = {
   eventOtherClear(el) { const o = Object.assign({}, S.a.eventsOther); delete o[el.dataset.v]; setA({ eventsOther: o }); },
   eventsNone() { const on = !S.a.eventsNone.all; setA(on ? { eventsNone: { all: true }, events: {}, eventCounts: {}, eventsOther: {} } : { eventsNone: {} }); },
   consent(el) { const c = Object.assign({}, S.a.consent); c[el.dataset.v] = !c[el.dataset.v]; setA({ consent: c }); },
-  openAttach() { S.view = "attach"; S.attachSaved = false; addLog("attach-later", "open"); render(); window.scrollTo({ top: 0 }); },
-  async attachDone() { const btn = document.querySelector('[data-act="attachDone"]'); if (btn) btn.disabled = true; S.a.caseLater = false; persist(); const out = await save("doc"); S.attachSaved = !!(out && out.ok); if (!S.attachSaved) S.errs.net = t("e_net"); addLog("attach-later", S.attachSaved ? "attached" : "error"); render(); },
   trToggle() { const ta = $("trtext"); if (ta) S.trText = ta.value; S.trOpen = !S.trOpen; S.trState = ""; render(); },
   async trSend() {
     const ta = $("trtext"), text = ta ? ta.value.trim() : ""; S.trText = ta ? ta.value : "";
@@ -679,14 +607,13 @@ document.addEventListener("input", (e) => {
 document.addEventListener("change", (e) => {
   const el = e.target;
   if (el.tagName === "SELECT" && el.dataset.f) { setA({ [el.dataset.f]: el.value }); return; }
-  if (el.type === "file" && el.dataset.kind) { const files = el.files; if (files && files.length) addFiles(el.dataset.kind, files); el.value = ""; }
 });
 let rw = 0; window.addEventListener("resize", () => { clearTimeout(rw); rw = setTimeout(render, 120); });
 
-// ---------- boot: local draft, personal link (?r=), attach-later (?doc=1) ----------
+// ---------- boot: local draft, personal link (?r=) ----------
 (async function boot() {
   const q = new URLSearchParams(location.search);
-  const r = (q.get("r") || "").trim(), wantDoc = q.get("doc") === "1";
+  const r = (q.get("r") || "").trim();
   if (r && RID_RX.test(r)) {
     let d = null;
     try { const resp = await fetch("/api/letter?rid=" + encodeURIComponent(r)); if (resp.ok) d = await resp.json(); } catch (e) {}
@@ -694,13 +621,11 @@ let rw = 0; window.addEventListener("resize", () => { clearTimeout(rw); rw = set
       const localBusy = r !== S.rid && hasAnswers() && !S.submitted;
       if (!localBusy || confirm(t("confirm_adopt"))) {
         S.rid = r; S.a = Object.assign(A0(), d.a || {}); if (!Array.isArray(S.a.knownAs) || !S.a.knownAs.length) S.a.knownAs = [""];
-        const files = d.files || {};
-        for (const k of ["caseFiles", "idFiles"]) S.a[k] = (files[k] || []).map((n) => ({ name: n, up: true }));
         S.submitted = !!d.submitted; S.startedAt = d.startedAt || Date.now(); S.log = []; S.savedStep = null;
         if (d.lang && LANGS.some((l) => l[0] === d.lang) && !q.get("lang")) lang = d.lang;
-        if (S.submitted) { S.view = wantDoc ? "attach" : "done"; }
-        else { S.view = wantDoc ? "attach" : "welcome"; S.savedStep = Math.min(Math.max(+d.step || 0, 0), STEPS.length - 1); S.savedView = "step"; }
-        persist(); addLog(wantDoc ? "attach-later" : "resume", "link");
+        if (S.submitted) { S.view = "done"; }
+        else { S.view = "welcome"; S.savedStep = Math.min(Math.max(+d.step || 0, 0), STEPS.length - 1); S.savedView = "step"; }
+        persist(); addLog("resume", "link");
       }
     }
     history.replaceState(null, "", location.pathname);

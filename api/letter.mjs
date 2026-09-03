@@ -5,20 +5,17 @@
 //                   "Form — started, not finished" on first save, then updates it.
 //   mode "submit" — final submission: row moves to "Form — answers received",
 //                   Letter Status → Answers received, a readable update is posted.
-//   mode "doc"    — the person came back through the emailed link and attached
-//                   the case document they had promised.
-// GET ?rid=… — the draft for the personal resume link (answers, step, language,
-//   file names already uploaded), or {submitted:true} once it was sent.
-// POST ?file=1&rid=…&kind=caseFiles|idFiles&name=… with the file bytes as
-//   the body — uploads into the row's Files column (see uploadHandler below). It
-//   lives in this same function because Vercel's Hobby plan allows at most 12
-//   serverless functions per deployment and the repository already has 11.
+//   mode "feedback" — "Spotted a translation problem?": text goes to the row's Translation feedback column.
+// GET ?rid=… — the draft for the personal resume link (answers, step, language),
+//   or {submitted:true} once it was sent.
+// Everything lives in this one function: Vercel's Hobby plan allows at most 12
+// serverless functions per deployment and the repository already has 11.
 //
 // One person = one row, found by the intake id (⚙️ Intake id). The browser
 // invents the id (UUID); it is unguessable, so the resume link is private.
 // Free text is stored verbatim in whatever language the person wrote;
 // board labels are English (repository rule). Column ids: lib/letter-board.mjs.
-import { C, L, LANGS, RID_RX, MONDAY_FILE, GROUP_ANSWERS, monday, findByRid, createRow } from "../lib/letter-board.mjs";
+import { C, L, LANGS, RID_RX, GROUP_ANSWERS, monday, findByRid, createRow } from "../lib/letter-board.mjs";
 import { sendResumeEmail, sendSubmitEmail } from "../lib/letter-mail.mjs";
 
 const FORM_BASE = process.env.FORM_BASE || "https://feedback.qaravan.org";
@@ -38,13 +35,12 @@ export function cleanAnswers(src) {
   const a = {
     firstName: str(s.firstName, 80), lastName: str(s.lastName, 80),
     knownAs: list(s.knownAs, 6, (x) => str(x, 80)),
-    dobD: str(s.dobD, 2), dobM: str(s.dobM, 2), dobY: str(s.dobY, 4),
+    age: /^\d{1,3}$/.test(s.age || "") && +s.age >= 1 && +s.age <= 110 ? String(+s.age) : "",
     pronouns: pick(L.pronouns, s.pronouns), pronounsText: str(s.pronounsText, 60),
     phone: str(s.phone, 30), email: str(s.email, 120).toLowerCase(), telegram: str(s.telegram, 60), whatsapp: str(s.whatsapp, 30), instagram: str(s.instagram, 60),
     followLang: pick(L.followLang, s.followLang),
     proceeding: pick(L.proceeding, s.proceeding), proceedingText: str(s.proceedingText, 200),
     country1: str(s.country1, 2).toUpperCase(),
-    caseLater: bool(s.caseLater),
     claim: Object.fromEntries(keys(L.identities, s.claim).map((k) => [k, true])),
     claimWhich: {},
     noAttorney: bool(s.noAttorney), attFirst: str(s.attFirst, 80), attLast: str(s.attLast, 80), attEmail: str(s.attEmail, 120).toLowerCase(), attPhone: str(s.attPhone, 30), attFirm: str(s.attFirm, 120),
@@ -62,7 +58,7 @@ export function cleanAnswers(src) {
     role: Object.fromEntries(keys(L.roles, s.role).map((k) => [k, true])),
     partner: pick(L.partner, s.partner), partnerIn: pick(L.yesno, s.partnerIn), partnerStmt: pick(L.pstatement, s.partnerStmt), partnerName: str(s.partnerName, 80), partnerContact: str(s.partnerContact, 120),
     consent: { truth: bool(s.consent && s.consent.truth), share: bool(s.consent && s.consent.share), contact: bool(s.consent && s.consent.contact) },
-    anythingElse: str(s.anythingElse, 2000),
+    anythingElse: str(s.anythingElse, 1000),
   };
   for (const k of ["ethnic", "religious", "other"]) if (a.claim[k] && s.claimWhich && typeof s.claimWhich[k] === "string") a.claimWhich[k] = str(s.claimWhich[k], 120);
   const EV_ID = /^20(1[2-9]|2[0-6])-(p\d{1,2}|m\d{1,2}-\d{1,2})$/;
@@ -94,7 +90,6 @@ function eventIndex() {
 }
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const fullName = (a) => [a.firstName, a.lastName].filter(Boolean).join(" ");
-const dob = (a) => (a.dobY.length === 4 && a.dobM && a.dobD ? `${a.dobY}-${a.dobM.padStart(2, "0")}-${a.dobD.padStart(2, "0")}` : "");
 const phoneVal = (p) => { const d = p.replace(/[^\d+]/g, ""); if (!d) return ""; const digits = d.replace(/\D/g, ""); const us = !d.startsWith("+") ? digits.length === 10 || (digits.length === 11 && digits[0] === "1") : digits.startsWith("1") && digits.length === 11; return { phone: (d.startsWith("+") ? "+" : (digits.length === 10 ? "+1" : "")) + digits, countryShortName: us ? "US" : "" }; };
 const emailVal = (e) => (EMAIL_RX.test(e) ? { email: e, text: e } : "");
 const dateVal = (d) => (d ? { date: d } : "");
@@ -133,7 +128,7 @@ const attorneyText = (a) => (a.noAttorney ? "No attorney yet" : [[a.attFirst, a.
 const firstContact = (a) => [a.cameM && a.cameY ? `${MONTHS[+a.cameM - 1]} ${a.cameY}` : a.cameY || "", a.found ? `via ${L.found[a.found]}${a.found === "other" && a.foundText ? ` (${a.foundText})` : ""}` : ""].filter(Boolean).join(" · ");
 
 
-// Every column the form fills. `files` = names uploaded so far (from the row's raw JSON).
+// Every column the form fills.
 export function columnValues(a, meta) {
   const submitted = meta.mode === "submit" || meta.submitted;
   const messengers = [a.telegram && `Telegram ${a.telegram}`, a.whatsapp && `WhatsApp ${a.whatsapp}`, a.instagram && `Instagram ${a.instagram}`].filter(Boolean).join(" · ");
@@ -143,19 +138,18 @@ export function columnValues(a, meta) {
   const anything = [a.anythingElse, other ? `Details for “Other”:\n${other}` : ""].filter(Boolean).join("\n\n");
   const progress = submitted
     ? `Submitted ${(meta.submittedAt || new Date().toISOString()).slice(0, 10)} · ${meta.minutes != null ? meta.minutes + " min" : "time unknown"} · ${L.lang[meta.lang]}`
-    : `Q ${meta.lastQ} of 20 · ${meta.progress}% · ${L.lang[meta.lang]}`;
+    : `Q ${meta.lastQ} of 19 · ${meta.progress}% · ${L.lang[meta.lang]}`;
   const cv = {
     [C.rid]: meta.rid,
     [C.formStatus]: { label: submitted ? "Submitted" : "In progress" },
     [C.progress]: progress,
     [C.firstName]: a.firstName, [C.lastName]: a.lastName, [C.known]: known,
-    [C.dob]: dateVal(dob(a)),
+    [C.age]: a.age || "",
     [C.phone]: phoneVal(a.phone), [C.email]: emailVal(a.email), [C.messengers]: messengers,
     [C.followLang]: a.followLang ? { label: L.followLang[a.followLang] } : "",
     [C.proceeding]: a.proceeding ? { label: L.proceeding[a.proceeding] } : "",
     [C.caseType]: a.proceeding ? { label: L.caseType[a.proceeding] } : "", [C.venue]: a.proceeding ? { label: L.venue[a.proceeding] } : "",
     [C.country]: countryName(a.country1),
-    [C.caseDoc]: meta.files.caseFiles.length ? { label: meta.docLater ? "Added later" : "Uploaded" } : a.caseLater ? { label: "Will send later" } : "",
     [C.identities]: Object.keys(a.claim).length ? { labels: Object.keys(a.claim).map((k) => L.identities[k]) } : "",
     [C.attorney]: attorneyText(a), [C.attEmail]: a.noAttorney ? "" : emailVal(a.attEmail),
     [C.deadline]: dateVal(a.deadlineUnknown ? "" : a.deadline),
@@ -191,7 +185,7 @@ export function involvementSummary(a) {
 
 // The raw JSON is what the resume link reads back; trimmed only at the very end.
 function rawJson(a, meta) {
-  const body = { rid: meta.rid, feedback: meta.feedback, savedAt: new Date().toISOString(), lang: meta.lang, step: Math.max(0, meta.lastQ - 1), progress: meta.progress, startedAt: meta.startedAt, submitted: !!meta.submitted || meta.mode === "submit", submittedAt: meta.submittedAt || null, minutes: meta.minutes ?? null, emailSent: meta.emailSent || null, docLater: !!meta.docLater, files: meta.files, a };
+  const body = { rid: meta.rid, feedback: meta.feedback, savedAt: new Date().toISOString(), lang: meta.lang, step: Math.max(0, meta.lastQ - 1), progress: meta.progress, startedAt: meta.startedAt, submitted: !!meta.submitted || meta.mode === "submit", submittedAt: meta.submittedAt || null, minutes: meta.minutes ?? null, emailSent: meta.emailSent || null, a };
   let s = JSON.stringify(body);
   if (s.length > RAW_MAX) { body.a = { ...a, anythingElse: a.anythingElse.slice(0, 300), incidents: a.incidents }; s = JSON.stringify(body); }
   return s.slice(0, RAW_MAX);
@@ -210,14 +204,11 @@ export function updateText(a, meta) {
     meta.repeat ? "UPDATED SUBMISSION — the form was submitted again; columns were overwritten, the earlier text stays above." : "Answers from the letter intake form (feedback.qaravan.org/letter)",
     "",
     "WHO",
-    line("Legal name", fullName(a)), line("Known as", a.knownAs.filter(Boolean).join(", ")), line("Date of birth", dob(a)), line("Pronouns", pronounsText(a)),
+    line("Legal name", fullName(a)), line("Known as", a.knownAs.filter(Boolean).join(", ")), line("Age", a.age), line("Pronouns", pronounsText(a)),
     line("Phone", a.phone), line("Email", a.email), line("Telegram", a.telegram), line("WhatsApp", a.whatsapp), line("Instagram", a.instagram), line("Follow-up language", L.followLang[a.followLang]),
     "", "CASE",
     line("Proceeding", a.proceeding ? L.proceeding[a.proceeding] + (a.proceeding === "other" && a.proceedingText ? ` — ${a.proceedingText}` : "") : ""),
     line("Country", countryName(a.country1)),
-    line("Case document", meta.files.caseFiles.length ? meta.files.caseFiles.join(", ") : a.caseLater ? "will send later (personal link emailed)" : "—"),
-    line("ID photo", meta.files.idFiles.join(", ")),
-    "(files are in the Files column, prefixed case- / id-)",
     line("Identities & experiences", Object.keys(a.claim).map((k) => L.identities[k] + (a.claimWhich[k] ? ` (${a.claimWhich[k]})` : "")).join("; ")),
     line("Attorney", attorneyText(a)), line("Letter needed by", a.deadlineUnknown ? "date not known yet" : a.deadline),
     line("Key events at home", a.incidents), line("Other support letters", lettersText(a)),
@@ -246,12 +237,11 @@ export default async function handler(req, res) {
       const row = await findByRid(rid);
       if (!row || !row.raw) return res.end('{"found":false}');
       const r = row.raw;
-      return res.end(JSON.stringify({ found: true, submitted: !!r.submitted, a: r.a || {}, step: r.step || 0, lang: langOf(r.lang), startedAt: r.startedAt || 0, files: r.files || { caseFiles: [], idFiles: [] }, docLater: !!r.docLater, emailSent: !!r.emailSent }));
+      return res.end(JSON.stringify({ found: true, submitted: !!r.submitted, a: r.a || {}, step: r.step || 0, lang: langOf(r.lang), startedAt: r.startedAt || 0, emailSent: !!r.emailSent }));
     } catch (e) { console.error("letter draft read failed:", e.message); res.statusCode = 502; return res.end("{}"); }
   }
 
   if (req.method !== "POST") { res.statusCode = 405; return res.end("{}"); }
-  if (new URL(req.url, "https://x").searchParams.get("file") === "1") return uploadHandler(req, res);
   const chunks = []; for await (const c of req) chunks.push(c);
   let b; try { b = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch { res.statusCode = 400; return res.end("{}"); }
   if (b.website) return res.end('{"ok":true}'); // honeypot: agree politely, write nothing
@@ -262,10 +252,10 @@ export default async function handler(req, res) {
   if (b.mode === "feedback") {
     const text = String(b.text || "").trim().slice(0, 2000);
     if (!text) return res.end('{"ok":true}');
-    const q = Math.min(20, Math.max(0, Math.round(Number(b.step) || 0)));
+    const q = Math.min(19, Math.max(0, Math.round(Number(b.step) || 0)));
     try {
       const existing = await findByRid(rid);
-      const prev = existing && existing.raw ? existing.raw : { rid, files: {} };
+      const prev = existing && existing.raw ? existing.raw : { rid };
       const list = [...(Array.isArray(prev.feedback) ? prev.feedback : []), { at: new Date().toISOString(), lang: langOf(b.lang), q, text }].slice(-20);
       const col = list.map((f) => `[${f.at.slice(0, 16).replace("T", " ")} · ${f.lang.toUpperCase()}${f.q ? ` · Q${f.q}` : ""}] ${f.text}`).join("\n\n").slice(0, 9000);
       const cv = { [C.translationFeedback]: { text: col }, [C.raw]: { text: JSON.stringify({ ...prev, rid, feedback: list }).slice(0, 9000) } };
@@ -274,7 +264,7 @@ export default async function handler(req, res) {
       return res.end('{"ok":true}');
     } catch (e) { console.error("translation feedback failed:", e.message); res.statusCode = 502; return res.end("{}"); }
   }
-  const mode = ["draft", "submit", "doc"].includes(b.mode) ? b.mode : "draft";
+  const mode = b.mode === "submit" ? "submit" : "draft";
   const a = cleanAnswers(b.a);
   const log = cleanLog(b.log);
   const hasAny = Object.values(a).some((v) => (typeof v === "string" ? v : Array.isArray(v) ? v.some((x) => (typeof x === "string" ? x : Object.values(x || {}).some(Boolean))) : v && typeof v === "object" ? Object.keys(v).length : v));
@@ -284,23 +274,18 @@ export default async function handler(req, res) {
     const existing = await findByRid(rid);
     const prev = existing && existing.raw ? existing.raw : {};
     const wasSubmitted = !!prev.submitted;
-    if (mode === "doc" && !existing) { res.statusCode = 404; return res.end('{"ok":false}'); }
-    const files = prev.files && typeof prev.files === "object" ? { caseFiles: prev.files.caseFiles || [], idFiles: prev.files.idFiles || [] } : { caseFiles: [], idFiles: [] };
     const startedAt = Number(b.startedAt) || Number(prev.startedAt) || Date.now();
     const meta = {
-      rid, mode, lang: langOf(b.lang), log, files, startedAt,
+      rid, mode, lang: langOf(b.lang), log, startedAt,
       submitted: wasSubmitted || mode === "submit",
-      docLater: mode === "doc" ? true : !!prev.docLater,
-      lastQ: Math.min(20, Math.max(0, Math.round(Number(b.step) || 0) + 1)),
+      lastQ: Math.min(19, Math.max(0, Math.round(Number(b.step) || 0) + 1)),
       progress: Math.min(100, Math.max(0, Math.round(Number(b.progress) || 0))),
       minutes: mode === "submit" ? Math.min(1440, Math.max(0, Math.round((Date.now() - startedAt) / 6000) / 10)) : (prev.minutes ?? null),
       emailSent: prev.emailSent || null,
       feedback: Array.isArray(prev.feedback) ? prev.feedback : [],
       submittedAt: mode === "submit" ? new Date().toISOString() : prev.submittedAt || null,
     };
-    // In "doc" mode only the file list changed; answers stay as they were.
-    const answers = mode === "doc" && prev.a ? { ...cleanAnswers(prev.a), caseLater: false } : a;
-    if (mode === "doc") { meta.submitted = wasSubmitted; meta.progress = wasSubmitted ? 100 : Number(prev.progress) || 0; meta.lastQ = Math.min(20, (Number(prev.step) || 0) + 1); }
+    const answers = a;
 
     // Personal resume link — emailed once, as soon as we have a valid email.
     let emailed = null;
@@ -322,10 +307,7 @@ export default async function handler(req, res) {
     if (mode === "submit") {
       if (!existing || existing.group !== GROUP_ANSWERS) await monday(`mutation ($i: ID!) { move_item_to_group(item_id:$i, group_id:"${GROUP_ANSWERS}") { id } }`, { i: String(itemId) }).catch((e) => console.error("move failed:", e.message));
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t) { id } }`, { i: String(itemId), t: updateText(answers, { ...meta, repeat: wasSubmitted }) }).catch((e) => console.error("update failed:", e.message));
-      if (EMAIL_RX.test(answers.email)) await sendSubmitEmail({ to: answers.email, name: answers.firstName, lang: meta.lang, link: `${FORM_BASE}/letter?r=${rid}&doc=1`, docLater: answers.caseLater && !files.caseFiles.length }).catch((e) => console.error("submit email failed:", e.message));
-    }
-    if (mode === "doc") {
-      await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t) { id } }`, { i: String(itemId), t: `Case document added later through the personal link: ${files.caseFiles.join(", ") || "(see Case documents)"}` }).catch((e) => console.error("doc update failed:", e.message));
+      if (EMAIL_RX.test(answers.email)) await sendSubmitEmail({ to: answers.email, name: answers.firstName, lang: meta.lang }).catch((e) => console.error("submit email failed:", e.message));
     }
     return res.end(JSON.stringify({ ok: true, emailed }));
   } catch (e) {
@@ -334,42 +316,3 @@ export default async function handler(req, res) {
   }
 }
 
-// ---- file uploads (formerly api/letter-file.mjs) ----
-const KIND = { caseFiles: C.files, idFiles: C.files }; // one Files column; the kind is kept in the row's raw JSON
-const MAX_BYTES = 4 * 1024 * 1024;
-
-async function uploadHandler(req, res) {
-  const u = new URL(req.url, "https://x");
-  const rid = String(u.searchParams.get("rid") || "").trim();
-  const kind = String(u.searchParams.get("kind") || "");
-  const name = String(u.searchParams.get("name") || "file").replace(/[\r\n"\\/]/g, "").slice(0, 120) || "file";
-  if (!RID_RX.test(rid) || !KIND[kind]) { res.statusCode = 400; return res.end('{"ok":false,"error":"bad request"}'); }
-
-  const chunks = []; let size = 0;
-  for await (const c of req) { size += c.length; if (size > MAX_BYTES) { res.statusCode = 413; return res.end('{"ok":false,"error":"too big"}'); } chunks.push(c); }
-  const buf = Buffer.concat(chunks);
-  if (!buf.length) { res.statusCode = 400; return res.end('{"ok":false,"error":"empty"}'); }
-
-  try {
-    let row = await findByRid(rid);
-    const itemId = row ? row.id : await createRow(rid);
-    const form = new FormData();
-    form.append("query", `mutation ($file: File!) { add_file_to_column (item_id: ${itemId}, column_id: "${KIND[kind]}", file: $file) { id } }`);
-    form.append("map", '{"f":"variables.file"}');
-    form.append("f", new Blob([buf]), ({ caseFiles: "case-", idFiles: "id-" }[kind] || "") + name);
-    const up = await fetch(MONDAY_FILE, { method: "POST", headers: { Authorization: process.env.MONDAY_TOKEN, "API-Version": "2024-10" }, body: form }).then((r) => r.json());
-    if (!up.data?.add_file_to_column?.id) { console.error("letter file upload failed:", JSON.stringify(up).slice(0, 300)); res.statusCode = 502; return res.end('{"ok":false,"error":"upload failed"}'); }
-
-    // Remember the name in the row's raw JSON so the resume link and staff summary know about it.
-    const raw = (row && row.raw) || { rid, files: {} };
-    raw.files = raw.files && typeof raw.files === "object" ? raw.files : {};
-    raw.files[kind] = (raw.files[kind] || []).concat([name]).slice(-12);
-    if (kind === "caseFiles" && raw.submitted) raw.docLater = true;
-    await monday(`mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b, item_id:$i, column_values:$v) { id } }`,
-      { b: "18429448469", i: String(itemId), v: JSON.stringify({ [C.raw]: { text: JSON.stringify(raw).slice(0, 9000) }, ...(kind === "caseFiles" ? { [C.caseDoc]: { label: raw.submitted ? "Added later" : "Uploaded" } } : {}) }) });
-    return res.end(JSON.stringify({ ok: true, name, assetId: up.data.add_file_to_column.id }));
-  } catch (e) {
-    console.error("letter-file failed:", e.message);
-    res.statusCode = 500; return res.end('{"ok":false}');
-  }
-}
