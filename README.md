@@ -69,7 +69,9 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
   Тексты всех шести языков — `letter/strings.js`; названия событий —
   `letter/intake-events.js` (английский источник, идентификаторы позиционные,
   **не переставлять**) и `letter/events-i18n.js` (переводы по id); страны —
-  `letter/countries.js` (ISO-коды, имена локализует браузер).
+  `letter/countries.js` (ISO-коды, имена локализует браузер); невидимые синонимы
+  для поиска по событиям («хайк» → hike/поход, «пати» → party) —
+  `letter/search-synonyms.js`, группы слов-основ, дописывать можно свободно.
 - `api/letter.mjs` — автосохранение после каждого ответа (`mode: draft`),
   отправка (`submit`), выдача черновика по личной ссылке (`GET ?rid=`) и
   сообщения об ошибках перевода (`mode: feedback`). Всё в одной функции: на плане

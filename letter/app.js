@@ -427,7 +427,12 @@ const STEP_RENDER = {
     const a = S.a, YE = window.QARAVAN_EVENTS || [], f = S.filter.trim().toLowerCase();
     const idx = eventIndex();
     const countFor = (y) => Object.keys(a.events).filter((k) => a.events[k] && idx[k] && idx[k].year === y).length + (a.eventsOther[y] ? 1 : 0);
-    const match = (n, id) => !f || n.toLowerCase().includes(f) || eventName(id, n).toLowerCase().includes(f);
+    // Search: the English name, the name in all six languages, and the invisible synonym groups
+    // (letter/search-synonyms.js) — «хайк» finds a hike even though the calendar says «поход».
+    const SYN = window.QARAVAN_SEARCH_SYNONYMS || [];
+    const terms = f.length >= 3 ? Array.from(new Set(SYN.filter((g) => g.some((w) => w.includes(f) || (w.length >= 3 && f.includes(w)))).flat())) : [];
+    const allNames = (id) => Object.keys(EVI).map((l) => { const v = EVI[l] && EVI[l][id]; return Array.isArray(v) ? v.join(" ") : v || ""; }).join(" ");
+    const match = (n, id, det) => { if (!f) return true; const hay = (n + " " + (det || "") + " " + allNames(id)).toLowerCase(); return hay.includes(f) || terms.some((w) => hay.includes(w)); };
     const pills = YE.map((yr) => { const c = countFor(yr.y); return '<button type="button" class="ypill' + (c ? " on" : "") + '" data-act="jumpYear" data-v="' + yr.y + '"><span>' + yr.y + "</span>" + (c ? '<span class="badge">' + c + "</span>" : "") + "</button>"; }).join("");
     const pickedIds = Object.keys(a.events).filter((k) => a.events[k] && idx[k]).sort((p, q) => idx[q].year - idx[p].year);
     const picked = pickedIds.map((k) => '<button type="button" class="pchip" data-act="event" data-v="' + k + '" aria-label="' + esc(t("remove")) + '"><span class="y">' + idx[k].year + "</span><span>" + esc(eventName(k, idx[k].name) + (a.eventCounts[k] ? ", " + t("cnt_" + a.eventCounts[k].replace("-", "_").replace("+", "p")) : "")) + "</span>" + svgX("#0099CC") + "</button>")
@@ -435,7 +440,7 @@ const STEP_RENDER = {
     const row = (id, name, det, cls) => { const on = !!a.events[id]; return '<div class="lrow ' + cls + (on ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + on + '" data-act="event" data-v="' + id + '">' + cb(on) + '<span class="col"><span>' + esc(name) + "</span>" + (det ? '<span class="det">' + esc(det) + "</span>" : "") + "</span></div>"; };
     let tl = "", any = false;
     YE.forEach((yr) => {
-      const programs = yr.programs.map((p, i) => ({ id: yr.y + "-p" + i, name: p[0], detail: p[1] })).filter((p) => match(p.name, p.id));
+      const programs = yr.programs.map((p, i) => ({ id: yr.y + "-p" + i, name: p[0], detail: p[1] })).filter((p) => match(p.name, p.id, p.detail));
       const ms = yr.months.map((m, mi) => ({ mi, name: m[0], events: m[1].map((n, ei) => ({ id: yr.y + "-m" + mi + "-" + ei, name: n })).filter((e) => match(e.name, e.id)) })).filter((m) => m.events.length);
       if (f && !programs.length && !ms.length) return; any = true;
       const c = countFor(yr.y), otherOn = a.eventsOther[yr.y] !== undefined;
