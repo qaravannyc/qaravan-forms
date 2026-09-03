@@ -9,7 +9,7 @@
 //                   the case document they had promised.
 // GET ?rid=… — the draft for the personal resume link (answers, step, language,
 //   file names already uploaded), or {submitted:true} once it was sent.
-// POST ?file=1&rid=…&kind=caseFiles|idFiles|declFiles&name=… with the file bytes as
+// POST ?file=1&rid=…&kind=caseFiles|idFiles&name=… with the file bytes as
 //   the body — uploads into the row's Files column (see uploadHandler below). It
 //   lives in this same function because Vercel's Hobby plan allows at most 12
 //   serverless functions per deployment and the repository already has 11.
@@ -44,7 +44,7 @@ export function cleanAnswers(src) {
     followLang: pick(L.followLang, s.followLang),
     proceeding: pick(L.proceeding, s.proceeding), proceedingText: str(s.proceedingText, 200),
     country1: str(s.country1, 2).toUpperCase(),
-    anumber: str(s.anumber, 13), caseLater: bool(s.caseLater),
+    caseLater: bool(s.caseLater),
     claim: Object.fromEntries(keys(L.identities, s.claim).map((k) => [k, true])),
     claimWhich: {},
     noAttorney: bool(s.noAttorney), attFirst: str(s.attFirst, 80), attLast: str(s.attLast, 80), attEmail: str(s.attEmail, 120).toLowerCase(), attPhone: str(s.attPhone, 30), attFirm: str(s.attFirm, 120),
@@ -63,7 +63,6 @@ export function cleanAnswers(src) {
     partner: pick(L.partner, s.partner), partnerIn: pick(L.yesno, s.partnerIn), partnerStmt: pick(L.pstatement, s.partnerStmt), partnerName: str(s.partnerName, 80), partnerContact: str(s.partnerContact, 120),
     consent: { truth: bool(s.consent && s.consent.truth), share: bool(s.consent && s.consent.share), contact: bool(s.consent && s.consent.contact) },
     anythingElse: str(s.anythingElse, 2000),
-    declChoice: ["upload", "later", "no"].includes(s.declChoice) ? s.declChoice : "",
   };
   for (const k of ["ethnic", "religious", "other"]) if (a.claim[k] && s.claimWhich && typeof s.claimWhich[k] === "string") a.claimWhich[k] = str(s.claimWhich[k], 120);
   const EV_ID = /^20(1[2-9]|2[0-6])-(p\d{1,2}|m\d{1,2}-\d{1,2})$/;
@@ -144,7 +143,7 @@ export function columnValues(a, meta) {
   const anything = [a.anythingElse, other ? `Details for “Other”:\n${other}` : ""].filter(Boolean).join("\n\n");
   const progress = submitted
     ? `Submitted ${(meta.submittedAt || new Date().toISOString()).slice(0, 10)} · ${meta.minutes != null ? meta.minutes + " min" : "time unknown"} · ${L.lang[meta.lang]}`
-    : `Q ${meta.lastQ} of 21 · ${meta.progress}% · ${L.lang[meta.lang]}`;
+    : `Q ${meta.lastQ} of 20 · ${meta.progress}% · ${L.lang[meta.lang]}`;
   const cv = {
     [C.rid]: meta.rid,
     [C.formStatus]: { label: submitted ? "Submitted" : "In progress" },
@@ -155,7 +154,7 @@ export function columnValues(a, meta) {
     [C.followLang]: a.followLang ? { label: L.followLang[a.followLang] } : "",
     [C.proceeding]: a.proceeding ? { label: L.proceeding[a.proceeding] } : "",
     [C.caseType]: a.proceeding ? { label: L.caseType[a.proceeding] } : "", [C.venue]: a.proceeding ? { label: L.venue[a.proceeding] } : "",
-    [C.country]: countryName(a.country1), [C.aNumber]: a.anumber,
+    [C.country]: countryName(a.country1),
     [C.caseDoc]: meta.files.caseFiles.length ? { label: meta.docLater ? "Added later" : "Uploaded" } : a.caseLater ? { label: "Will send later" } : "",
     [C.identities]: Object.keys(a.claim).length ? { labels: Object.keys(a.claim).map((k) => L.identities[k]) } : "",
     [C.attorney]: attorneyText(a), [C.attEmail]: a.noAttorney ? "" : emailVal(a.attEmail),
@@ -168,7 +167,6 @@ export function columnValues(a, meta) {
     [C.partner]: partner ? { text: partner } : "",
     [C.consents]: check(a.consent.truth && a.consent.share && a.consent.contact),
     [C.anythingElse]: anything ? { text: anything } : "",
-    [C.ps]: a.declChoice ? { label: L.ps[a.declChoice] } : submitted ? { label: "Not reached" } : "",
     [C.resumeLink]: { url: `${FORM_BASE}/letter?r=${meta.rid}`, text: "Open this person's form" },
     [C.source]: `Intake form (feedback.qaravan.org/letter)${a.found ? ` · found us via ${L.found[a.found]}` : ""}`,
     [C.involvement]: { text: involvementSummary(a).slice(0, RAW_MAX) },
@@ -216,10 +214,10 @@ export function updateText(a, meta) {
     line("Phone", a.phone), line("Email", a.email), line("Telegram", a.telegram), line("WhatsApp", a.whatsapp), line("Instagram", a.instagram), line("Follow-up language", L.followLang[a.followLang]),
     "", "CASE",
     line("Proceeding", a.proceeding ? L.proceeding[a.proceeding] + (a.proceeding === "other" && a.proceedingText ? ` — ${a.proceedingText}` : "") : ""),
-    line("Country", countryName(a.country1)), line("A-number", a.anumber),
+    line("Country", countryName(a.country1)),
     line("Case document", meta.files.caseFiles.length ? meta.files.caseFiles.join(", ") : a.caseLater ? "will send later (personal link emailed)" : "—"),
     line("ID photo", meta.files.idFiles.join(", ")),
-    "(files are in the Files column, prefixed case- / id- / statement-)",
+    "(files are in the Files column, prefixed case- / id-)",
     line("Identities & experiences", Object.keys(a.claim).map((k) => L.identities[k] + (a.claimWhich[k] ? ` (${a.claimWhich[k]})` : "")).join("; ")),
     line("Attorney", attorneyText(a)), line("Letter needed by", a.deadlineUnknown ? "date not known yet" : a.deadline),
     line("Key events at home", a.incidents), line("Other support letters", lettersText(a)),
@@ -231,10 +229,8 @@ export function updateText(a, meta) {
     "", "CONSENT",
     `Answers true: ${a.consent.truth ? "yes" : "NO"} · Share with attorney: ${a.consent.share ? "yes" : "NO"} · May contact: ${a.consent.contact ? "yes" : "NO"}`,
     line("Anything else", a.anythingElse),
-    "", "PERSONAL STATEMENT",
-    line("Choice", a.declChoice ? L.ps[a.declChoice] : "not reached"), line("File", meta.files.declFiles.join(", ")),
     "",
-    `Form language: ${L.lang[meta.lang]} · ${meta.minutes != null ? meta.minutes + " min" : "time unknown"} · went back ${meta.log.filter((e) => e.d === "back" || e.d === "jump").length} times · reached the last step: ${meta.log.some((e) => e.s === "declaration") ? "yes" : "no"}`,
+    `Form language: ${L.lang[meta.lang]} · ${meta.minutes != null ? meta.minutes + " min" : "time unknown"} · went back ${meta.log.filter((e) => e.d === "back" || e.d === "jump").length} times · reached the last step: ${meta.log.some((e) => e.s === "consent") ? "yes" : "no"}`,
   ].filter((x) => x !== null);
   return parts.join("\n").slice(0, 9500);
 }
@@ -250,7 +246,7 @@ export default async function handler(req, res) {
       const row = await findByRid(rid);
       if (!row || !row.raw) return res.end('{"found":false}');
       const r = row.raw;
-      return res.end(JSON.stringify({ found: true, submitted: !!r.submitted, a: r.a || {}, step: r.step || 0, lang: langOf(r.lang), startedAt: r.startedAt || 0, files: r.files || { caseFiles: [], idFiles: [], declFiles: [] }, docLater: !!r.docLater, emailSent: !!r.emailSent }));
+      return res.end(JSON.stringify({ found: true, submitted: !!r.submitted, a: r.a || {}, step: r.step || 0, lang: langOf(r.lang), startedAt: r.startedAt || 0, files: r.files || { caseFiles: [], idFiles: [] }, docLater: !!r.docLater, emailSent: !!r.emailSent }));
     } catch (e) { console.error("letter draft read failed:", e.message); res.statusCode = 502; return res.end("{}"); }
   }
 
@@ -272,13 +268,13 @@ export default async function handler(req, res) {
     const prev = existing && existing.raw ? existing.raw : {};
     const wasSubmitted = !!prev.submitted;
     if (mode === "doc" && !existing) { res.statusCode = 404; return res.end('{"ok":false}'); }
-    const files = prev.files && typeof prev.files === "object" ? { caseFiles: prev.files.caseFiles || [], idFiles: prev.files.idFiles || [], declFiles: prev.files.declFiles || [] } : { caseFiles: [], idFiles: [], declFiles: [] };
+    const files = prev.files && typeof prev.files === "object" ? { caseFiles: prev.files.caseFiles || [], idFiles: prev.files.idFiles || [] } : { caseFiles: [], idFiles: [] };
     const startedAt = Number(b.startedAt) || Number(prev.startedAt) || Date.now();
     const meta = {
       rid, mode, lang: langOf(b.lang), log, files, startedAt,
       submitted: wasSubmitted || mode === "submit",
       docLater: mode === "doc" ? true : !!prev.docLater,
-      lastQ: Math.min(21, Math.max(0, Math.round(Number(b.step) || 0) + 1)),
+      lastQ: Math.min(20, Math.max(0, Math.round(Number(b.step) || 0) + 1)),
       progress: Math.min(100, Math.max(0, Math.round(Number(b.progress) || 0))),
       minutes: mode === "submit" ? Math.min(1440, Math.max(0, Math.round((Date.now() - startedAt) / 6000) / 10)) : (prev.minutes ?? null),
       emailSent: prev.emailSent || null,
@@ -286,7 +282,7 @@ export default async function handler(req, res) {
     };
     // In "doc" mode only the file list changed; answers stay as they were.
     const answers = mode === "doc" && prev.a ? { ...cleanAnswers(prev.a), caseLater: false } : a;
-    if (mode === "doc") { meta.submitted = wasSubmitted; meta.progress = wasSubmitted ? 100 : Number(prev.progress) || 0; meta.lastQ = Math.min(21, (Number(prev.step) || 0) + 1); }
+    if (mode === "doc") { meta.submitted = wasSubmitted; meta.progress = wasSubmitted ? 100 : Number(prev.progress) || 0; meta.lastQ = Math.min(20, (Number(prev.step) || 0) + 1); }
 
     // Personal resume link — emailed once, as soon as we have a valid email.
     let emailed = null;
@@ -321,7 +317,7 @@ export default async function handler(req, res) {
 }
 
 // ---- file uploads (formerly api/letter-file.mjs) ----
-const KIND = { caseFiles: C.files, idFiles: C.files, declFiles: C.files }; // one Files column; the kind is kept in the row's raw JSON
+const KIND = { caseFiles: C.files, idFiles: C.files }; // one Files column; the kind is kept in the row's raw JSON
 const MAX_BYTES = 4 * 1024 * 1024;
 
 async function uploadHandler(req, res) {
@@ -342,7 +338,7 @@ async function uploadHandler(req, res) {
     const form = new FormData();
     form.append("query", `mutation ($file: File!) { add_file_to_column (item_id: ${itemId}, column_id: "${KIND[kind]}", file: $file) { id } }`);
     form.append("map", '{"f":"variables.file"}');
-    form.append("f", new Blob([buf]), ({ caseFiles: "case-", idFiles: "id-", declFiles: "statement-" }[kind] || "") + name);
+    form.append("f", new Blob([buf]), ({ caseFiles: "case-", idFiles: "id-" }[kind] || "") + name);
     const up = await fetch(MONDAY_FILE, { method: "POST", headers: { Authorization: process.env.MONDAY_TOKEN, "API-Version": "2024-10" }, body: form }).then((r) => r.json());
     if (!up.data?.add_file_to_column?.id) { console.error("letter file upload failed:", JSON.stringify(up).slice(0, 300)); res.statusCode = 502; return res.end('{"ok":false,"error":"upload failed"}'); }
 

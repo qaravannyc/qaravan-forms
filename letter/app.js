@@ -1,6 +1,6 @@
 /* QARAVAN letter intake form — feedback.qaravan.org/letter
  * Vanilla JS build of the Claude Design prototype (Letter Intake Form.dc.html).
- * 21 questions in 5 sections, one per screen. Answers live in `S.a`, every change
+ * 20 questions in 4 sections, one per screen. Answers live in `S.a`, every change
  * is saved to localStorage at once and to the board (POST /api/letter) with a
  * short debounce. Strings: letter/strings.js; events: letter/intake-events.js
  * (+ events-i18n.js); countries: letter/countries.js.
@@ -12,9 +12,10 @@ const STEPS = [
   ["name", 0], ["birth", 0], ["contact", 0],
   ["proceeding", 1], ["country", 1], ["caseDoc", 1], ["idDoc", 1], ["claim", 1], ["attorney", 1], ["deadline", 1], ["incidents", 1], ["otherLetters", 1],
   ["firstCame", 2], ["knows", 2], ["frequency", 2], ["events", 2], ["beyond", 2], ["role", 2], ["partner", 2],
-  ["consent", 3], ["declaration", 4]
+  ["consent", 3]
 ];
-const WEIGHT = { name: 1, birth: 1, contact: 2, proceeding: 1, country: 1, caseDoc: 3, idDoc: 2, claim: 1, attorney: 2, deadline: 1, incidents: 3, otherLetters: 1, firstCame: 1, knows: 3, frequency: 1, events: 6, beyond: 3, role: 1, partner: 1, consent: 1, declaration: 2 };
+const WEIGHT = { name: 1, birth: 1, contact: 2, proceeding: 1, country: 1, caseDoc: 3, idDoc: 2, claim: 1, attorney: 2, deadline: 1, incidents: 3, otherLetters: 1, firstCame: 1, knows: 3, frequency: 1, events: 6, beyond: 3, role: 1, partner: 1, consent: 1 };
+const SECTIONS = 4;
 const TOTAL_WEIGHT = STEPS.reduce((t, x) => t + WEIGHT[x[0]], 0);
 const OPTIONAL = new Set(["incidents", "otherLetters", "beyond", "partner", "deadline", "knows", "frequency", "firstCame", "role"]);
 const KEY = "qaravan-intake-draft-v1";
@@ -26,14 +27,14 @@ const A0 = () => ({
   firstName: "", lastName: "", knownAs: [""], dobD: "", dobM: "", dobY: "", pronouns: "", pronounsText: "",
   phone: "", email: "", telegram: "", whatsapp: "", instagram: "", followLang: "",
   proceeding: "", proceedingText: "", country1: "",
-  anumber: "", caseFiles: [], caseLater: false, idFiles: [],
+  caseFiles: [], caseLater: false, idFiles: [],
   claim: {}, claimWhich: {}, noAttorney: false, attFirst: "", attLast: "", attEmail: "", attPhone: "", attFirm: "",
   deadline: "", deadlineUnknown: false, incidents: "", otherLetters: "", otherLettersList: [{ name: "", status: "" }],
   cameM: "", cameY: "", found: "", foundText: "", knowsPeople: [{ name: "", phone: "", email: "", handle: "" }, { name: "", phone: "", email: "", handle: "" }], knowsVia: {}, knowsViaText: "", frequency: "",
   events: {}, eventCounts: {}, eventsOther: {}, eventsNone: {},
   beyond: [{ what: "", since: "", howOften: "" }], role: {},
   partner: "", partnerIn: "", partnerStmt: "", partnerName: "", partnerContact: "",
-  consent: {}, anythingElse: "", declChoice: "", declFiles: []
+  consent: {}, anythingElse: ""
 });
 
 // ---------- i18n ----------
@@ -141,7 +142,6 @@ function clearErr(path) {
   if (k.startsWith("dob")) delete S.errs.dob;
   if (k === "caseFiles" || k === "caseLater") delete S.errs.caseDoc;
   if (k === "idFiles") delete S.errs.idDoc;
-  if (k === "declChoice" || k === "declFiles") delete S.errs.declaration;
   if (k === "knowsPeople") { const i = path.split(".")[1]; delete S.errs["knowsPhone" + i]; }
 }
 function touched() { if (!S.startedAt) S.startedAt = Date.now(); persist(); schedule(); }
@@ -155,7 +155,6 @@ function fmtPhone(raw) {
   if (plus && s.startsWith("1")) return "+1 " + [s.slice(1, 4), s.slice(4, 7), s.slice(7, 11)].filter(Boolean).join("-") + (s.length > 11 ? " " + s.slice(11, 15) : "");
   return (plus ? "+" : "") + s.replace(/(\d{1,3})(?=\d)/g, "$1 ").slice(0, 20);
 }
-const fmtA = (v) => { const d = v.replace(/\D/g, "").slice(0, 9); return d ? "A-" + [d.slice(0, 3), d.slice(3, 6), d.slice(6, 9)].filter(Boolean).join("-") : ""; };
 function dobError(a) {
   const d = +a.dobD, m = +a.dobM, y = +a.dobY, filled = a.dobD && a.dobM && a.dobY.length === 4;
   if (a.dobD && !(d >= 1 && d <= 31)) return t("e_day");
@@ -172,7 +171,6 @@ function dobError(a) {
 function onInput(el) {
   const path = el.dataset.f; let v = el.value;
   if (el.dataset.fmt === "phone") { v = fmtPhone(v); el.value = v; }
-  if (el.dataset.fmt === "anumber") { v = fmtA(v); el.value = v; }
   if (el.dataset.fmt === "digits") { v = v.replace(/\D/g, "").slice(0, +el.maxLength || 4); el.value = v; }
   if (el.maxLength > 0 && v.length > el.maxLength) { v = v.slice(0, el.maxLength); el.value = v; }
   setPath(S.a, path, v); clearErr(path);
@@ -249,7 +247,7 @@ function validate() {
   if (id === "attorney" && !a.noAttorney) { req("attFirst", t("e_attfirst")); req("attLast", t("e_attlast")); if (!EMAIL_RX.test(a.attEmail.trim())) e.attEmail = t("e_attemail"); }
   if (id === "knows") a.knowsPeople.forEach((k, i) => { if (k.name.trim() && !k.phone.trim()) e["knowsPhone" + i] = t("e_knowsphone", { name: k.name.trim() }); });
   if (id === "consent" && !(a.consent.truth && a.consent.share && a.consent.contact)) e.consent = t("e_consent");
-  if (id === "declaration") { const m = missingRequired(); if (m.length) e.missing = m; if (a.declChoice === "upload" && !filesOk("declFiles")) e.declaration = a.declFiles.some((f) => f.up === "wait") ? t("e_wait") : t("e_decl"); }
+  if (S.step === STEPS.length - 1) { const m = missingRequired(); if (m.length) e.missing = m; }
   return e;
 }
 function missingRequired() {
@@ -317,7 +315,7 @@ const rowCheck = (on, act, arg, title, sub) => '<div class="row' + (on ? " on" :
 const addBtn = (act, label) => '<button type="button" class="btn outline md" data-act="' + act + '">' + svgPlus + "<span>" + esc(label) + "</span></button>";
 function fileList(kind, accept, multiple) {
   const rows = S.a[kind].map((f, i) => '<div class="filerow' + (f.up === "wait" ? " wait" : f.up === "err" ? " bad" : "") + '"><span>' + esc(f.name) + (f.up === "wait" ? " — " + t("uploading") : f.up === "err" ? " — " + esc(f.msg || t("e_upload")) : "") + '</span><button type="button" data-act="rmfile" data-k="' + kind + '" data-v="' + i + '" aria-label="' + esc(t("remove_file")) + '">' + t("remove") + "</button></div>").join("");
-  const label = S.a[kind].length ? (kind === "idFiles" ? t("up_replace") : t("up_another")) : (kind === "declFiles" ? t("up_choose") : t("up_first"));
+  const label = S.a[kind].length ? (kind === "idFiles" ? t("up_replace") : t("up_another")) : t("up_first");
   return '<div class="stack" style="gap:10px">' + rows + '<label class="upload"><input type="file" accept="' + accept + '"' + (multiple ? " multiple" : "") + ' data-kind="' + kind + '"><span>' + esc(label) + "</span></label></div>";
 }
 const sec = (i) => t("sec_" + i);
@@ -338,10 +336,10 @@ function renderRail() {
   const st = STEPS[S.step], secIdx = st[1], id = st[0], mr = maxReached(), pct = progressPct();
   const secSteps = STEPS.filter((x) => x[1] === secIdx), pos = secSteps.findIndex((x) => x[0] === id) + 1;
   let html = '<nav class="railnav" aria-label="Sections"><div class="rail-p"><div class="top"><span class="cap">' + t("your_progress") + '</span><span style="font-size:13px;font-weight:800">' + esc(t("q_of", { n: S.step + 1, total: STEPS.length })) + '</span></div><div class="bar"><i style="width:' + Math.max(pct, 3) + '%"></i></div></div><div>';
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < SECTIONS; i++) {
     const items = STEPS.filter((x) => x[1] === i), first = stepIdx(items[0][0]), last = stepIdx(items[items.length - 1][0]);
     const cur = i === secIdx, done = mr >= last && !cur, expand = cur && id !== "events";
-    html += '<div class="rsec' + (cur ? "" : " go") + '"' + (cur ? "" : ' data-act="go" data-v="' + first + '" data-dir="' + (first > mr ? "peek" : "jump") + '"') + '><span class="dotcol"><span class="rdot' + (done ? " done" : cur ? " cur" : "") + '">' + (done ? svgTick("#fff") : i + 1) + "</span>" + (i < 4 ? '<span class="rline' + (done ? " done" : "") + '"></span>' : "") + '</span><span class="rbody"><span class="rname"><b' + (cur ? ' class="cur"' : "") + ">" + esc(sec(i)) + "</b><span>" + esc(cur ? t("n_of_m", { n: pos, m: items.length }) : tn("n_questions", items.length)) + "</span></span>";
+    html += '<div class="rsec' + (cur ? "" : " go") + '"' + (cur ? "" : ' data-act="go" data-v="' + first + '" data-dir="' + (first > mr ? "peek" : "jump") + '"') + '><span class="dotcol"><span class="rdot' + (done ? " done" : cur ? " cur" : "") + '">' + (done ? svgTick("#fff") : i + 1) + "</span>" + (i < SECTIONS - 1 ? '<span class="rline' + (done ? " done" : "") + '"></span>' : "") + '</span><span class="rbody"><span class="rname"><b' + (cur ? ' class="cur"' : "") + ">" + esc(sec(i)) + "</b><span>" + esc(cur ? t("n_of_m", { n: pos, m: items.length }) : tn("n_questions", items.length)) + "</span></span>";
     if (expand) html += '<span class="ritems">' + items.map((x) => { const ii = stepIdx(x[0]), isCur = ii === S.step, isDone = ii < S.step; return '<span class="ritem' + (isCur ? " cur" : isDone ? " done" : "") + '"' + (isCur ? "" : ' data-act="go" data-v="' + ii + '" data-dir="' + (ii > mr ? "peek" : "jump") + '"') + "><i></i><span>" + esc(cap(stepLabel(x[0]))) + "</span></span>"; }).join("") + "</span>";
     html += "</span></div>";
   }
@@ -417,7 +415,6 @@ const STEP_RENDER = {
   caseDoc() {
     const a = S.a;
     return "<h1>" + t("q6_title") + '</h1><p class="help">' + t("q6_help") + "</p>" +
-      field(t("q6_anumber") + opt(), "anumber", { mode: "numeric", fmt: "anumber" }, t("q6_anumber_hint")) +
       '<div><span class="lbl">' + t("q6_upload") + "</span>" + fileList("caseFiles", "image/*,.pdf", true) + ferr("caseDoc") + "</div>" +
       '<div class="divider">' + rowCheck(a.caseLater, "toggle", "caseLater", t("q6_later"), t("q6_later_sub")) + "</div>";
   },
@@ -522,12 +519,8 @@ const STEP_RENDER = {
     const a = S.a;
     return "<h1>" + t("q20_title") + '</h1><p class="help">' + t("q20_help") + '</p><div class="card plain">' + [["truth", "c_truth", "c_truth_sub"], ["share", "c_share", "c_share_sub"], ["contact", "c_contact", "c_contact_sub"]].map(([v, tk, sk]) => '<div class="consent' + (a.consent[v] ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + !!a.consent[v] + '" data-act="consent" data-v="' + v + '"><span class="txt"><span class="t">' + t(tk) + '</span><span class="s">' + t(sk) + '</span></span><span style="flex:none;padding-top:2px">' + cb(!!a.consent[v], true) + "</span></div>").join("") + "</div>" + ferr("consent") +
       '<label class="field"><span class="lbl">' + t("q20_else") + opt() + '</span><textarea class="in" data-f="anythingElse" rows="4" maxlength="2000" style="min-height:110px">' + esc(a.anythingElse) + "</textarea></label>";
-  },
-  declaration() {
-    const a = S.a;
-    return '<div class="eyebrow">' + t("last_step") + "</div><h1>" + t("q21_title") + "</h1><p>" + t("q21_body") + '</p><p style="font-size:15px;font-weight:700">' + t("q21_q") + opt() + '</p><div class="card plain">' + [["upload", "dc_upload", "dc_upload_sub"], ["later", "dc_later", "dc_later_sub"], ["no", "dc_no", "dc_no_sub"]].map(([v, tk, sk]) => '<div class="consent sky' + (a.declChoice === v ? " on" : "") + '" role="radio" tabindex="0" aria-checked="' + (a.declChoice === v) + '" data-act="decl" data-v="' + v + '"><span style="flex:none;padding-top:1px">' + rd(a.declChoice === v) + '</span><span class="txt"><span class="t">' + t(tk) + '</span><span class="s">' + t(sk) + "</span></span></div>").join("") + "</div>" +
-      (a.declChoice === "upload" ? '<div class="fade">' + fileList("declFiles", "image/*,.pdf,.doc,.docx", true) + "</div>" : "") + ferr("declaration");
   }
+
 };
 let EVIDX = null;
 function eventIndex() {
@@ -600,7 +593,7 @@ const ACT = {
   back() { if (S.step === 0) { S.view = "welcome"; S.savedStep = 0; S.savedView = "step"; persist(); render(); window.scrollTo({ top: 0 }); return; } go(S.step - 1, "back"); },
   next() { next(); },
   skip() { go(S.step + 1, "skip"); },
-  chip(el) { const k = el.dataset.k, v = el.dataset.v; const p = {}; p[k] = S.a[k] === v ? "" : v; if (k === "declChoice") addLog("declaration", "choice:" + v); setA(p); },
+  chip(el) { const k = el.dataset.k, v = el.dataset.v; const p = {}; p[k] = S.a[k] === v ? "" : v; setA(p); },
   check(el) { const k = el.dataset.k, v = el.dataset.v; const cur = Object.assign({}, S.a[k]); if (k === "role") { if (v === "none") { const on = cur.none; for (const x in cur) delete cur[x]; if (!on) cur.none = true; } else { cur[v] = !cur[v]; if (!cur[v]) delete cur[v]; delete cur.none; } } else { cur[v] = !cur[v]; if (!cur[v]) delete cur[v]; } const p = {}; p[k] = cur; setA(p); },
   toggle(el) { const k = el.dataset.v; const p = {}; p[k] = !S.a[k]; setA(p); },
   toggleDeadline() { setA({ deadlineUnknown: !S.a.deadlineUnknown, deadline: S.a.deadlineUnknown ? S.a.deadline : "" }); },
@@ -625,7 +618,6 @@ const ACT = {
   eventOtherClear(el) { const o = Object.assign({}, S.a.eventsOther); delete o[el.dataset.v]; setA({ eventsOther: o }); },
   eventsNone() { const on = !S.a.eventsNone.all; setA(on ? { eventsNone: { all: true }, events: {}, eventCounts: {}, eventsOther: {} } : { eventsNone: {} }); },
   consent(el) { const c = Object.assign({}, S.a.consent); c[el.dataset.v] = !c[el.dataset.v]; setA({ consent: c }); },
-  decl(el) { addLog("declaration", "choice:" + el.dataset.v); setA({ declChoice: el.dataset.v }); },
   openAttach() { S.view = "attach"; S.attachSaved = false; addLog("attach-later", "open"); render(); window.scrollTo({ top: 0 }); },
   async attachDone() { const btn = document.querySelector('[data-act="attachDone"]'); if (btn) btn.disabled = true; S.a.caseLater = false; persist(); const out = await save("doc"); S.attachSaved = !!(out && out.ok); if (!S.attachSaved) S.errs.net = t("e_net"); addLog("attach-later", S.attachSaved ? "attached" : "error"); render(); },
   copyLink() { const v = resumeURL(); navigator.clipboard && navigator.clipboard.writeText(v).catch(() => {}); const b = document.querySelector('[data-act="copyLink"]'); if (b) b.textContent = t("copied"); }
@@ -666,7 +658,7 @@ let rw = 0; window.addEventListener("resize", () => { clearTimeout(rw); rw = set
       if (!localBusy || confirm(t("confirm_adopt"))) {
         S.rid = r; S.a = Object.assign(A0(), d.a || {}); if (!Array.isArray(S.a.knownAs) || !S.a.knownAs.length) S.a.knownAs = [""];
         const files = d.files || {};
-        for (const k of ["caseFiles", "idFiles", "declFiles"]) S.a[k] = (files[k] || []).map((n) => ({ name: n, up: true }));
+        for (const k of ["caseFiles", "idFiles"]) S.a[k] = (files[k] || []).map((n) => ({ name: n, up: true }));
         S.submitted = !!d.submitted; S.startedAt = d.startedAt || Date.now(); S.log = []; S.savedStep = null;
         if (d.lang && LANGS.some((l) => l[0] === d.lang) && !q.get("lang")) lang = d.lang;
         if (S.submitted) { S.view = wantDoc ? "attach" : "done"; }
