@@ -90,7 +90,7 @@ function persist() {
 function addLog(s, d) { S.log.push({ t: Date.now(), s, d }); if (S.log.length > 400) S.log = S.log.slice(-400); persist(); }
 
 // ---------- saving to the board ----------
-let dirty = false, inflight = false, timer = 0, pendingResolve = [];
+let dirty = false, inflight = false, timer = 0, queued = null; // queued: a save requested while another was on the wire
 function setSaveState(st) { S.saveState = st; const el = document.getElementById("stamp"); if (el) el.textContent = stampText(); }
 function stampText() {
   if (S.saveState === "saving") return t("saving");
@@ -109,7 +109,13 @@ function schedule() {
   clearTimeout(timer); timer = setTimeout(() => save("draft"), 1200);
 }
 async function save(mode) {
-  if (inflight) { dirty = true; return new Promise((r) => pendingResolve.push(r)); }
+  if (mode === "draft" && S.submitted) return { ok: true }; // nothing to autosave once the answers are in
+  if (inflight) {
+    // Another save is on the wire: run this one right after it, with the stronger mode.
+    // A submit must never be swallowed by an autosave that happened to be in flight.
+    if (!queued) queued = { mode, resolvers: [] }; else if (mode === "submit") queued.mode = "submit";
+    return new Promise((r) => queued.resolvers.push(r));
+  }
   inflight = true; dirty = false;
   let out = null;
   try {
@@ -120,8 +126,13 @@ async function save(mode) {
   } catch (e) { dirty = true; setSaveState("local"); }
   finally {
     inflight = false;
-    const rs = pendingResolve; pendingResolve = []; rs.forEach((r) => r(out));
-    if (dirty && !S.submitted && mode === "draft") { clearTimeout(timer); timer = setTimeout(() => save("draft"), 4000); }
+    if (queued) {
+      const q = queued; queued = null;
+      // an autosave queued behind a successful submit is moot; anything else runs now
+      if (q.mode === "draft" && mode === "submit" && out && out.ok) q.resolvers.forEach((r) => r(out));
+      else save(q.mode).then((o) => q.resolvers.forEach((r) => r(o)));
+    }
+    else if (dirty && !S.submitted && mode === "draft") { clearTimeout(timer); timer = setTimeout(() => save("draft"), 4000); }
   }
   return out;
 }

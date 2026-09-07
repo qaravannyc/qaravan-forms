@@ -14,8 +14,10 @@ globalThis.__LETTER_DB = DB;
 
 // Fake monday: enough GraphQL to run the handlers end to end.
 const realFetch = globalThis.fetch;
+const DELAY = +(process.env.LETTER_DEV_DELAY || 0); // ms of pretend monday latency, to reproduce save races
 globalThis.fetch = async (url, opts = {}) => {
   const u = String(url);
+  if (DELAY && u.startsWith("https://api.monday.com/v2")) await new Promise((r) => setTimeout(r, DELAY));
   if (u.startsWith("https://api.monday.com/v2")) {
     const { query, variables: v } = JSON.parse(opts.body);
     if (query.includes("items_page_by_column_values")) {
