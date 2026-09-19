@@ -13,9 +13,9 @@
 const MONDAY = "https://api.monday.com/v2";
 const EVENTS_BOARD = "4774572020";
 const FEEDBACK_BOARD = "18423848983";
-// Колонку Attendance (numbers) Эзра удалил при чистке доски (Aug 11, 2026) —
-// число участников от ведущего идёт сразу в дашбордную «⚙️ 2026 attendance».
-const ATTENDED_COL = "numeric_mm64dp6";
+// Числовой колонки с участниками на календаре нет (Attendance удалена Aug 11,
+// 2026, «Checked in» — вместе со старым дашбордом Sep 19, 2026): число от
+// ведущего остаётся в тексте его отзыва и в Slack.
 // Три поля про альбом на календаре. Альбомы создаёт робот (events-robot,
 // robot/albums.mjs) заранее; здесь альбом заводится только как запасной путь —
 // если фото пришли раньше, чем робот успел. Служебный id — чтобы фото всех
@@ -599,19 +599,9 @@ export default async function handler(req, res) {
   }
 
   if (b.isLead) {
-    // Ответ ведущего не должен падать из-за колонки Attendance: её однажды
-    // удалили с доски, и каждый ответ ведущего умирал с 500. Число всё равно
-    // сохраняется в тексте отзыва («Сколько пришло: N») и уходит в Slack.
-    let attendedNote = null;
-    if (ev && Number.isFinite(b.headcount)) {
-      await monday(
-        `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v){id} }`,
-        { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({ [ATTENDED_COL]: String(b.headcount) }) }
-      ).catch((e) => {
-        console.error("attended write failed:", e.message);
-        attendedNote = "⚠️ Число участников НЕ записалось в колонку Attendance (колонка удалена с доски?) — только в текст этого отзыва.";
-      });
-    }
+    // Число участников от ведущего живёт в тексте отзыва («Сколько пришло: N»)
+    // и в Slack — колонки для него на календаре больше нет.
+    const attendedNote = null;
     const cv = { [F.eventName]: ev?.name || "", [F.lang]: { labels: [b.lang === "en" ? "en" : "ru"] } };
     if (ev) cv[F.eventRel] = { item_ids: [Number(ev.id)] };
     if (b.rating >= 1 && b.rating <= 5) cv[F.rating] = { rating: b.rating };
