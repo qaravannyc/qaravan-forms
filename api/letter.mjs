@@ -1,8 +1,15 @@
 // /api/letter — the letter intake form (letter/index.html, feedback.qaravan.org/letter).
 //
-// POST {rid, mode, lang, a, log, step, startedAt, website}
+// POST {rid, mode, lang, a, log, step, startedAt, website, itemId?, emailSent?}
 //   mode "draft"  — autosave after every answer; creates the person's row in
 //                   "Form — started, not finished" on first save, then updates it.
+//                   The response carries the row's itemId and, once the resume
+//                   email went out, its emailSent time; the browser sends both
+//                   back with every later save. The row is then read straight
+//                   by id (the search index lags behind writes and handed back
+//                   the previous save, so the resume email went out once per
+//                   autosave — 4–7 times per person on Sep 14–15, 2026), and a
+//                   browser that has seen emailSent never triggers it again.
 //   mode "submit" — final submission: row moves to "Form — answers received",
 //                   Letter Status → Answers received, a readable update is posted.
 //   mode "feedback" — "Spotted a translation problem?": text goes to the row's Translation feedback column.
@@ -15,7 +22,7 @@
 // invents the id (UUID); it is unguessable, so the resume link is private.
 // Free text is stored verbatim in whatever language the person wrote;
 // board labels are English (repository rule). Column ids: lib/letter-board.mjs.
-import { C, L, LANGS, RID_RX, GROUP_ANSWERS, monday, findByRid, createRow } from "../lib/letter-board.mjs";
+import { C, L, LANGS, RID_RX, GROUP_ANSWERS, monday, findByRid, findByItemId, createRow } from "../lib/letter-board.mjs";
 import { sendResumeEmail, sendSubmitEmail } from "../lib/letter-mail.mjs";
 
 const FORM_BASE = process.env.FORM_BASE || "https://feedback.qaravan.org";
@@ -25,6 +32,9 @@ const str = (v, max = 300) => (typeof v === "string" ? v.trim().slice(0, max) : 
 const bool = (v) => v === true;
 const langOf = (v) => (LANGS.includes(v) ? v : "en");
 const EMAIL_RX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const SENT_AT_RX = /^\d{4}-\d{2}-\d{2}T[\d:.]+Z?$/; // the emailSent stamp the browser hands back
+// The person's row: by item id when the browser knows it (a direct read), else by intake id.
+const findRow = async (itemId, rid) => (await findByItemId(itemId, rid)) || findByRid(rid);
 const pick = (map, v) => (typeof v === "string" && map[v] ? v : "");
 const keys = (map, obj) => (obj && typeof obj === "object" ? Object.keys(obj).filter((k) => obj[k] && map[k]) : []);
 const list = (v, n, fn) => (Array.isArray(v) ? v.slice(0, n).map(fn).filter(Boolean) : []);
@@ -237,7 +247,7 @@ export default async function handler(req, res) {
       const row = await findByRid(rid);
       if (!row || !row.raw) return res.end('{"found":false}');
       const r = row.raw;
-      return res.end(JSON.stringify({ found: true, submitted: !!r.submitted, a: r.a || {}, step: r.step || 0, lang: langOf(r.lang), startedAt: r.startedAt || 0, emailSent: !!r.emailSent }));
+      return res.end(JSON.stringify({ found: true, itemId: String(row.id), submitted: !!r.submitted, a: r.a || {}, step: r.step || 0, lang: langOf(r.lang), startedAt: r.startedAt || 0, emailSent: r.emailSent || null }));
     } catch (e) { console.error("letter draft read failed:", e.message); res.statusCode = 502; return res.end("{}"); }
   }
 
@@ -254,14 +264,14 @@ export default async function handler(req, res) {
     if (!text) return res.end('{"ok":true}');
     const q = Math.min(19, Math.max(0, Math.round(Number(b.step) || 0)));
     try {
-      const existing = await findByRid(rid);
+      const existing = await findRow(b.itemId, rid);
       const prev = existing && existing.raw ? existing.raw : { rid };
       const list = [...(Array.isArray(prev.feedback) ? prev.feedback : []), { at: new Date().toISOString(), lang: langOf(b.lang), q, text }].slice(-20);
       const col = list.map((f) => `[${f.at.slice(0, 16).replace("T", " ")} · ${f.lang.toUpperCase()}${f.q ? ` · Q${f.q}` : ""}] ${f.text}`).join("\n\n").slice(0, 9000);
       const cv = { [C.translationFeedback]: { text: col }, [C.raw]: { text: JSON.stringify({ ...prev, rid, feedback: list }).slice(0, 9000) } };
       const itemId = existing ? existing.id : await createRow(rid, `Intake ${rid.slice(0, 8)}`);
       await monday(`mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b, item_id:$i, column_values:$v) { id } }`, { b: "18429448469", i: String(itemId), v: JSON.stringify(cv) });
-      return res.end('{"ok":true}');
+      return res.end(JSON.stringify({ ok: true, itemId: String(itemId) }));
     } catch (e) { console.error("translation feedback failed:", e.message); res.statusCode = 502; return res.end("{}"); }
   }
   const mode = b.mode === "submit" ? "submit" : "draft";
@@ -271,7 +281,7 @@ export default async function handler(req, res) {
   if (mode === "draft" && !hasAny && !log.length) return res.end('{"ok":true}');
 
   try {
-    const existing = await findByRid(rid);
+    const existing = await findRow(b.itemId, rid);
     const prev = existing && existing.raw ? existing.raw : {};
     const wasSubmitted = !!prev.submitted;
     const startedAt = Number(b.startedAt) || Number(prev.startedAt) || Date.now();
@@ -281,7 +291,9 @@ export default async function handler(req, res) {
       lastQ: Math.min(19, Math.max(0, Math.round(Number(b.step) || 0) + 1)),
       progress: Math.min(100, Math.max(0, Math.round(Number(b.progress) || 0))),
       minutes: mode === "submit" ? Math.min(1440, Math.max(0, Math.round((Date.now() - startedAt) / 6000) / 10)) : (prev.minutes ?? null),
-      emailSent: prev.emailSent || null,
+      // Sent once, ever: the row remembers, and so does the browser (it can only
+      // say «already sent», never make us send).
+      emailSent: prev.emailSent || (SENT_AT_RX.test(String(b.emailSent || "")) ? String(b.emailSent).slice(0, 30) : null),
       feedback: Array.isArray(prev.feedback) ? prev.feedback : [],
       submittedAt: mode === "submit" ? new Date().toISOString() : prev.submittedAt || null,
     };
@@ -309,7 +321,7 @@ export default async function handler(req, res) {
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t) { id } }`, { i: String(itemId), t: updateText(answers, { ...meta, repeat: wasSubmitted }) }).catch((e) => console.error("update failed:", e.message));
       if (EMAIL_RX.test(answers.email)) await sendSubmitEmail({ to: answers.email, name: answers.firstName, lang: meta.lang }).catch((e) => console.error("submit email failed:", e.message));
     }
-    return res.end(JSON.stringify({ ok: true, emailed }));
+    return res.end(JSON.stringify({ ok: true, emailed, itemId: String(itemId), emailSent: meta.emailSent }));
   } catch (e) {
     console.error("letter save failed:", e.message);
     res.statusCode = 502; return res.end("{}");

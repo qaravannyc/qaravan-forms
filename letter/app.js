@@ -66,7 +66,11 @@ const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</
 
 // ---------- state ----------
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => { const r = (Math.random() * 16) | 0; return (c === "x" ? r : (r & 3) | 8).toString(16); }));
-let S = { view: "welcome", step: 0, langOpen: false, filter: "", a: A0(), errs: {}, log: [], rid: uuid(), savedAt: null, startedAt: 0, linkNotice: null, submitted: false, calView: null, saveState: "" };
+// itemId: the board row the server created for this intake id; emailSent: when the
+// resume link went out. Both come back from the server and travel with every save,
+// so a later save never re-creates the row or re-sends the link.
+const ITEM_RX = /^\d{5,20}$/;
+let S = { view: "welcome", step: 0, langOpen: false, filter: "", a: A0(), errs: {}, log: [], rid: uuid(), savedAt: null, startedAt: 0, linkNotice: null, submitted: false, calView: null, saveState: "", itemId: null, emailSent: null };
 let saved = null;
 try { saved = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
 if (saved && typeof saved === "object") {
@@ -75,6 +79,7 @@ if (saved && typeof saved === "object") {
   S.log = Array.isArray(saved.log) ? saved.log : [];
   S.rid = RID_RX.test(saved.rid || "") ? saved.rid : S.rid;
   S.savedAt = saved.savedAt || null; S.startedAt = saved.startedAt || 0; S.submitted = !!saved.submitted;
+  S.itemId = ITEM_RX.test(String(saved.itemId || "")) ? String(saved.itemId) : null; S.emailSent = typeof saved.emailSent === "string" ? saved.emailSent : null;
   S.savedStep = typeof saved.step === "number" ? saved.step : null; S.savedView = saved.view || null;
   if (saved.lang && LANGS.some((l) => l[0] === saved.lang)) lang = saved.lang;
 } else { S.savedStep = null; S.savedView = null; }
@@ -83,7 +88,7 @@ if (!saved && urlLang && LANGS.some((l) => l[0] === urlLang)) lang = urlLang;
 
 function persist() {
   const savedAt = Date.now();
-  try { localStorage.setItem(KEY, JSON.stringify({ rid: S.rid, a: S.a, step: S.step, view: S.view, log: S.log, lang, savedAt, startedAt: S.startedAt, submitted: S.submitted })); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({ rid: S.rid, a: S.a, step: S.step, view: S.view, log: S.log, lang, savedAt, startedAt: S.startedAt, submitted: S.submitted, itemId: S.itemId, emailSent: S.emailSent })); } catch (e) {}
   S.savedAt = savedAt;
   return savedAt;
 }
@@ -99,7 +104,7 @@ function stampText() {
 }
 function progressPct() { const done = STEPS.slice(0, S.step).reduce((n, x) => n + WEIGHT[x[0]], 0); return Math.round(done / TOTAL_WEIGHT * 100); }
 function payload(mode) {
-  return { rid: S.rid, mode, lang, a: S.a, log: S.log.slice(-300), step: S.step, startedAt: S.startedAt || Date.now(), progress: mode === "submit" ? 100 : progressPct(), website: (document.getElementById("hp") || {}).value || "" };
+  return { rid: S.rid, mode, lang, a: S.a, log: S.log.slice(-300), step: S.step, startedAt: S.startedAt || Date.now(), progress: mode === "submit" ? 100 : progressPct(), itemId: S.itemId, emailSent: S.emailSent, website: (document.getElementById("hp") || {}).value || "" };
 }
 function hasAnswers() { const a = S.a; return !!(a.firstName || a.lastName || a.phone || a.email || a.proceeding || a.country1 || Object.keys(a.claim).length || Object.keys(a.events).length || a.incidents); }
 function schedule() {
@@ -116,6 +121,9 @@ async function save(mode) {
     const r = await fetch("/api/letter", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload(mode)) });
     if (!r.ok) throw new Error("http " + r.status);
     out = await r.json().catch(() => ({ ok: true }));
+    if (out && ITEM_RX.test(String(out.itemId || ""))) S.itemId = String(out.itemId);
+    if (out && typeof out.emailSent === "string" && out.emailSent) S.emailSent = out.emailSent;
+    persist();
     setSaveState("");
   } catch (e) { dirty = true; setSaveState("local"); }
   finally {
@@ -559,7 +567,7 @@ const ACT = {
   saveLater() { S.view = "saved"; S.savedStep = S.step; S.savedView = "saved"; persist(); addLog("saved-for-later", "exit:" + STEPS[S.step][0]); clearTimeout(timer); save("draft"); render(); window.scrollTo({ top: 0 }); },
   start() { S.startedAt = S.startedAt || Date.now(); go(0, "start"); },
   resume() { const i = S.savedStep === null ? S.step : S.savedStep; S.savedStep = null; go(i, "resume"); },
-  startOver() { if (!confirm(t("confirm_startover"))) return; try { localStorage.removeItem(KEY); } catch (e) {} S.a = A0(); S.log = []; S.rid = uuid(); S.savedStep = null; S.submitted = false; S.startedAt = Date.now(); persist(); go(0, "start-over"); },
+  startOver() { if (!confirm(t("confirm_startover"))) return; try { localStorage.removeItem(KEY); } catch (e) {} S.a = A0(); S.log = []; S.rid = uuid(); S.itemId = null; S.emailSent = null; S.savedStep = null; S.submitted = false; S.startedAt = Date.now(); persist(); go(0, "start-over"); },
   go(el) { go(+el.dataset.v, el.dataset.dir || "jump"); },
   back() { if (S.step === 0) { S.view = "welcome"; S.savedStep = 0; S.savedView = "step"; persist(); render(); window.scrollTo({ top: 0 }); return; } go(S.step - 1, "back"); },
   next() { next(); },
@@ -651,6 +659,7 @@ window.addEventListener("resize", () => {
       if (!localBusy || confirm(t("confirm_adopt"))) {
         S.rid = r; S.a = Object.assign(A0(), d.a || {}); if (!Array.isArray(S.a.knownAs) || !S.a.knownAs.length) S.a.knownAs = [""];
         S.submitted = !!d.submitted; S.startedAt = d.startedAt || Date.now(); S.log = []; S.savedStep = null;
+        S.itemId = ITEM_RX.test(String(d.itemId || "")) ? String(d.itemId) : null; S.emailSent = typeof d.emailSent === "string" ? d.emailSent : null;
         if (d.lang && LANGS.some((l) => l[0] === d.lang) && !q.get("lang")) lang = d.lang;
         if (S.submitted) { S.view = "done"; }
         else { S.view = "welcome"; S.savedStep = Math.min(Math.max(+d.step || 0, 0), STEPS.length - 1); S.savedView = "step"; }
