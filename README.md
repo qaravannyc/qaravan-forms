@@ -109,3 +109,29 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
 ## Правило
 
 В этот репозиторий никогда не коммитятся токены и ключи, он публичный.
+
+## Feedback photo uploads
+
+The attendee, lead, photos-only, and multi-event forms accept up to 50 files per
+event. The server applies the same limit. Four direct Google Photos transfers
+can run at once; a separate worker prepares one image at a time so selection
+and form controls stay responsive.
+
+JPEG optimization preserves the full pixel dimensions and uses quality 0.94.
+It replaces a file only when at least 10% smaller. The original-files checkbox
+applies to subsequent selections and skips re-encoding. Other formats and
+videos remain unchanged, and unsupported browsers fall back to the original.
+Optimized JPEGs lose camera metadata such as EXIF capture dates; use originals
+when that metadata or an untouched publication source is needed.
+
+Run the upload, cancellation, 50-file, and album-failure regression checks with:
+
+```sh
+node --test tools/photo-*.test.mjs
+```
+
+Feedback copy follows [NN/G error-message guidance](https://www.nngroup.com/articles/error-message-guidelines/)
+and the [GOV.UK button guidance](https://design-system.service.gov.uk/components/button/):
+name the action, describe the current state, and give a concrete recovery step.
+Failed selected files require retry or removal before submission. Album failures
+show a warning even when an attempted backup succeeds.
