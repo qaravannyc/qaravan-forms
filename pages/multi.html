@@ -5,6 +5,7 @@
 <title>Отзыв — QARAVAN</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#FFFDF5">
+<link rel="preconnect" href="https://photoslibrary.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&display=swap" rel="stylesheet">
@@ -115,14 +116,20 @@ input.bad{border-color:var(--q-red) !important}
 .ph-ask{font-size:14px; line-height:1.5; color:var(--q-ink); margin:0 0 10px; text-align:left; text-wrap:pretty}
 .ph-add{border:2px dashed var(--q-sky); background:var(--q-white); border-radius:var(--radius-md); width:100%; padding:13px; font:inherit; font-size:16px; font-weight:700; color:var(--q-sky); cursor:pointer; transition:transform .15s ease}
 .ph-add:active{transform:scale(.99)}
+.ph-quality{display:flex; gap:8px; align-items:flex-start; margin:12px 0; font-size:14px; line-height:1.45; cursor:pointer}
+.ph-quality input{flex:none; width:18px; height:18px; margin:1px 0 0; accent-color:var(--q-sky)}
 .ph-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px}
 .ph-item{position:relative; border-radius:var(--radius-md); overflow:hidden; background:var(--q-line); aspect-ratio:1}
-.ph-item img,.ph-item video{width:100%; height:100%; object-fit:cover; display:block}
+.ph-item img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block}
+.ph-item img[hidden]{display:none}
+.ph-placeholder{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:30px 10px 14px; text-align:center}
+.ph-placeholder>span:first-child{font-size:28px; line-height:1}
+.ph-name{font-size:11px; line-height:1.3; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
 .ph-bar{position:absolute; left:0; right:0; bottom:0; height:5px; background:rgba(255,255,255,.55)}
 .ph-bar i{display:block; height:100%; width:0; background:var(--q-sky); transition:width .2s}
 .ph-item.done .ph-bar,.ph-item.fail .ph-bar{display:none}
 .ph-retry{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; border:0; cursor:pointer; font:inherit; font-size:13px; font-weight:700; color:var(--q-white); background:rgba(255,51,51,.72)}
-.ph-x{position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:50%; border:0; background:rgba(0,0,0,.55); color:#fff; font-weight:900; font-size:14px; cursor:pointer; line-height:1; display:flex; align-items:center; justify-content:center}
+.ph-x{position:absolute; z-index:2; top:6px; right:6px; width:26px; height:26px; border-radius:50%; border:0; background:rgba(0,0,0,.55); color:#fff; font-weight:900; font-size:14px; cursor:pointer; line-height:1; display:flex; align-items:center; justify-content:center}
 .ph-badge{position:absolute; left:6px; top:6px; background:rgba(0,0,0,.55); color:#fff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:99px}
 .ph-note{font-size:13px; color:var(--q-gray); margin:12px 0 0; text-wrap:pretty}
 .ph-err{display:none; color:var(--q-red); font-size:14px; font-weight:700; margin:10px 0 0}
@@ -162,7 +169,7 @@ footer{margin-top:44px; color:var(--q-gray); font-size:13px}
 <div class="wrap">
   <div class="top">
     <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></a>
-    <div class="lang" role="group" aria-label="Language">
+    <div class="lang" role="group" aria-label="Language" data-i18n-aria="language_label">
       <button type="button" id="btnRu" aria-pressed="true">РУ</button>
       <button type="button" id="btnEn" aria-pressed="false">EN</button>
     </div>
@@ -196,9 +203,10 @@ footer{margin-top:44px; color:var(--q-gray); font-size:13px}
           <div id="contactWrap">
             <p class="hint" data-i18n="contact_hint"></p>
             <div><label class="f-lab" for="respContactName" data-i18n="contact_name"></label><input type="text" id="respContactName" maxlength="120" autocomplete="name"></div>
-            <div><label class="f-lab" for="respEmail" data-i18n="contact_email"></label><input type="email" id="respEmail" maxlength="200" autocomplete="email" inputmode="email" placeholder="anna@example.com"></div>
-            <div><label class="f-lab" for="respPhone" data-i18n="contact_phone"></label><input type="tel" id="respPhone" maxlength="40" autocomplete="tel" inputmode="tel" placeholder="(929) 123-4567"></div>
+            <div><label class="f-lab" for="respEmail" data-i18n="contact_email"></label><input type="email" id="respEmail" aria-describedby="emailHint" maxlength="200" autocomplete="email" inputmode="email" placeholder="anna@example.com"></div>
+            <div><label class="f-lab" for="respPhone" data-i18n="contact_phone"></label><input type="tel" id="respPhone" aria-describedby="phoneHint" maxlength="40" autocomplete="tel" inputmode="tel" placeholder="(929) 123-4567"></div>
             <p class="field-hint" id="phoneHint" data-i18n="phone_bad"></p>
+          <p class="field-hint" id="emailHint" data-i18n="email_bad"></p>
           </div>
         </fieldset>
 
@@ -222,14 +230,23 @@ footer{margin-top:44px; color:var(--q-gray); font-size:13px}
 
   <div id="thanks">
     <h1 data-i18n="thanks_t"></h1>
+    <p id="photoWarning" class="err" role="alert"></p>
     <p class="sub" data-i18n="thanks_p"></p>
   </div>
 </div>
 
+<script src="/assets/photo-previews.js"></script>
 <script>
 const DONATE_URL = window.__DONATE_URL__ || "https://givebutter.com/qaravan";
 const STRINGS = {
 ru: {
+  photos_partial: (n) => `Отправка завершена, но не удалось добавить в альбом файлов: ${n}. Сохрани оригиналы и сообщи об этом организаторам события.`,
+  generic_event: "Событие QARAVAN",
+  email_bad: "Проверь почту: нужен адрес в формате name@example.com.",
+  language_label: "Язык формы",
+  sending: "Отправляем…",
+  photos_bg: (a, b) => `Загружено файлов: ${a} из ${b}. Можно продолжать заполнять форму. Оставь эту страницу открытой.`,
+  photos_done: "Все файлы загружены. Чтобы завершить отправку, нажми «Отправить отзыв».",
   title: "Как тебе события этой недели?",
   stars_words: ["Плохо", "Так себе", "Нормально", "Хорошо", "Отлично!"],
   q_good: "Что было лучше всего?",
@@ -238,24 +255,29 @@ ru: {
   chips_bad: ["Неудобное время", "Сложно добираться", "Слишком долго", "Слишком коротко", "Не с кем было поговорить", "Слишком много людей", "Мало информации заранее"],
   prog: (a, b) => `${a} из ${b}`,
   prog_zero: n => n === 1 ? "1 событие" : (n <= 4 ? `${n} события` : `${n} событий`),
-  prog_done: "Готово",
+  prog_done: "Ответы о событиях готовы",
   ev_comment_ph: "Хочешь добавить пару слов? Не обязательно",
-  add_words: "Добавить пару слов",
+  add_words: "Добавить комментарий",
   photos_ask: "Ваши фотографии и видео нам очень нужны — это помогает нам привлекать новых людей и убедительно рассказывать окружающим о важности нашей миссии.",
   na: "Меня там не было",
-  na_note: "Ок, это событие не считаем.",
-  na_undo: "Вернуть",
-  need_stars: "Поставь оценку — или отметь, что тебя там не было.",
-  next: "Дальше",
-  next_last: "Готово",
-  change: "изменить",
-  photos_add: "Добавить фото и видео",
-  photos_hint: "До 20 файлов на событие, каждый до 300 МБ. Если выбрать сразу много, телефон может на пару секунд задуматься — это нормально.",
+  na_note: "Отмечено: тебя не было на этом событии.",
+  na_undo: "Оценить это событие",
+  need_stars: "Оцени событие от 1 до 5 звёзд или выбери «Меня там не было».",
+  next: "Следующее событие",
+  next_last: "Продолжить к отправке",
+  change: "Изменить ответы",
+  photos_add: "Выбрать фото и видео",
+  photos_hint: "До 50 файлов на событие, каждый до 300 МБ. Загрузка начнётся после выбора. Оставь страницу открытой и дождись загрузки перед отправкой.",
   photos_note: "Загружая, ты разрешаешь QARAVAN использовать эти фото и видео в своих материалах и соцсетях.",
-  photos_retry: "Ещё раз",
-  photos_err_size: "Файл больше 300 МБ — такой не загрузится.",
-  photos_err_count: "До 20 файлов на событие.",
-  photos_wait: "Фото ещё загружаются — подожди пару секунд.",
+  photos_optimizing_note: "По возможности уменьшаем размер JPEG-файлов, сохраняя исходное разрешение и высокое качество. Выбери оригиналы до добавления фото, чтобы сохранить файлы и данные камеры без изменений. Видео не меняем.",
+  photos_original: "Загрузить оригиналы без изменений",
+  photos_fix_failed: "Не все файлы загрузились. Нажми «Повторить загрузку» на файлах с ошибкой или убери их из списка перед отправкой.",
+  photos_failed_status: (done, total, failed) => `Загружено файлов: ${done} из ${total}. Не загрузилось: ${failed}. Повтори загрузку файлов с ошибкой или убери их из списка.`,
+  photos_remove: "Убрать файл из списка",
+  photos_retry: "Повторить загрузку",
+  photos_err_size: "Этот файл больше 300 МБ. Выбери файл меньшего размера или сократи видео, затем добавь его снова.",
+  photos_err_count: "Можно добавить до 50 файлов на одно событие. Чтобы выбрать другие, сначала убери ненужные файлы из списка.",
+  photos_wait: "Файлы ещё загружаются. Оставь эту страницу открытой. Когда загрузка завершится, нажми «Отправить отзыв».",
   q_consent: "Время от времени нам в QARAVAN приходится объяснять людям со стороны, зачем существует наша организация и почему её работа важна. Можно ли использовать твои ответы в отчётах и заявках?",
   consent: ["Да, с именем","Да, но без имени","Лучше не надо"],
   name_hint: "Как тебя подписать?",
@@ -263,19 +285,26 @@ ru: {
   contact_hint: "Как к тебе обращаться и куда написать? Достаточно почты или телефона.",
   contact_opts: ["Можно написать мне по поводу этого отзыва","Оставлю отзыв анонимно — не пишите мне"],
   contact_name: "Имя", contact_email: "Почта", contact_phone: "Телефон",
-  err_contact: "Оставь почту или телефон — иначе мы не сможем ответить.",
-  phone_bad: "Проверь номер — похоже, в нём опечатка.",
+  err_contact: "Укажи почту, например name@example.com, или телефон из 10–15 цифр, чтобы мы могли ответить.",
+  phone_bad: "В номере должно быть от 10 до 15 цифр. Проверь, все ли цифры на месте.",
   donate_1: "Честная обратная связь уже помогает нам — спасибо большое!<br><br>Есть и второй способ: все события QARAVAN бесплатные, и это возможно благодаря пожертвованиям тех, кто их находит интересными и стоящими поддержки.",
   donate_2: "Подпишись на ежемесячный донат: <b>$20 в месяц помогают нам готовить новые встречи и делают планирование более предсказуемым.</b>",
   donate_btn: "Поддержать QARAVAN",
-  send: "Отправить",
-  err_rating: "Поставь звёзды каждому событию — или отметь «Меня там не было».",
-  err_net: "Не отправилось. Проверь интернет и попробуй ещё раз.",
-  q_donate: "И последнее.",
-  thanks_t: "Спасибо!",
-  thanks_p: "Передадим команде."
+  send: "Отправить отзыв",
+  err_rating: "Оцени каждое событие от 1 до 5 звёзд или выбери «Меня там не было».",
+  err_net: "Не удалось завершить отправку. Оставь эту страницу открытой, проверь интернет и снова нажми «Отправить отзыв».",
+  q_donate: "Поддержать встречи QARAVAN",
+  thanks_t: "Отзыв отправлен. Спасибо!",
+  thanks_p: "Твои ответы передадим команде, которая готовила события."
 },
 en: {
+  photos_partial: (n) => `Sending finished, but ${n} file(s) could not be added to the album. Keep the originals and let the event organizers know.`,
+  generic_event: "QARAVAN event",
+  email_bad: "Check the email address: use a format such as name@example.com.",
+  language_label: "Form language",
+  sending: "Sending…",
+  photos_bg: (a, b) => `Files uploaded: ${a} of ${b}. You can keep filling in the form. Keep this page open.`,
+  photos_done: "All files uploaded. Select “Send feedback” to finish sending them.",
   title: "How were this week's events?",
   stars_words: ["Bad", "Meh", "Okay", "Good", "Great!"],
   q_good: "What was best about it?",
@@ -284,24 +313,29 @@ en: {
   chips_bad: ["Inconvenient time", "Hard to get to", "Too long", "Too short", "No one to talk to", "Too crowded", "Not enough info beforehand"],
   prog: (a, b) => `${a} of ${b}`,
   prog_zero: n => `${n} event${n === 1 ? "" : "s"}`,
-  prog_done: "Done",
+  prog_done: "Event responses ready",
   ev_comment_ph: "Want to add a few words? Optional",
-  add_words: "Add a few words",
+  add_words: "Add a comment",
   photos_ask: "We really need your photos and videos — they help us bring in new people and make a convincing case for why our mission matters.",
   na: "I wasn't there",
-  na_note: "Got it — we'll skip this one.",
-  na_undo: "Undo",
-  need_stars: "Add a rating — or mark that you weren't there.",
-  next: "Next",
-  next_last: "Done",
-  change: "change",
-  photos_add: "Add photos and videos",
-  photos_hint: "Up to 20 files per event, 300 MB each. Picking a lot at once can make your phone pause for a few seconds — that's normal.",
+  na_note: "Marked as not attended.",
+  na_undo: "Rate this event",
+  need_stars: "Rate the event from 1 to 5 stars, or select “I wasn’t there”.",
+  next: "Next event",
+  next_last: "Continue to submission",
+  change: "Edit responses",
+  photos_add: "Choose photos and videos",
+  photos_hint: "Up to 50 files per event, up to 300 MB each. Uploads start after selection. Keep this page open and wait for uploads to finish before sending.",
   photos_note: "By uploading you allow QARAVAN to use these photos and videos in our materials and on social media.",
-  photos_retry: "Try again",
-  photos_err_size: "That file is over 300 MB — it won't upload.",
-  photos_err_count: "Up to 20 files per event.",
-  photos_wait: "Your files are still uploading — give it a couple of seconds.",
+  photos_optimizing_note: "We reduce JPEG file size where possible, keeping full resolution and high quality. Choose originals before adding photos to preserve the files and camera metadata unchanged. Videos are unchanged.",
+  photos_original: "Upload original files without changes",
+  photos_fix_failed: "Some files did not upload. Select “Retry upload” on each failed file, or remove those files from the list before sending.",
+  photos_failed_status: (done, total, failed) => `Files uploaded: ${done} of ${total}. Failed: ${failed}. Retry the failed uploads or remove those files from the list.`,
+  photos_remove: "Remove file from list",
+  photos_retry: "Retry upload",
+  photos_err_size: "This file is over 300 MB. Choose a smaller file or shorten the video, then add it again.",
+  photos_err_count: "You can add up to 50 files per event. To choose different files, first remove files you no longer want from the list.",
+  photos_wait: "Files are still uploading. Keep this page open. When the upload finishes, select “Send feedback”.",
   q_consent: "Every now and then we at QARAVAN have to explain to people outside the community why this organization exists and why its work matters. May we use your answers in reports and applications?",
   consent: ["Yes, with my name","Yes, anonymously","Please don't"],
   name_hint: "How should we credit you?",
@@ -309,17 +343,17 @@ en: {
   contact_hint: "What should we call you, and where do we write? Email or phone is enough.",
   contact_opts: ["You can write to me about this feedback","I'm leaving this anonymously — please don't write to me"],
   contact_name: "Name", contact_email: "Email", contact_phone: "Phone",
-  err_contact: "Leave an email or a phone number — otherwise we can't reply.",
-  phone_bad: "Double-check the number — it looks like a typo.",
+  err_contact: "Enter an email address, such as name@example.com, or a phone number with 10–15 digits so we can reply.",
+  phone_bad: "The phone number needs 10 to 15 digits. Check for missing or extra digits.",
   donate_1: "Honest feedback already helps us — thank you! There's a second way too: every QARAVAN event is free, and that's possible thanks to donations from people who find our events worth supporting.",
   donate_2: "Set up a monthly donation: <b>$20 a month helps us prepare new meetups and makes planning more predictable.</b>",
   donate_btn: "Support QARAVAN",
-  send: "Send",
-  err_rating: "Add stars for each event — or mark “I wasn't there”.",
-  err_net: "Didn't go through. Check your connection and try again.",
-  q_donate: "One last thing.",
-  thanks_t: "Thank you!",
-  thanks_p: "We'll pass it on to the team."
+  send: "Send feedback",
+  err_rating: "Rate each event from 1 to 5 stars, or select “I wasn’t there”.",
+  err_net: "We could not finish sending. Keep this page open, check your connection, and select “Send feedback” again.",
+  q_donate: "Support QARAVAN events",
+  thanks_t: "Feedback sent. Thank you!",
+  thanks_p: "We will share your responses with the team that organized the events."
 }};
 
 const params = new URLSearchParams(location.search);
@@ -370,7 +404,8 @@ function loadDraft(){
 const clearDraft = () => { try{ sessionStorage.removeItem(DRAFT_KEY); }catch(x){} };
 
 // ===== фото и видео: сразу напрямую в Google Photos, к альбому своего события =====
-const PH_MAX_SIZE = 300 * 1024 * 1024, PH_MAX_COUNT = 20, PH_PARALLEL = 4;
+let phSaveFailed = 0;
+const PH_MAX_SIZE = 300 * 1024 * 1024, PH_MAX_COUNT = 50, PH_PARALLEL = 4;
 const phTok = {};           // eventId -> { token, exp, req }
 let phActive = 0;
 
@@ -389,27 +424,13 @@ async function phGetAccess(eventId){
   return c.req;
 }
 
-// Миниатюра: маленькая копия вместо полноразмерного кадра. Десяток фото с
-// телефона — это сотни мегапикселей; полный декод в главном потоке подвешивает
-// страницу и съедает память. Где createImageBitmap нет — показываем оригинал.
-function phThumb(img, file, url){
-  if (typeof createImageBitmap !== "function") { img.src = url; return; }
-  createImageBitmap(file, { resizeWidth: 360, resizeQuality: "low" }).then(bmp => {
-    const c = document.createElement("canvas");
-    c.width = bmp.width; c.height = bmp.height;
-    c.getContext("2d").drawImage(bmp, 0, 0);
-    if (bmp.close) bmp.close();
-    img.src = c.toDataURL("image/jpeg", 0.72);
-    URL.revokeObjectURL(url);
-  }).catch(() => { img.src = url; });
-}
 function phPump(){
   if (phActive >= PH_PARALLEL) return;
   let next = null;
   for (const e of ev) { next = e.photos.find(p => p.status === "wait"); if (next) break; }
   if (!next) return;
   phActive++;
-  phSend(next).finally(() => { phActive--; phPump(); });
+  phSend(next).finally(() => { phActive--; phSync(); phPump(); });
   phPump();
 }
 async function phSend(p){
@@ -417,28 +438,38 @@ async function phSend(p){
   const retry = p.el.querySelector(".ph-retry");
   if (retry) retry.remove();
   try{
-    const tok = await phGetAccess(p.eventId);
+    const [tok, prepared] = await Promise.all([phGetAccess(p.eventId), p.prepared || Promise.resolve(p.file)]);
+    if (p.status === "removed" || !prepared) return;
+    p.file = prepared;
+    p.name = prepared.name;
     const text = await new Promise((ok, no) => {
       const x = new XMLHttpRequest();
+      p.xhr = x;
       x.open("POST", "https://photoslibrary.googleapis.com/v1/uploads");
       x.setRequestHeader("Authorization", "Bearer " + tok);
       x.setRequestHeader("Content-Type", "application/octet-stream");
       x.setRequestHeader("X-Goog-Upload-Content-Type", p.file.type || "application/octet-stream");
       x.setRequestHeader("X-Goog-Upload-Protocol", "raw");
-      x.upload.onprogress = e => { if (e.lengthComputable){ const b = p.el.querySelector(".ph-bar i"); if (b) b.style.width = (e.loaded / e.total * 100) + "%"; } };
+      x.upload.onprogress = e => { if (p.status !== "removed" && e.lengthComputable){ const b = p.el.querySelector(".ph-bar i"); if (b) b.style.width = (e.loaded / e.total * 100) + "%"; } };
       x.onload = () => (x.status === 200 && x.responseText) ? ok(x.responseText) : no(new Error("http " + x.status));
       x.onerror = () => no(new Error("net"));
+      x.onabort = () => no(new Error("aborted"));
       x.timeout = 15 * 60 * 1000;
       x.ontimeout = () => no(new Error("timeout"));
       x.send(p.file);
     });
+    if (p.status === "removed") return;
     p.token = text.trim(); p.status = "done"; p.el.classList.add("done");
   }catch(e){
+    if (p.status === "removed") return;
     p.status = "fail"; p.el.classList.add("fail");
     const b = document.createElement("button");
     b.type = "button"; b.className = "ph-retry"; b.textContent = T().photos_retry;
-    b.onclick = () => { p.el.classList.remove("fail"); p.status = "wait"; phPump(); };
+    b.onclick = () => { p.el.classList.remove("fail"); p.status = "wait"; phPump(); phSync(); };
+    b.setAttribute("aria-label", T().photos_retry + ": " + (p.file?.name || ""));
     p.el.appendChild(b);
+  } finally {
+    p.xhr = null;
   }
 }
 function phAdd(e, files, grid, errEl){
@@ -448,24 +479,53 @@ function phAdd(e, files, grid, errEl){
     if (f.size > PH_MAX_SIZE){ errEl.textContent = T().photos_err_size; errEl.classList.add("show"); continue; }
     const el = document.createElement("div");
     el.className = "ph-item";
-    const url = URL.createObjectURL(f);
+    // File cards paint immediately; preview decoding never runs on the UI thread.
     const isVideo = (f.type || "").startsWith("video/");
-    el.innerHTML = (isVideo
-      ? `<video muted playsinline preload="metadata" src="${url}"></video><span class="ph-badge">${lang === "ru" ? "видео" : "video"}</span>`
-      : `<img alt="">`) + `<div class="ph-bar"><i></i></div>`;
-    if (!isVideo) phThumb(el.querySelector("img"), f, url);
+    el.innerHTML = `<div class="ph-placeholder"><span aria-hidden="true">${isVideo ? "🎞" : "📷"}</span><span class="ph-name"></span></div>`
+      + (isVideo ? "" : `<img alt="" hidden decoding="async">`)
+      + `<div class="ph-bar"><i></i></div>`;
+    el.querySelector(".ph-name").textContent = f.name || (isVideo ? "Video" : "Photo");
+    el.title = f.name || "";
+    const clearPreview = !isVideo && window.QPhotoPreview
+      ? window.QPhotoPreview.enqueue(el.querySelector("img"), f, { optimize: !e.uploadOriginal }) : () => {};
     const x = document.createElement("button");
-    x.type = "button"; x.className = "ph-x"; x.textContent = "×"; x.setAttribute("aria-label", "remove");
+    x.type = "button"; x.className = "ph-x"; x.textContent = "×"; x.setAttribute("aria-label", T().photos_remove + ": " + (f.name || ""));
     const rec = { file: f, el, status: "wait", token: "", eventId: e.id, name: f.name || "media" };
-    x.onclick = () => { rec.status = "removed"; el.remove(); URL.revokeObjectURL(url); };
+    rec.prepared = clearPreview.ready || Promise.resolve(f);
+    x.onclick = () => {
+      rec.status = "removed";
+      if (rec.xhr) rec.xhr.abort();
+      clearPreview();
+      rec.file = null; rec.token = ""; rec.prepared = null;
+      el.remove();
+      phSync();
+    };
     el.appendChild(x);
     grid.appendChild(el);
     e.photos.push(rec);
   }
   phPump();
+  phSync();
 }
 const phLive = e => e.photos.filter(p => p.status !== "removed");
-const phBusy = () => ev.some(e => phLive(e).some(p => p.status === "wait" || p.status === "up"));
+const phBusy = () => ev.some(e => !e.na && phLive(e).some(p => p.status === "wait" || p.status === "up"));
+
+function phSync(){
+  for (const e of ev) {
+    const live = phLive(e);
+    for (const p of live) {
+      const retry = p.el.querySelector(".ph-retry");
+      if (retry) { retry.textContent = T().photos_retry; retry.setAttribute("aria-label", T().photos_retry + ": " + (p.file?.name || "")); }
+      p.el.querySelector(".ph-x").setAttribute("aria-label", T().photos_remove + ": " + (p.file?.name || ""));
+    }
+    if (e.phNote) e.phNote.style.display = live.length ? "" : "none";
+    if (!e.phStatus) continue;
+    e.phStatus.style.display = live.length ? "" : "none";
+    const done = live.filter(p => p.status === "done").length;
+    const failed = live.filter(p => p.status === "fail").length;
+    e.phStatus.textContent = failed ? T().photos_failed_status(done, live.length, failed) : done === live.length ? T().photos_done : T().photos_bg(done, live.length);
+  }
+}
 
 // ===== телефон и почта =====
 const phoneDigits = v => v.replace(/\D/g, "");
@@ -538,7 +598,7 @@ function fillActive(e, host, idx){
   host.className = "ev";
   const head = document.createElement("div"); head.className = "ev-head";
   if (e.date){ const date = document.createElement("div"); date.className = "date"; date.textContent = lang === "en" ? (e.dateEn || e.date) : e.date; head.appendChild(date); }
-  const h = document.createElement("h2"); h.textContent = e.name || "Событие QARAVAN";
+  const h = document.createElement("h2"); h.textContent = e.name || T().generic_event;
   head.appendChild(h);
   host.appendChild(head);
 
@@ -656,10 +716,19 @@ function fillActive(e, host, idx){
     const note = document.createElement("p"); note.className = "ph-note"; note.textContent = T().photos_note;
     const syncNote = () => { note.style.display = phLive(e).length ? "" : "none"; };
     inp.onchange = () => { phAdd(e, Array.from(inp.files || []), grid, errEl); inp.value = ""; syncNote(); };
-    ph.append(ask, add, lim, inp, grid, errEl, note);
+    const qualityNote = document.createElement("p"); qualityNote.className = "ph-note"; qualityNote.textContent = T().photos_optimizing_note;
+    const qualityLabel = document.createElement("label"); qualityLabel.className = "ph-quality";
+    const original = document.createElement("input"); original.type = "checkbox"; original.checked = !!e.uploadOriginal;
+    original.onchange = () => { e.uploadOriginal = original.checked; };
+    const qualityText = document.createElement("span"); qualityText.textContent = T().photos_original;
+    qualityLabel.append(original, qualityText);
+    const status = document.createElement("p"); status.className = "ph-note"; status.setAttribute("role", "status");
+    e.phStatus = status; e.phNote = note;
+    ph.append(ask, qualityNote, qualityLabel, add, lim, inp, grid, status, errEl, note);
     // уже загруженные превью переносим в новую сетку — перерисовка их не теряет
     phLive(e).forEach(p => grid.appendChild(p.el));
     syncNote();
+    phSync();
     host.appendChild(ph);
   }
 
@@ -705,12 +774,14 @@ function renderEvents(){
 
 function render(){
   document.documentElement.lang = lang;
+  if (phSaveFailed) $("photoWarning").textContent = T().photos_partial(phSaveFailed);
+  document.querySelectorAll("[data-i18n-aria]").forEach(el => el.setAttribute("aria-label", T()[el.dataset.i18nAria]));
   $("btnRu").setAttribute("aria-pressed", lang === "ru");
   $("btnEn").setAttribute("aria-pressed", lang === "en");
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const k = el.dataset.i18n;
     if (HTML_KEYS.has(k)) { el.innerHTML = T()[k]; return; }
-    el.textContent = T()[k];
+    el.textContent = k === "send" && el.disabled ? T().sending : T()[k];
   });
   document.querySelectorAll(".tdl").forEach(a => a.href = DONATE_URL);
   renderEvents();
@@ -730,8 +801,8 @@ $("btnEn").onclick = () => { lang = "en"; saveDraft(); render(); };
 const ph = $("respPhone"), em = $("respEmail"), hint = $("phoneHint");
 ph.addEventListener("input", () => { ph.value = phoneFormat(ph.value); ph.classList.remove("bad"); hint.classList.remove("show"); ph.classList.toggle("ok", phoneValid(ph.value)); saveDraft(); });
 ph.addEventListener("blur", () => { if (!ph.value.trim()) { ph.classList.remove("ok","bad"); hint.classList.remove("show"); return; } const g = phoneValid(ph.value); ph.classList.toggle("ok", g); ph.classList.toggle("bad", !g); hint.classList.toggle("show", !g); });
-em.addEventListener("input", () => { em.classList.remove("bad"); em.classList.toggle("ok", emailValid(em.value)); saveDraft(); });
-em.addEventListener("blur", () => { if (!em.value.trim()) { em.classList.remove("ok","bad"); return; } const g = emailValid(em.value); em.classList.toggle("ok", g); em.classList.toggle("bad", !g); });
+em.addEventListener("input", () => { em.classList.remove("bad"); $("emailHint").classList.remove("show"); em.setAttribute("aria-invalid", "false"); em.classList.toggle("ok", emailValid(em.value)); saveDraft(); });
+em.addEventListener("blur", () => { if (!em.value.trim()) { em.classList.remove("ok","bad"); return; } const g = emailValid(em.value); em.classList.toggle("ok", g); em.classList.toggle("bad", !g); $("emailHint").classList.toggle("show", !g); em.setAttribute("aria-invalid", String(!g)); });
 $("respName").addEventListener("input", saveDraft);
 $("respContactName").addEventListener("input", saveDraft);
 
@@ -743,6 +814,25 @@ async function loadEvents(){
     }catch(x){}
   }));
   render();
+}
+
+async function rescueFiles(list, eventIdFallback = ""){
+  if (!Array.isArray(list) || !list.length) return;
+  const records = ev.flatMap(e => e.photos);
+  for (const item of list) {
+    const record = records.find(p => p.status !== "removed" && p.file?.name === item.name
+      && (!p.eventId || String(p.eventId) === String(item.eventId)));
+    if (!record?.file || record.file.size > 4 * 1024 * 1024) continue;
+    try {
+      const response = await fetch(`/api/rescue-file?event=${encodeURIComponent(item.eventId || eventIdFallback)}&name=${encodeURIComponent(item.name)}`,
+        { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: record.file });
+      if (!response.ok) continue;
+    } catch (_) { /* The warning below still tells the user to keep their originals. */ }
+  }
+  const warning = $("photoWarning");
+  phSaveFailed = list.length;
+  warning.textContent = T().photos_partial(phSaveFailed);
+  warning.classList.add("show");
 }
 
 $("f").addEventListener("submit", async x => {
@@ -761,12 +851,21 @@ $("f").addEventListener("submit", async x => {
     em.classList.add("bad");
     return;
   }
+  const failedEvent = ev.findIndex(e => !e.na && phLive(e).some(p => p.status === "fail"));
+  if (failedEvent !== -1){
+    cursor = failedEvent; render();
+    const host = document.querySelector(`[data-ev="${failedEvent}"]`);
+    if (host?.scrollIntoView) host.scrollIntoView({ behavior: "smooth", block: "center" });
+    err.textContent = T().photos_fix_failed; err.classList.add("show");
+    return;
+  }
   if (phBusy()){
     err.textContent = T().photos_wait; err.classList.add("show");
     return;
   }
   err.classList.remove("show");
   $("send").disabled = true;
+  $("send").textContent = T().sending;
   const credit = (consent === 0 ? $("respName").value.trim() : "") || (contactOk === 0 ? $("respContactName").value.trim() : "");
   const body = {
     multi: 1, p: pTok, lang,
@@ -774,7 +873,7 @@ $("f").addEventListener("submit", async x => {
       id: e.id, rating: e.rating || 0, comment: (e.comment || "").trim(), no_show: !!e.na,
       tags: e.na ? [] : (e.tags || []),
       custom_a: e.custom ? (e.customA || "").trim() : "",
-      photos: phLive(e).filter(p => p.status === "done" && p.token).map(p => ({ token: p.token, name: p.name })),
+      photos: (e.na ? [] : phLive(e)).filter(p => p.status === "done" && p.token).map(p => ({ token: p.token, name: p.name })),
     })),
     photo_credit: credit,
     consent: consent === "" ? "" : STRINGS.ru.consent[consent],
@@ -789,16 +888,8 @@ $("f").addEventListener("submit", async x => {
     const r = await fetch("/api/submit", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error();
     // Что Google не принял — дошлём сами байты нам же, чтобы не пропало
-    const data = await r.json().catch(() => ({}));
-    for (const item of (Array.isArray(data.rescue) ? data.rescue : [])) {
-      const e = ev.find(x => String(x.id) === String(item.eventId));
-      const p = e && phLive(e).find(x => (x.name || "media") === item.name);
-      if (!p || !p.file || p.file.size > 4 * 1024 * 1024) continue;
-      try {
-        await fetch(`/api/rescue-file?event=${encodeURIComponent(item.eventId)}&name=${encodeURIComponent(item.name)}`,
-          { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: p.file });
-      } catch (x) {}
-    }
+    const data = await r.json();
+    await rescueFiles(data.rescue);
     clearDraft();
     $("formView").style.display = "none";
     $("thanks").classList.add("show");
@@ -806,6 +897,7 @@ $("f").addEventListener("submit", async x => {
   }catch(e2){
     err.textContent = T().err_net; err.classList.add("show");
     $("send").disabled = false;
+    $("send").textContent = T().send;
   }
 });
 
