@@ -483,7 +483,7 @@ export default async function handler(req, res) {
     if (!ev) { res.statusCode = 404; return res.end("{}"); }
     const credit = String(b.photo_credit || "").slice(0, 120);
     const media = Array.isArray(b.photos)
-      ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20)
+      ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 50)
       : [];
     if (!media.length) return res.end('{"ok":true,"rescue":[]}');
     const rescue = [];
@@ -554,7 +554,7 @@ export default async function handler(req, res) {
       // каждое событие грузит свои файлы отдельно.
       let photoLine = null;
       const media = Array.isArray(entry.photos)
-        ? entry.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20)
+        ? entry.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 50)
         : [];
       if (!noShow && media.length) {
         try {
@@ -619,14 +619,17 @@ export default async function handler(req, res) {
       `mutation ($b: ID!, $n: String!, $v: JSON!) { create_item(board_id:$b,item_name:$n,column_values:$v,create_labels_if_missing:true){id} }`,
       { b: FEEDBACK_BOARD, n: `LEAD — ${ev?.name || "событие"}`, v: JSON.stringify(cv) });
     let leadPhotoLine = null;
-    const leadMedia = Array.isArray(b.photos) ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20) : [];
+    const rescue = [];
+    const leadMedia = Array.isArray(b.photos) ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 50) : [];
     if (ev && leadMedia.length) {
       try {
         const done = await filePhotos(ev, leadMedia, String(b.photo_credit || "").slice(0, 120));
         leadPhotoLine = photoResultLine(ev, done, b.photo_credit, leadMedia.length);
+        for (const l of done.lost || []) rescue.push({ eventId: String(ev.id), name: l.name });
       } catch (e) {
         leadPhotoLine = `⚠️ Фото/видео: прислано ${leadMedia.length} шт., сохранить не удалось — ${String(e.message).slice(0, 200)}\n` +
           `Токены загрузки (живут ~сутки):\n` + leadMedia.map((m) => `${m.name || "media"}: ${String(m.token).slice(0, 400)}`).join("\n");
+        for (const m of leadMedia) rescue.push({ eventId: String(ev.id), name: m.name || "media" });
       }
     }
     const body = [
@@ -640,7 +643,7 @@ export default async function handler(req, res) {
       { i: String(d.create_item.id), t: body });
     await slackNotify(`Отзыв ведущего — ${ev?.name || "событие"}`,
       slackBlocks(`Отзыв ведущего — ${ev?.name || "событие"}`, ev, body, d.create_item.id));
-    return res.end('{"ok":true}');
+    return res.end(JSON.stringify({ ok: true, rescue }));
   }
 
   // Attendee
@@ -681,7 +684,7 @@ export default async function handler(req, res) {
   // Photos/videos: file the browser-uploaded bytes into the event album.
   let photoLine = null;
   const rescue = [];   // файлы, которые Google не взял никуда — форма дошлёт их нам
-  const media = Array.isArray(b.photos) ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 20) : [];
+  const media = Array.isArray(b.photos) ? b.photos.filter((x) => x && typeof x.token === "string" && x.token.length > 10).slice(0, 50) : [];
   if (ev && media.length) {
     try {
       const done = await filePhotos(ev, media, String(b.photo_credit || "").slice(0, 120));
