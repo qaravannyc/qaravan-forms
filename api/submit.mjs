@@ -9,13 +9,12 @@
 // Attendee answers fill the structured columns on the Отзывы board (labels are
 // stored in Russian regardless of UI language — one label system), plus one
 // update with the complete submission so nothing is ever lost to a missing
-// column. The lead's headcount goes straight into the event's Attended column.
+// column. The lead's headcount stays in the text of their answer: the Event
+// Calendar has no attendance number any more (QARAVAN does not check people in;
+// every Going RSVP is an attendee — events-robot/robot/ATTENDANCE.md).
 const MONDAY = "https://api.monday.com/v2";
 const EVENTS_BOARD = "4774572020";
 const FEEDBACK_BOARD = "18423848983";
-// Колонку Attendance (numbers) Эзра удалил при чистке доски (Aug 11, 2026) —
-// число участников от ведущего идёт сразу в дашбордную «⚙️ 2026 attendance».
-const ATTENDED_COL = "numeric_mm64dp6";
 // Три поля про альбом на календаре. Альбомы создаёт робот (events-robot,
 // robot/albums.mjs) заранее; здесь альбом заводится только как запасной путь —
 // если фото пришли раньше, чем робот успел. Служебный id — чтобы фото всех
@@ -599,19 +598,10 @@ export default async function handler(req, res) {
   }
 
   if (b.isLead) {
-    // Ответ ведущего не должен падать из-за колонки Attendance: её однажды
-    // удалили с доски, и каждый ответ ведущего умирал с 500. Число всё равно
-    // сохраняется в тексте отзыва («Сколько пришло: N») и уходит в Slack.
-    let attendedNote = null;
-    if (ev && Number.isFinite(b.headcount)) {
-      await monday(
-        `mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b,item_id:$i,column_values:$v){id} }`,
-        { b: EVENTS_BOARD, i: String(ev.id), v: JSON.stringify({ [ATTENDED_COL]: String(b.headcount) }) }
-      ).catch((e) => {
-        console.error("attended write failed:", e.message);
-        attendedNote = "⚠️ Число участников НЕ записалось в колонку Attendance (колонка удалена с доски?) — только в текст этого отзыва.";
-      });
-    }
+    // Число от ведущего живёт только в тексте отзыва («Сколько пришло: N») и в
+    // Slack. Колонки «Checked in» на календаре больше нет (удалена 19.09.2026):
+    // запись в неё каждый раз падала, и к каждому ответу ведущего добавлялось
+    // «⚠️ Число участников НЕ записалось…».
     const cv = { [F.eventName]: ev?.name || "", [F.lang]: { labels: [b.lang === "en" ? "en" : "ru"] } };
     if (ev) cv[F.eventRel] = { item_ids: [Number(ev.id)] };
     if (b.rating >= 1 && b.rating <= 5) cv[F.rating] = { rating: b.rating };
@@ -633,7 +623,7 @@ export default async function handler(req, res) {
       }
     }
     const body = [
-      `Сколько пришло: ${b.headcount}`, attendedNote, `Оценка: ${b.rating || "—"}`,
+      `Сколько пришло: ${b.headcount}`, `Оценка: ${b.rating || "—"}`,
       `Комментарий: ${b.comment || "—"}`,
       `Мешало: ${(b.obstacles || []).join("; ") || "—"}`,
       `Не хватило от QARAVAN: ${(b.missing || []).join("; ") || "—"}`,
