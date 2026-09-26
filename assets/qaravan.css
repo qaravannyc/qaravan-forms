@@ -1,0 +1,64 @@
+/* QARAVAN design system for the forms: fonts, tokens and base rules.
+   Values come from the design system's tokens.json (2026-09 revision: Fira Sans and
+   Fira Sans Condensed, white pages, square shapes, the six brand colours with no
+   deep shades or pale tints). Every page links this file first; page styles only
+   use the tokens below. */
+
+/* ---- fonts: the design system's own files (fontsource 5.3.0 merges: Latin,
+   Latin Extended, Cyrillic incl. Ukrainian, Kazakh and Uzbek); Georgian comes
+   from FiraGO, Fira Sans extended by the same designers. OFL, see fonts/. ---- */
+@font-face{font-family:"Fira Sans";src:url("fonts/FiraSans-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Fira Sans";src:url("fonts/FiraSans-Medium.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"Fira Sans";src:url("fonts/FiraSans-SemiBold.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Fira Sans";src:url("fonts/FiraSans-Bold.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Fira Sans Condensed";src:url("fonts/FiraSansCondensed-SemiBold.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Fira Sans Condensed";src:url("fonts/FiraSansCondensed-Bold.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"FiraGO";src:url("fonts/FiraGO-Regular-Georgian.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+10A0-10FF,U+1C90-1CBF,U+2D00-2D2F}
+@font-face{font-family:"FiraGO";src:url("fonts/FiraGO-Medium-Georgian.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap;unicode-range:U+10A0-10FF,U+1C90-1CBF,U+2D00-2D2F}
+@font-face{font-family:"FiraGO";src:url("fonts/FiraGO-SemiBold-Georgian.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap;unicode-range:U+10A0-10FF,U+1C90-1CBF,U+2D00-2D2F}
+@font-face{font-family:"FiraGO";src:url("fonts/FiraGO-Bold-Georgian.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap;unicode-range:U+10A0-10FF,U+1C90-1CBF,U+2D00-2D2F}
+
+:root{
+  /* six brand colours, sampled from the wordmark: marks, flags and fields only */
+  --q-red:#ff3333; --q-orange:#ff9933; --q-yellow:#f8f36e; --q-yellow-soft:#f9f694;
+  --q-green:#66cc66; --q-sky:#0099cc; --q-purple:#7668aa;
+  /* ink, white, one hairline and the working greys */
+  --q-black:#000000;   /* the wordmark's q only */
+  --q-ink:#333333;     /* all text and UI, 12.6:1 on white */
+  --q-white:#ffffff;
+  --q-muted:#5e5a53;   /* secondary text, 6.9:1 on white; at least 15px in UI */
+  --q-line:#ece8de;    /* hairlines, card edges, and the hover/pressed/disabled fill */
+  --q-edge:#8a857b;    /* control edges that must be seen, 3.7:1 on white */
+  --q-quiet:var(--q-line); --q-disabled:var(--q-line); --q-disabled-ink:var(--q-muted);
+  --surface-page:var(--q-white); --surface-card:var(--q-white);
+  --text-body:var(--q-ink); --text-muted:var(--q-muted);
+  --accent:var(--q-sky);     /* focus rings: 3px solid */
+  --positive:var(--q-green); --danger:var(--q-red); --link:var(--q-ink);
+
+  --font-brand:"Fira Sans","FiraGO","Helvetica Neue",Arial,sans-serif;               /* reading text */
+  --font-head:"Fira Sans Condensed","FiraGO","Arial Narrow","Fira Sans",Arial,sans-serif; /* headlines, labels, buttons, numerals */
+  --tracking-display:-.005em; --tracking-caps:.08em;
+
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
+  --border-bold:2px solid var(--q-ink); --border-edge:2px solid var(--q-edge); --border-hairline:1px solid var(--q-line);
+  --shadow-pop:0 18px 48px rgba(28,28,27,.22);   /* dialogs and menus only; cards carry no shadow */
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--surface-page); color:var(--text-body);
+  font-family:var(--font-brand); font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit}
+/* links: ink with a 2px sky underline; on hover the underline turns ink and thickens */
+a{color:var(--link); font-weight:600; text-decoration:underline; text-decoration-color:var(--q-sky);
+  text-decoration-thickness:2px; text-underline-offset:3px}
+a:hover{text-decoration-color:currentColor; text-decoration-thickness:3px}
+/* focus is a 3px sky ring */
+:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+::placeholder{color:var(--q-muted); opacity:1}
+::selection{background:var(--q-yellow); color:var(--q-ink)}
+
+/* the wordmark is artwork (assets/logo-wordmark.svg), never live type; at least 120px wide */
+.wordmark{display:inline-flex; align-items:center; min-height:44px; text-decoration:none}
+.wordmark img{display:block; width:140px; height:auto}

@@ -32,7 +32,7 @@ globalThis.fetch = async (url, opts = {}) => {
 };
 
 const letter = (await import("../api/letter.mjs")).default;
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".json": "application/json" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".json": "application/json", ".woff2": "font/woff2" };
 
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
