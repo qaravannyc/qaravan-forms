@@ -4,6 +4,7 @@
 // through their personal link lands in the same row. The link is signed with
 // UNSUB_SECRET; nobody can mark другого человека by guessing ids.
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { statusPage as page } from "../lib/status-page.mjs";
 
 const MONDAY = "https://api.monday.com/v2";
 const EVENTS_BOARD = "4774572020";
@@ -22,18 +23,6 @@ async function monday(query, variables = {}) {
   const j = await r.json();
   if (j.errors) throw new Error(JSON.stringify(j.errors));
   return j.data;
-}
-
-const LOGO = `<span style="font-family:'Montserrat',Arial,Helvetica,sans-serif;font-weight:900;font-size:26px;letter-spacing:-1px;"><span style="color:#000000;">q</span><span style="color:#FF3333;">a</span><span style="color:#FF9933;">r</span><span style="color:#EBC53F;">a</span><span style="color:#0099CC;">v</span><span style="color:#66CC66;">a</span><span style="color:#7668AA;">n</span></span>`;
-
-function page(h1, sub) {
-  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet"><title>${h1} — QARAVAN</title></head>
-<body style="margin:0;padding:32px 16px;background:#F1EEE3;font-family:'Montserrat',Arial,Helvetica,sans-serif;">
-<div style="max-width:560px;margin:0 auto;background:#FFFDF5;border-radius:16px;padding:36px 40px;">
-${LOGO}
-<div style="font-weight:bold;font-size:22px;line-height:1.3;color:#333;padding-top:28px;">${h1}</div>
-<div style="font-size:15px;line-height:1.6;color:#6E6E6E;padding-top:10px;">${sub}</div>
-</div></body></html>`;
 }
 
 export default async function handler(req, res) {
