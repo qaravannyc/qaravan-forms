@@ -94,11 +94,11 @@ const isShareUrl = (u) => /photos\.app\.goo\.gl|photos\.google\.com\/(?:u\/\d+\/
 async function getEvent(id) {
   if (!id) return null;
   const d = await monday(
-    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["${CUSTOM_COL}","${ALBUM_COL}","${ALBUM_LINK_COL}","${THREAD_COL}","date4","location","text_mm5qsspp","text_mm5b1czz","link"]) { id text } } }`,
+    `query ($ids: [ID!]) { items(ids: $ids) { id name board { id } column_values(ids: ["${CUSTOM_COL}","${ALBUM_COL}","${ALBUM_LINK_COL}","${THREAD_COL}","date4","location","text_mm5qsspp","board_relation_mm63c5g1","link"]) { id text ... on BoardRelationValue { display_value } } } }`,
     { ids: [String(id)] });
   const item = d.items?.[0];
   if (!item || String(item.board.id) !== EVENTS_BOARD) return null;
-  const cols = Object.fromEntries(item.column_values.map((c) => [c.id, c.text || ""]));
+  const cols = Object.fromEntries(item.column_values.map((c) => [c.id, c.text || c.display_value || ""]));
   // /u/7/ в пути — номер аккаунта владельца в его браузере; чужим мешает.
   const albumLink = urlFrom(cols[ALBUM_LINK_COL]).replace(/photos\.google\.com\/u\/\d+\//, "photos.google.com/");
   return {
@@ -111,7 +111,7 @@ async function getEvent(id) {
     date: ruDate(cols.date4),
     location: (cols.location || "").trim(),
     ruName: (cols.text_mm5qsspp || "").trim(),
-    lead: (cols.text_mm5b1czz || "").trim(),
+    lead: (cols.board_relation_mm63c5g1 || "").trim(), // Event Lead(s)
     partiful: (String(cols.link || "").match(/https?:\/\/\S+/) || [""])[0],
     slackThread: (cols[THREAD_COL] || "").trim(),
   };

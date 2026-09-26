@@ -39,16 +39,16 @@ async function slack(method, payload) {
 
 async function getEventRow(eventId) {
   const d = await monday(
-    `query ($ids: [ID!]) { items(ids: $ids) { id name column_values(ids: ["date4","location","text_mm5b1czz","link","${DIGEST_COL}"]) { id text } } }`,
+    `query ($ids: [ID!]) { items(ids: $ids) { id name column_values(ids: ["date4","location","board_relation_mm63c5g1","link","${DIGEST_COL}"]) { id text ... on BoardRelationValue { display_value } } } }`,
     { ids: [String(eventId)] }
   );
   const item = d.items?.[0];
   if (!item) return null;
-  const cols = Object.fromEntries(item.column_values.map((c) => [c.id, c.text || ""]));
+  const cols = Object.fromEntries(item.column_values.map((c) => [c.id, c.text || c.display_value || ""]));
   return {
     id: item.id, name: item.name,
     date: cols.date4 || "", location: (cols.location || "").trim(),
-    lead: (cols.text_mm5b1czz || "").trim(),
+    lead: (cols.board_relation_mm63c5g1 || "").trim(), // Event Lead(s)
     partiful: (String(cols.link || "").match(/https?:\/\/\S+/) || [""])[0],
     digest: (cols[DIGEST_COL] || "").trim(),
   };
