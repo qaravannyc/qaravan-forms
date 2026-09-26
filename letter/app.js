@@ -331,8 +331,10 @@ function renderSavedScreen() {
 }
 function renderDone() {
   const a = S.a, name = a.firstName || t("friend");
-  return '<div class="stack fade">' + wordmark(44) + '<h1 class="big">' + esc(t("d_title", { name })) + "</h1><p>" + esc(t("d_body", { email: a.email, phone: a.phone ? t("d_or_call", { phone: a.phone }) : "" })) + "</p>" +
-    '<p class="luck">' + t("d_luck") + '</p><p class="small">' + t("d_close") + "</p>" + renderTrBlock() + "</div>";
+  return '<div class="stack fade"><h1 class="big">' + esc(t("d_title", { name })) + "</h1><p>" + esc(t("d_body", { email: a.email, phone: a.phone ? t("d_or_call", { phone: a.phone }) : "" })) + "</p>" +
+    '<p class="luck">' + t("d_luck") + '</p><p class="small">' + t("d_close") + "</p>" +
+    // One browser can send many forms: a volunteer may fill them in for several people.
+    '<div class="divider stack" style="gap:12px"><p class="small">' + t("d_new_hint") + '</p><button type="button" class="btn outline md" data-act="newForm">' + svgPlus + "<span>" + t("d_new") + "</span></button></div>" + renderTrBlock() + "</div>";
 }
 
 // ---------- the 19 steps ----------
@@ -564,6 +566,8 @@ const ACT = {
   start() { S.startedAt = S.startedAt || Date.now(); go(0, "start"); },
   resume() { const i = S.savedStep === null ? S.step : S.savedStep; S.savedStep = null; go(i, "resume"); },
   startOver() { if (!confirm(t("confirm_startover"))) return; try { localStorage.removeItem(KEY); } catch (e) {} S.a = A0(); S.log = []; S.rid = uuid(); S.savedStep = null; S.submitted = false; S.startedAt = Date.now(); persist(); go(0, "start-over"); },
+  // After a submission: a clean form with a new intake id, so the next person's answers make a new row on the board.
+  newForm() { clearTimeout(timer); dirty = false; try { localStorage.removeItem(KEY); } catch (e) {} Object.assign(S, { view: "welcome", step: 0, a: A0(), errs: {}, log: [], rid: uuid(), savedAt: null, startedAt: 0, linkNotice: null, submitted: false, calView: null, saveState: "", savedStep: null, savedView: null, trOpen: false, trState: "", trText: "", filter: "" }); persist(); render(); window.scrollTo({ top: 0 }); },
   go(el) { go(+el.dataset.v, el.dataset.dir || "jump"); },
   back() { if (S.step === 0) { S.view = "welcome"; S.savedStep = 0; S.savedView = "step"; persist(); render(); window.scrollTo({ top: 0 }); return; } go(S.step - 1, "back"); },
   next() { next(); },
