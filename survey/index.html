@@ -16,15 +16,36 @@
 /* header: wordmark, the autosave status and the language menu */
 .top{padding:4px 0 18px}
 .topright{display:flex; align-items:center; gap:12px; min-width:0}
-/* the language switch for six languages: the design system's Dropdown button (square, ink edge,
-   a globe before the language, a drawn chevron); the list itself stays the native picker */
-.lang-sel{flex:none; min-height:44px; padding:8px 36px 8px 38px; border:2px solid var(--q-ink); border-radius:0; cursor:pointer;
-  color:var(--q-ink); font:600 16px/1.15 var(--font-head); letter-spacing:.01em; -webkit-appearance:none; appearance:none;
-  background:var(--q-white) no-repeat;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13ZM1.5 8h13M8 1.5c-1.9 1.8-2.9 4-2.9 6.5s1 4.7 2.9 6.5M8 1.5c1.9 1.8 2.9 4 2.9 6.5s-1 4.7-2.9 6.5' fill='none' stroke='%23333333' stroke-width='1.6'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%23333333' stroke-width='2' stroke-linecap='square'/%3E%3C/svg%3E");
-  background-position:left 12px center, right 12px center; background-size:18px 18px, 14px 14px}
-.lang-sel:hover{background-color:var(--q-line)}
+/* the language switch for six languages: the design system's Dropdown. A square button with an
+   ink edge, a globe before the language and a chevron; open, the button fills ink and a white
+   panel with a 4px ink top edge drops 6px below it; the current language has a sky flag and a check */
+.lang-dd{position:relative; flex:none}
+.lang-btn{display:inline-flex; align-items:center; gap:10px; min-height:44px; padding:8px 12px 8px 14px; border:2px solid var(--q-ink); border-radius:0;
+  background:transparent; color:var(--q-ink); cursor:pointer; font:600 16px/1.15 var(--font-head),"FiraGO"; letter-spacing:.01em; white-space:nowrap;
+  transition:background-color .12s, color .12s}
+.lang-btn:hover{background:var(--q-line)}
+.lang-btn[aria-expanded="true"]{background:var(--q-ink); color:var(--q-white)}
+.lang-btn svg{flex:none; fill:none; stroke:currentColor}
+.lang-btn .globe{width:18px; height:18px; stroke-width:1.6}
+.lang-btn .chev{width:14px; height:14px; stroke-width:2; stroke-linecap:square; transition:transform .15s}
+.lang-btn[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.lang-list{position:absolute; right:0; top:calc(100% + 6px); z-index:40; min-width:248px; max-height:min(440px,calc(100vh - 72px)); overflow:auto;
+  margin:0; padding:6px 0; list-style:none; background:var(--q-white); border:1px solid var(--q-line); border-top:4px solid var(--q-ink);
+  box-shadow:var(--shadow-pop); animation:lang-in .12s ease-out}
+.lang-list[hidden]{display:none}
+.lang-list:focus{outline:none}
+@keyframes lang-in{from{opacity:0; transform:translateY(-4px)} to{opacity:1; transform:none}}
+.lang-list li{position:relative; display:flex; align-items:center; gap:14px; min-height:46px; padding:10px 16px 10px 22px; cursor:pointer; user-select:none;
+  color:var(--q-ink); font:500 17px/1.3 var(--font-brand)}
+.lang-list li .nm{flex:1; min-width:0}
+.lang-list li svg{width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:square; visibility:hidden}
+.lang-list li.act{background:var(--q-line)}
+.lang-list li[aria-selected="true"]{font-weight:600}
+.lang-list li[aria-selected="true"]::before{content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--q-sky)}
+.lang-list li[aria-selected="true"] svg{visibility:visible}
+.lang-list:focus-visible li.act{outline:3px solid var(--accent); outline-offset:-3px}
+@media (prefers-reduced-motion:reduce){ .lang-list{animation:none} .lang-btn,.lang-btn .chev{transition:none} }
+@media (forced-colors:active){ .lang-list li[aria-selected="true"]::before{background:Highlight} .lang-list li.act{outline:2px solid CanvasText; outline-offset:-2px} }
 
 /* autosave: the person always sees that answers are kept */
 .savechip{display:none; align-items:center; gap:8px; font:600 15px/1.2 var(--font-head); letter-spacing:.01em; color:var(--q-muted); white-space:nowrap; overflow:hidden}
@@ -134,14 +155,21 @@ textarea,input[type="text"]{margin-top:0}
     <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><img src="/assets/logo-wordmark.svg" width="140" height="28" alt="qaravan"></a>
     <div class="topright">
       <div class="savechip" id="saveChip" role="status" aria-live="polite"><span class="dot"></span><span id="saveText"></span></div>
-      <select class="lang-sel" id="langSel" aria-label="Language">
-        <option value="ru">Русский</option>
-        <option value="en">English</option>
-        <option value="uk">Українська</option>
-        <option value="ka">ქართული</option>
-        <option value="uz">Oʻzbekcha</option>
-        <option value="kk">Қазақша</option>
-      </select>
+      <div class="lang-dd" id="langDd">
+        <button type="button" class="lang-btn" id="langBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="langList">
+          <svg class="globe" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13ZM1.5 8h13M8 1.5c-1.9 1.8-2.9 4-2.9 6.5s1 4.7 2.9 6.5M8 1.5c1.9 1.8 2.9 4 2.9 6.5s-1 4.7-2.9 6.5"/></svg>
+          <span id="langCur" lang="ru">Русский</span>
+          <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5"/></svg>
+        </button>
+        <ul class="lang-list" id="langList" role="listbox" aria-label="Language" tabindex="-1" hidden>
+          <li role="option" id="lo-ru" data-v="ru" lang="ru" aria-selected="false"><span class="nm">Русский</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7.5-8"/></svg></li>
+          <li role="option" id="lo-en" data-v="en" lang="en" aria-selected="false"><span class="nm">English</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7.5-8"/></svg></li>
+          <li role="option" id="lo-uk" data-v="uk" lang="uk" aria-selected="false"><span class="nm">Українська</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7.5-8"/></svg></li>
+          <li role="option" id="lo-ka" data-v="ka" lang="ka" aria-selected="false"><span class="nm">ქართული</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7.5-8"/></svg></li>
+          <li role="option" id="lo-uz" data-v="uz" lang="uz" aria-selected="false"><span class="nm">Oʻzbekcha</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7.5-8"/></svg></li>
+          <li role="option" id="lo-kk" data-v="kk" lang="kk" aria-selected="false"><span class="nm">Қазақша</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.5l3.5 3.5 7.5-8"/></svg></li>
+        </ul>
+      </div>
     </div>
   </div>
 
@@ -1013,7 +1041,7 @@ function applyVisibility(){
 function renderChrome(){
   document.documentElement.lang = lang;
   document.title = STR().title;
-  $("langSel").value = lang;
+  syncLangMenu();
   document.querySelectorAll("[data-i18n]").forEach(n => {
     const k = n.dataset.i18n;
     if (HTML_KEYS.has(k)) n.innerHTML = STR()[k]; else n.textContent = STR()[k];
@@ -1029,7 +1057,56 @@ function setLang(l){
   if (S.step >= 1){ $("stepLabel").textContent = STR().section_of(S.step); syncPct(); }
   schedule(); // язык заполнения — тоже данные, пусть уедет с автосейвом
 }
-$("langSel").onchange = e => setLang(e.target.value);
+// Language menu: the design system's Dropdown. Enter, Space or the arrows open it on the current
+// language; the arrows move, Home and End jump, typing a first letter finds a row; Enter or Space
+// chooses and returns focus to the button; Escape closes and returns focus; Tab or a click outside closes.
+const langBtn = $("langBtn"), langList = $("langList");
+const langRows = () => [...langList.querySelectorAll("li")];
+let langAct = -1;
+function syncLangMenu(){
+  langRows().forEach(li => li.setAttribute("aria-selected", String(li.dataset.v === lang)));
+  const cur = langList.querySelector(`li[data-v="${lang}"] .nm`);
+  $("langCur").textContent = cur ? cur.textContent : lang;
+  $("langCur").lang = lang;
+}
+function langMark(i){
+  const rows = langRows();
+  langAct = (i + rows.length) % rows.length;
+  rows.forEach((li, j) => li.classList.toggle("act", j === langAct));
+  langList.setAttribute("aria-activedescendant", rows[langAct].id);
+  rows[langAct].scrollIntoView({ block: "nearest" });
+}
+function langOpen(){
+  langList.hidden = false; langBtn.setAttribute("aria-expanded", "true");
+  langMark(Math.max(0, langRows().findIndex(li => li.dataset.v === lang)));
+  langList.focus();
+}
+function langClose(focusBtn){
+  if (langList.hidden) return;
+  langList.hidden = true; langBtn.setAttribute("aria-expanded", "false");
+  langList.removeAttribute("aria-activedescendant");
+  if (focusBtn) langBtn.focus();
+}
+function langPick(i){ const li = langRows()[i]; langClose(true); if (li) setLang(li.dataset.v); }
+langBtn.onclick = () => langList.hidden ? langOpen() : langClose(true);
+langBtn.onkeydown = e => { if (["ArrowDown", "ArrowUp"].includes(e.key)){ e.preventDefault(); langOpen(); } };
+langList.onkeydown = e => {
+  const n = langRows().length;
+  if (e.key === "ArrowDown"){ e.preventDefault(); langMark(langAct + 1); }
+  else if (e.key === "ArrowUp"){ e.preventDefault(); langMark(langAct - 1); }
+  else if (e.key === "Home"){ e.preventDefault(); langMark(0); }
+  else if (e.key === "End"){ e.preventDefault(); langMark(n - 1); }
+  else if (e.key === "Enter" || e.key === " "){ e.preventDefault(); langPick(langAct); }
+  else if (e.key === "Escape"){ e.preventDefault(); langClose(true); }
+  else if (e.key === "Tab"){ langClose(false); }
+  else if (e.key.length === 1){
+    const k = e.key.toLowerCase(), rows = langRows();
+    for (let d = 1; d <= n; d++){ const j = (langAct + d) % n; if (rows[j].textContent.trim().toLowerCase().startsWith(k)){ langMark(j); break; } }
+  }
+};
+langList.onmousemove = e => { const li = e.target.closest("li"); if (li) langMark(langRows().indexOf(li)); };
+langList.onclick = e => { const li = e.target.closest("li"); if (li) langPick(langRows().indexOf(li)); };
+document.addEventListener("click", e => { if (!e.target.closest("#langDd")) langClose(false); });
 
 // ===== шаги и прогресс =====
 function goStep(n, focusHeading = true){
