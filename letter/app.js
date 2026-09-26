@@ -318,9 +318,9 @@ function renderRail() {
 function renderWelcome() {
   const has = isSaved();
   const where = has ? sec(STEPS[S.savedStep][1]) + ", " + stepLabel(STEPS[S.savedStep][0]) : "";
-  return '<div class="stack fade"><div class="eyebrow">' + t("w_eyebrow") + '</div><h1 class="big">' + t("w_title") + "</h1><p>" + t("w_p1") + "</p><p>" + t("w_p2") + '</p><div class="card ink">' +
-    [1, 2].map((n) => '<div class="li"><span class="n">' + n + "</span><span>" + t("w_card" + n) + "</span></div>").join("") +
-    '</div><p class="small">' + t("w_disclaimer") + "</p>" +
+  return '<div class="stack fade"><div class="eyebrow">' + t("w_eyebrow") + '</div><h1 class="big">' + t("w_title") + "</h1><p>" + t("w_p1") + '</p><div class="card ink">' +
+    [1, 2].map((n) => '<div class="li"><span class="n">' + n + "</span><span>" + t("w_part" + n) + "</span></div>").join("") +
+    "</div><p>" + t("w_p2") + "</p><p>" + t("w_p3") + '</p><p class="small">' + t("w_disclaimer") + "</p>" +
     (has ? '<div class="note green">' + esc(t("w_started", { where })) + "</div>" : "") +
     '<div class="stack" style="gap:10px;margin-top:4px">' + (has ? '<button type="button" class="btn full" data-act="resume">' + t("w_resume") + '</button><button type="button" class="textbtn" data-act="startOver">' + t("w_startover") + "</button>" : '<button type="button" class="btn full" data-act="start">' + t("w_start") + "</button>") + "</div>" +
     '<footer class="site">qaravan.org</footer></div>';
