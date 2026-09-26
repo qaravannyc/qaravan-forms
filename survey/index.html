@@ -4,239 +4,134 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Исследование потребностей сообщества — QARAVAN</title>
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#FFFDF5">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/survey/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/survey/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/survey/apple-touch-icon.png">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&family=Noto+Sans+Georgian:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="preload" href="/assets/fonts/FiraSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/FiraSansCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/qaravan.css">
+<link rel="stylesheet" href="/assets/forms.css">
 <style>
-:root{
-  /* Qaravan tokens — те же, что на форме отзыва */
-  --q-red:#FF3333; --q-orange:#FF9933; --q-yellow:#F8F36E;
-  --q-green:#66CC66; --q-sky:#0099CC; --q-purple:#7668AA;
-  --q-black:#000000; --q-ink:#333333; --q-gray:#6E6E6E;
-  --q-line:#ECE8DE; --q-paper:#FFFDF5; --q-white:#FFFFFF;
-  --q-red-tint:#FFE4E4; --q-orange-tint:#FFEDD9; --q-sky-tint:#DDF1F8;
-  --q-green-tint:#E3F6E3; --q-purple-tint:#EAE7F4;
-  /* Noto Sans Georgian — для грузинской версии: в Montserrat нет грузинских букв */
-  --font-brand:'Montserrat','Noto Sans Georgian','Helvetica Neue',Arial,sans-serif;
-  --radius-md:12px; --radius-lg:16px; --radius-pill:999px;
-  --shadow-card:0 2px 6px rgba(51,51,51,.05), 0 10px 28px rgba(51,51,51,.07);
-}
-*{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{
-  margin:0; background:var(--q-paper); color:var(--q-ink);
-  font-family:var(--font-brand); font-size:17px; line-height:1.55;
-  -webkit-font-smoothing:antialiased;
-}
-a{color:var(--q-sky); font-weight:700; text-decoration-thickness:2px}
-a:hover{color:var(--q-purple)}
-.wrap{max-width:560px; margin:0 auto; padding:20px 20px 64px}
-
-/* header */
-.top{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:4px 0 18px}
-.wordmark{font-weight:900; font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap}
-a.wordmark{text-decoration:none}
+/* header: wordmark, the autosave status and the language menu */
+.top{padding:4px 0 18px}
 .topright{display:flex; align-items:center; gap:12px; min-width:0}
-.lang-sel{
-  border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-white);
-  font:inherit; font-size:13px; font-weight:700; color:var(--q-ink); line-height:1.2;
-  padding:8px 30px 8px 14px; cursor:pointer; flex:none;
-  -webkit-appearance:none; appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2710%27%20height%3D%276%27%3E%3Cpath%20d%3D%27M1%201l4%204%204-4%27%20stroke%3D%27%23333333%27%20stroke-width%3D%272%27%20fill%3D%27none%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E");
-  background-repeat:no-repeat; background-position:right 12px center;
-}
+/* the language switch for six languages: the design system's Dropdown button (square, ink edge,
+   a globe before the language, a drawn chevron); the list itself stays the native picker */
+.lang-sel{flex:none; min-height:44px; padding:8px 36px 8px 38px; border:2px solid var(--q-ink); border-radius:0; cursor:pointer;
+  color:var(--q-ink); font:600 16px/1.15 var(--font-head); letter-spacing:.01em; -webkit-appearance:none; appearance:none;
+  background:var(--q-white) no-repeat;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13ZM1.5 8h13M8 1.5c-1.9 1.8-2.9 4-2.9 6.5s1 4.7 2.9 6.5M8 1.5c1.9 1.8 2.9 4 2.9 6.5s-1 4.7-2.9 6.5' fill='none' stroke='%23333333' stroke-width='1.6'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%23333333' stroke-width='2' stroke-linecap='square'/%3E%3C/svg%3E");
+  background-position:left 12px center, right 12px center; background-size:18px 18px, 14px 14px}
+.lang-sel:hover{background-color:var(--q-line)}
 
-/* автосохранение: человек всегда видит, что его ответы не пропадут */
-.savechip{display:none; align-items:center; gap:7px; font-size:13px; font-weight:700; color:var(--q-gray); white-space:nowrap; overflow:hidden}
+/* autosave: the person always sees that answers are kept */
+.savechip{display:none; align-items:center; gap:8px; font:600 15px/1.2 var(--font-head); letter-spacing:.01em; color:var(--q-muted); white-space:nowrap; overflow:hidden}
 .savechip.show{display:flex}
-.savechip .dot{width:9px; height:9px; border-radius:50%; background:var(--q-line); flex:none; transition:background .2s}
+.savechip .dot{width:10px; height:10px; background:var(--q-line); flex:none; transition:background-color .2s}
 .savechip.saving .dot{background:var(--q-orange)}
 .savechip.saved .dot{background:var(--q-green)}
-.savechip.local .dot{background:var(--q-gray)}
-@media (max-width:430px){ .savechip #saveText{display:none} } /* на узком экране остаётся цветная точка-статус */
+.savechip.local .dot{background:var(--q-edge)}
+@media (max-width:430px){ .savechip #saveText{display:none} } /* on a narrow screen the square stays as the status */
 
-/* progress */
+/* progress: one colour, not the rainbow (the rainbow belongs to the wordmark) */
 .progress{display:none; margin-bottom:26px}
 .progress.show{display:block}
-.progress-meta{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--q-gray); margin-bottom:8px}
-.bar{height:8px; border-radius:var(--radius-pill); background:var(--q-line); overflow:hidden}
-.bar i{display:block; height:100%; width:0; border-radius:var(--radius-pill);
-  background:linear-gradient(90deg,var(--q-red),var(--q-orange),var(--q-green),var(--q-sky),var(--q-purple));
-  transition:width .35s ease}
+.progress-meta{display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:8px;
+  font:600 15px/1.2 var(--font-head); letter-spacing:.01em; color:var(--q-muted); font-variant-numeric:tabular-nums}
+.bar{height:6px; background:var(--q-line); overflow:hidden}
+.bar i{display:block; height:100%; width:0; background:var(--q-sky); transition:width .35s ease-out}
 @media (prefers-reduced-motion:reduce){ .bar i{transition:none} }
 
-/* hero / intro */
-.eyebrow{font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--q-sky)}
-h1{font-weight:800; font-size:clamp(28px,7.5vw,40px); line-height:1.1; letter-spacing:-.02em; margin:10px 0 8px; text-wrap:balance}
-h2.sec{font-weight:800; font-size:clamp(22px,6vw,30px); line-height:1.15; letter-spacing:-.02em; margin:8px 0 0; text-wrap:balance; outline:none}
-.sub{color:var(--q-gray); margin:0; text-wrap:pretty}
-.intro-card{background:var(--q-white); border:2px solid var(--q-ink); border-radius:var(--radius-lg); padding:22px; margin-top:24px}
+/* intro */
+h1{margin-top:12px}
+h2.sec{font:700 clamp(26px,6.5vw,32px)/1.1 var(--font-head); letter-spacing:var(--tracking-display); margin:12px 0 0; text-wrap:balance; outline:none}
+.intro-card{margin-top:24px; padding:20px 22px; background:var(--q-white); border:1px solid var(--q-line)}
 .intro-card ul{margin:0; padding:0; list-style:none; display:grid; gap:14px}
-.intro-card li{display:flex; gap:12px; align-items:flex-start; font-size:15.5px; text-wrap:pretty}
-.intro-card li .ico{flex:none; width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px}
-.motto{margin:22px 0 0; font-weight:800; font-size:17px}
-.helpnow{background:var(--q-sky-tint); border-radius:var(--radius-md); padding:14px 16px; font-size:14.5px; margin-top:22px; text-wrap:pretty}
+.intro-card li{font-size:16px; text-wrap:pretty}
+.intro-card li+li{border-top:1px solid var(--q-line); padding-top:14px}
+.motto{margin:24px 0 0; font:700 22px/1.25 var(--font-head); letter-spacing:var(--tracking-display)}
+/* white with a colour bar: sky for information, green for the restored draft */
+.helpnow,.resume-note{padding:14px 18px 15px 24px; background:var(--q-white); border:1px solid var(--q-line); box-shadow:inset 6px 0 0 var(--q-sky); font-size:15px; line-height:1.45; text-wrap:pretty}
+.helpnow{margin-top:22px}
 .start{margin-top:30px}
-.start button{
-  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink);
-  color:var(--q-white); font:inherit; font-size:18px; font-weight:700; padding:17px; cursor:pointer;
-  transition:transform .15s ease, opacity .15s ease;
-}
-.start button:active{transform:scale(.99)}
-.start .fine{color:var(--q-gray); font-size:13px; margin:12px 0 0; text-align:center; text-wrap:pretty}
+.start .fine{color:var(--q-muted); font-size:15px; margin:12px 0 0; text-align:center; text-wrap:pretty}
 
-/* восстановленный черновик */
-.resume-note{display:none; background:var(--q-green-tint); border-radius:var(--radius-md); padding:14px 16px; font-size:14.5px; margin:0 0 24px; text-wrap:pretty}
+/* restored draft */
+.resume-note{display:none; margin:0 0 24px; box-shadow:inset 6px 0 0 var(--q-green)}
 .resume-note.show{display:block}
-.resume-note button{border:0; background:none; padding:0; font:inherit; font-size:14px; font-weight:700; color:var(--q-gray); text-decoration:underline; text-underline-offset:3px; cursor:pointer; margin-top:6px}
-.resume-note button:hover{color:var(--q-ink)}
+.resume-note button{display:block; margin-top:6px; padding:0; border:0; background:none; cursor:pointer; color:var(--q-ink); font:600 15px/1.4 var(--font-brand);
+  text-decoration:underline; text-decoration-color:var(--q-sky); text-decoration-thickness:2px; text-underline-offset:3px}
+.resume-note button:hover{text-decoration-color:currentColor; text-decoration-thickness:3px}
 
 /* sections */
-fieldset{border:0; padding:24px 0 0; margin:0}
-fieldset+fieldset{border-top:1px solid var(--q-line); margin-top:40px; padding-top:36px}
 fieldset.gone{display:none}
-legend{float:left; width:100%; padding:0; margin:0 0 20px; font-weight:700; font-size:19px; line-height:1.35; text-wrap:pretty}
-legend+*{clear:both}
-.hint{color:var(--q-gray); font-size:14px; font-weight:400; margin:8px 0 0; text-wrap:pretty}
-legend .hint{display:block; margin:6px 0 0}
 .sec-head{padding-top:6px}
-.sec-intro{color:var(--q-gray); font-size:15px; margin:10px 0 0; text-wrap:pretty}
-
-/* chips (мультивыбор) */
-.chips{display:flex; flex-wrap:wrap; gap:12px; margin-top:0}
-.chips button{
-  border:2px solid var(--q-ink); background:var(--q-white); border-radius:var(--radius-pill);
-  padding:12px 18px; font:inherit; font-size:15px; font-weight:700; line-height:1.25;
-  cursor:pointer; color:var(--q-ink); text-align:left;
-  transition:transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease;
-}
-.chips button:active{transform:scale(.97)}
-.chips button[aria-pressed="true"]{background:var(--q-sky); border-color:var(--q-sky); color:var(--q-white)}
-.chips button:nth-child(6n+1)[aria-pressed="true"]{background:var(--q-red); border-color:var(--q-red)}
-.chips button:nth-child(6n+2)[aria-pressed="true"]{background:var(--q-orange); border-color:var(--q-orange)}
-.chips button:nth-child(6n+3)[aria-pressed="true"]{background:var(--q-green); border-color:var(--q-green)}
-.chips button:nth-child(6n+4)[aria-pressed="true"]{background:var(--q-purple); border-color:var(--q-purple)}
-.chips button:nth-child(6n+5)[aria-pressed="true"]{background:var(--q-sky); border-color:var(--q-sky)}
-.chips button:nth-child(6n)[aria-pressed="true"]{background:var(--q-ink); border-color:var(--q-ink)}
-.chips button.dim{opacity:.38}
-.counter{font-size:13px; font-weight:700; color:var(--q-gray); margin:12px 0 0}
-.counter.maxed{color:var(--q-orange)}
-.limit-hint{display:none; color:var(--q-orange); font-size:14px; font-weight:700; margin:10px 0 0}
-.limit-hint.show{display:block}
-.other-input{display:none; margin-top:14px}
-.other-input.show{display:block}
-
-/* text fields */
-textarea,input[type="text"]{
-  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-md); background:var(--q-white);
-  padding:13px 16px; font:inherit; font-size:16px; color:var(--q-ink); margin-top:0;
-  transition:border-color .15s ease, box-shadow .15s ease;
-}
-textarea{min-height:118px; resize:vertical; line-height:1.5}
-textarea:focus,input[type="text"]:focus{
-  outline:none; border-color:var(--q-sky); box-shadow:0 0 0 3px var(--q-sky-tint);
-}
-button:focus-visible,a:focus-visible,select:focus-visible,input[type="range"]:focus-visible{outline:3px solid var(--q-sky); outline-offset:2px}
-
-/* radio rows (один вариант) */
-.opts{display:grid; gap:12px; margin-top:0}
-.opts label{
-  display:flex; gap:12px; align-items:flex-start; border:2px solid var(--q-ink);
-  background:var(--q-white); border-radius:var(--radius-md); padding:14px 16px; cursor:pointer;
-  font-size:16px; line-height:1.4; transition:border-color .15s ease, background .15s ease;
-}
-.opts input{margin:4px 0 0; accent-color:var(--q-sky); width:19px; height:19px; flex:none}
-.opts label:has(input:checked){border-color:var(--q-sky); background:var(--q-sky-tint)}
+.sec-intro{color:var(--q-muted); font-size:16px; margin:10px 0 0; text-wrap:pretty}
+textarea,input[type="text"]{margin-top:0}
 @media (min-width:480px){ .opts.cols2{grid-template-columns:1fr 1fr} }
 
-/* slider (шкалы) */
+/* several choices, with a limit */
+.counter{margin:12px 0 0; font:600 15px/1.2 var(--font-head); letter-spacing:.01em; color:var(--q-muted)}
+.counter.maxed{color:var(--q-ink)}
+.limit-hint{display:none; gap:8px; align-items:baseline; margin:10px 0 0; font:600 14px/1.4 var(--font-brand); color:var(--q-ink)}
+.limit-hint.show{display:flex}
+.limit-hint::before{content:""; flex:none; width:10px; height:10px; background:var(--q-orange); transform:translateY(1px)}
+
+/* scales: a square thumb on a hairline track; the answered part fills sky */
 .slider{margin-top:6px}
-.slider .readout{min-height:52px; display:flex; align-items:center; justify-content:center; text-align:center;
-  border:2px dashed var(--q-line); border-radius:var(--radius-md); background:var(--q-white);
-  font-size:16px; font-weight:700; color:var(--q-gray); padding:10px 14px; margin-bottom:18px;
-  transition:border-color .2s, color .2s, background .2s}
-.slider.answered .readout{border-style:solid; border-color:var(--q-ink); color:var(--q-ink); background:var(--q-yellow)}
-.slider input[type="range"]{
-  -webkit-appearance:none; appearance:none; width:100%; height:44px; margin:0; background:transparent; cursor:pointer;
-}
-.slider input[type="range"]::-webkit-slider-runnable-track{height:10px; border-radius:var(--radius-pill); background:var(--q-line)}
-.slider input[type="range"]::-moz-range-track{height:10px; border-radius:var(--radius-pill); background:var(--q-line)}
-.slider.answered input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(90deg,var(--q-green),var(--q-yellow),var(--q-orange),var(--q-red))}
-.slider.answered.pos input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(90deg,var(--q-red),var(--q-orange),var(--q-yellow),var(--q-green))}
-.slider.answered input[type="range"]::-moz-range-track{background:linear-gradient(90deg,var(--q-green),var(--q-yellow),var(--q-orange),var(--q-red))}
-.slider.answered.pos input[type="range"]::-moz-range-track{background:linear-gradient(90deg,var(--q-red),var(--q-orange),var(--q-yellow),var(--q-green))}
-.slider input[type="range"]::-webkit-slider-thumb{
-  -webkit-appearance:none; appearance:none; width:32px; height:32px; border-radius:50%;
-  background:var(--q-white); border:3px solid var(--q-gray); margin-top:-11px;
-  box-shadow:var(--shadow-card); transition:border-color .2s}
-.slider.answered input[type="range"]::-webkit-slider-thumb{border-color:var(--q-ink)}
-.slider input[type="range"]::-moz-range-thumb{
-  width:26px; height:26px; border-radius:50%; background:var(--q-white); border:3px solid var(--q-gray); box-shadow:var(--shadow-card)}
-.slider.answered input[type="range"]::-moz-range-thumb{border-color:var(--q-ink)}
+.slider .readout{min-height:52px; display:flex; align-items:center; justify-content:center; text-align:center; margin-bottom:18px; padding:10px 14px;
+  border:2px solid var(--q-line); background:var(--q-white); color:var(--q-muted); font:600 17px/1.3 var(--font-brand);
+  transition:border-color .2s, color .2s}
+.slider.answered .readout{border-color:var(--q-ink); color:var(--q-ink); box-shadow:inset 6px 0 0 var(--q-sky)}
+.slider input[type="range"]{-webkit-appearance:none; appearance:none; width:100%; height:44px; margin:0; background:transparent; cursor:pointer}
+.slider input[type="range"]::-webkit-slider-runnable-track{height:8px; background:var(--q-line)}
+.slider.answered input[type="range"]::-webkit-slider-runnable-track{background:linear-gradient(var(--q-sky),var(--q-sky)) 0 0/var(--p,50%) 100% no-repeat, var(--q-line)}
+.slider input[type="range"]::-moz-range-track{height:8px; background:var(--q-line)}
+.slider.answered input[type="range"]::-moz-range-progress{height:8px; background:var(--q-sky)}
+.slider input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:28px; height:28px; margin-top:-10px;
+  border:2px solid var(--q-edge); border-radius:0; background:var(--q-white); transition:border-color .2s}
+.slider.answered input[type="range"]::-webkit-slider-thumb{border:3px solid var(--q-ink)}
+.slider input[type="range"]::-moz-range-thumb{width:24px; height:24px; border:2px solid var(--q-edge); border-radius:0; background:var(--q-white)}
+.slider.answered input[type="range"]::-moz-range-thumb{border:3px solid var(--q-ink)}
 .ticks{display:grid; margin-top:6px}
-.ticks button{border:0; background:none; padding:8px 2px; font:inherit; font-size:12.5px; font-weight:700; color:var(--q-gray); cursor:pointer; line-height:1.25}
+.ticks button{padding:8px 2px; border:0; background:none; cursor:pointer; color:var(--q-muted); font:600 14px/1.2 var(--font-head); letter-spacing:.01em}
 .ticks button:first-child{text-align:left}
 .ticks button:last-child{text-align:right}
-.ticks button.on{color:var(--q-ink)}
-.na-link{border:0; background:none; color:var(--q-gray); font:inherit; font-size:14px; font-weight:700; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:0; margin-top:16px; display:block}
-.na-link:hover{color:var(--q-ink)}
-.na-link.on{color:var(--q-purple)}
+.ticks button:hover{color:var(--q-ink)}
+.ticks button.on{color:var(--q-ink); box-shadow:inset 0 -4px 0 var(--q-sky)}
+.na-link{margin-top:10px}
+.na-link.on{text-decoration-color:currentColor; text-decoration-thickness:3px}
+.na-link.on::before{content:""; width:16px; height:16px; margin-right:8px; flex:none; background:center/16px no-repeat
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 8.5l3.5 3.5 7.5-8' fill='none' stroke='%23333333' stroke-width='2' stroke-linecap='square'/%3E%3C/svg%3E")}
 
-/* перенос на другое устройство */
+/* continue on another device, report a translation mistake: quiet links at the foot of a section */
 .xfer{margin-top:30px; text-align:center}
-.xfer > .na-link{display:inline; margin:0}
-.xfer-panel{display:none; text-align:left; background:var(--q-white); border:2px solid var(--q-ink); border-radius:var(--radius-md); padding:16px; margin-top:14px}
+.xfer > .na-link{margin:0; color:var(--q-muted)}
+.xfer > .na-link:hover{color:var(--q-ink)}
+.xfer-panel{display:none; text-align:left; margin-top:10px; padding:18px; background:var(--q-white); border:1px solid var(--q-line)}
 .xfer-panel.show{display:block}
-.xfer-panel p{margin:0 0 10px; font-size:14px; color:var(--q-gray); text-wrap:pretty}
-.xfer-panel input{margin:0; font-size:14px}
-.xfer-copy{margin-top:10px; border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-white); color:var(--q-ink); font:inherit; font-size:14px; font-weight:700; padding:10px 18px; cursor:pointer; transition:transform .15s ease}
-.xfer-copy:active{transform:scale(.97)}
+.xfer-panel p{margin:0 0 10px; font-size:15px; color:var(--q-muted); text-wrap:pretty}
+.xfer-panel input{margin:0; font-size:15px}
+.xfer-copy{margin-top:10px; min-height:44px; padding:8px 16px; border:2px solid var(--q-ink); background:var(--q-white); color:var(--q-ink); cursor:pointer;
+  font:600 16px/1.15 var(--font-head); letter-spacing:.01em; transition:background-color .12s}
+.xfer-copy:hover{background:var(--q-line)}
+.xfer-copy:active{transform:translateY(1px)}
+.xfer-copy:disabled{background:var(--q-disabled); border-color:var(--q-disabled); color:var(--q-disabled-ink); cursor:not-allowed; transform:none}
 
-/* steps */
-.step{display:none}
-.step.on{display:block; animation:stepin .3s ease-out}
-@keyframes stepin{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
-@media (prefers-reduced-motion:reduce){ .step.on{animation:none} }
-.stepnav{margin-top:46px; display:flex; align-items:center; justify-content:space-between; gap:14px}
-.stepnav .next{border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink); color:var(--q-white); font:inherit; font-size:17px; font-weight:700; padding:15px 34px; cursor:pointer; transition:transform .15s ease}
-.stepnav .next:active{transform:scale(.97)}
-.stepnav .back{border:0; background:none; color:var(--q-gray); font:inherit; font-size:15px; font-weight:700; cursor:pointer; padding:10px 0}
-
-/* submit */
 .submit{margin-top:46px}
-.submit button[type="submit"]{
-  width:100%; border:2px solid var(--q-ink); border-radius:var(--radius-pill); background:var(--q-ink);
-  color:var(--q-white); font:inherit; font-size:18px; font-weight:700; padding:17px; cursor:pointer;
-  transition:transform .15s ease, opacity .15s ease;
-}
-.submit button[type="submit"]:active{transform:scale(.99)}
-.submit button[type="submit"]:disabled{opacity:.4; cursor:default; transform:none}
-.err{
-  display:none; margin:0 0 14px; background:var(--q-red-tint); color:var(--q-ink);
-  border-radius:var(--radius-md); padding:14px 18px; font-size:15px; font-weight:500;
-}
-.err.show{display:block}
-
-/* thanks */
-#thanks{display:none; padding-top:6vh}
-#thanks.show{display:block}
-#thanks h1{margin-top:0}
-#thanks .again{border:0; background:none; color:var(--q-gray); font:inherit; font-size:14px; font-weight:700; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:0; margin-top:34px}
-
-.hp{position:absolute; left:-9999px; top:-9999px}
-footer{margin-top:56px; color:var(--q-gray); font-size:13px}
+#thanks .again{display:inline-flex; align-items:center; min-height:44px; margin-top:30px; padding:0; border:0; background:none; cursor:pointer;
+  color:var(--q-muted); font:600 15px/1.3 var(--font-brand);
+  text-decoration:underline; text-decoration-color:var(--q-sky); text-decoration-thickness:2px; text-underline-offset:4px}
+#thanks .again:hover{color:var(--q-ink); text-decoration-color:currentColor}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <noscript><p style="background:#FFE4E4;border-radius:12px;padding:14px 18px">Чтобы заполнить опрос, включите JavaScript в браузере. / Please enable JavaScript to fill out this survey.</p></noscript>
+  <noscript><p style="margin:0 0 20px;padding:14px 18px 15px 24px;border:1px solid #ece8de;box-shadow:inset 6px 0 0 #ff3333">Чтобы заполнить опрос, включите JavaScript в браузере. / Please enable JavaScript to fill out this survey.</p></noscript>
   <div class="top">
-    <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><span style="color:#000000">q</span><span style="color:#FF3333">a</span><span style="color:#FF9933">r</span><span style="color:#EBC53F">a</span><span style="color:#0099CC">v</span><span style="color:#66CC66">a</span><span style="color:#7668AA">n</span></a>
+    <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><img src="/assets/logo-wordmark.svg" width="140" height="28" alt="qaravan"></a>
     <div class="topright">
       <div class="savechip" id="saveChip" role="status" aria-live="polite"><span class="dot"></span><span id="saveText"></span></div>
       <select class="lang-sel" id="langSel" aria-label="Language">
@@ -266,16 +161,16 @@ footer{margin-top:56px; color:var(--q-gray); font-size:13px}
       <!-- ШАГ 0: приглашение и согласие -->
       <div class="step on" data-step="0">
         <header>
-          <div class="eyebrow">QARAVAN · 2026</div>
+          <div class="eyebrow">QARAVAN, 2026</div>
           <h1 data-i18n="intro_h1"></h1>
           <p class="sub" data-i18n="intro_sub"></p>
         </header>
         <div class="intro-card">
           <ul>
-            <li><span class="ico" style="background:var(--q-sky-tint)">🔒</span><span data-i18n="card_privacy"></span></li>
-            <li><span class="ico" style="background:var(--q-orange-tint)">⏱️</span><span data-i18n="card_time"></span></li>
-            <li><span class="ico" style="background:var(--q-green-tint)">💾</span><span data-i18n="card_save"></span></li>
-            <li><span class="ico" style="background:var(--q-purple-tint)">🙌</span><span data-i18n="card_skip"></span></li>
+            <li data-i18n="card_privacy"></li>
+            <li data-i18n="card_time"></li>
+            <li data-i18n="card_save"></li>
+            <li data-i18n="card_skip"></li>
           </ul>
         </div>
         <p class="motto" data-i18n="motto"></p>
@@ -552,7 +447,7 @@ const SECTIONS = [
     intro:["Мы понимаем, что сейчас тревожное время. Эти ответы помогут нам делать участие безопаснее.","We know this is an anxious time. These answers will help us make participation safer.","Ми розуміємо, що зараз тривожний час. Ці відповіді допоможуть нам робити участь безпечнішою.","გვესმის, რომ ახლა შფოთვიანი დროა. ეს პასუხები დაგვეხმარება მონაწილეობა უფრო უსაფრთხო გავხადოთ.","Hozir tashvishli davr ekanini tushunamiz. Bu javoblar ishtirokni xavfsizroq qilishga yordam beradi.","Қазір алаңдатарлық кез екенін түсінеміз. Бұл жауаптар қатысуды қауіпсізірек етуге көмектеседі."] },
   { n:5, name:["Будущее участие","Future participation","Участь надалі","მომავალი მონაწილეობა","Kelgusi ishtirok","Алдағы қатысу"], qs:["q23","q24"] },
 ];
-const SEC_COLORS = ["var(--q-red)","var(--q-orange)","var(--q-green)","var(--q-sky)","var(--q-purple)"];
+const SEC_COLORS = ["var(--q-red)","var(--q-orange)","var(--q-green)","var(--q-sky)","var(--q-purple)"]; // one flag colour per section
 
 // ===== тексты интерфейса =====
 // Статья «Ничего о нас без нас» есть в ru- и en-Википедии; для остальных
@@ -584,7 +479,7 @@ ru: {
   nav_next: "Дальше", nav_back: "Назад",
   send: "Отправить ответы", sending: "Отправляем…",
   err_net: "Не отправилось. Ответы сохранены на этом устройстве — проверьте интернет и нажмите ещё раз.",
-  save_saving: "Сохраняется…", save_saved: "Сохранено ✓", save_local: "Сохранено на устройстве", save_restored: "Черновик восстановлен",
+  save_saving: "Сохраняется…", save_saved: "Сохранено", save_local: "Сохранено на устройстве", save_restored: "Черновик восстановлен",
   count_sel: (n, m) => `Выбрано: ${n} из ${m}`,
   count_cap: m => `Можно выбрать до ${m === 3 ? "трёх" : m}`,
   limit_hint: m => `Не больше ${m === 3 ? "трёх" : m}: чтобы выбрать это, сначала снимите один из выбранных.`,
@@ -592,11 +487,11 @@ ru: {
   no_answer: "Ответ не выбран",
   xfer_link: "Продолжить на другом устройстве",
   xfer_note: "Откройте эту ссылку на другом устройстве — сохранённый черновик подтянется, и можно будет продолжить с того же места. Не делитесь ссылкой: по ней открываются ваши ответы.",
-  xfer_copy: "Скопировать ссылку", xfer_copied: "Скопировано ✓", xfer_aria: "Личная ссылка для продолжения",
+  xfer_copy: "Скопировать ссылку", xfer_copied: "Скопировано", xfer_aria: "Личная ссылка для продолжения",
   thanks_h1: "Спасибо!",
   thanks_sub: "Ваши ответы помогут делать программы, которые сообществу правда нужны.",
   thanks_help: helpLink("Нужна помощь прямо сейчас? ", "Заполните эту форму", " — мы свяжемся с вами."),
-  thanks_care: "Берегите себя. 🧡",
+  thanks_care: "Берегите себя.",
   again_btn: "Заполнить ещё раз",
   tr_link: "Заметили ошибку в переводе?",
   tr_note: "Эту версию мы переводили с помощью ИИ. Если вы носитель языка и что-то звучит неестественно или неточно — напишите, мы поправим. Спасибо!",
@@ -624,7 +519,7 @@ en: {
   nav_next: "Next", nav_back: "Back",
   send: "Submit answers", sending: "Submitting…",
   err_net: "It didn't go through. Your answers are saved on this device — check your connection and try again.",
-  save_saving: "Saving…", save_saved: "Saved ✓", save_local: "Saved on this device", save_restored: "Draft restored",
+  save_saving: "Saving…", save_saved: "Saved", save_local: "Saved on this device", save_restored: "Draft restored",
   count_sel: (n, m) => `Selected: ${n} of ${m}`,
   count_cap: m => `Pick up to ${m === 3 ? "three" : m}`,
   limit_hint: m => `No more than ${m === 3 ? "three" : m}: unselect one of your picks first.`,
@@ -632,11 +527,11 @@ en: {
   no_answer: "No answer selected",
   xfer_link: "Continue on another device",
   xfer_note: "Open this link on another device — your saved draft will load and you can pick up where you left off. Don't share the link: it opens your answers.",
-  xfer_copy: "Copy link", xfer_copied: "Copied ✓", xfer_aria: "Personal link to continue",
+  xfer_copy: "Copy link", xfer_copied: "Copied", xfer_aria: "Personal link to continue",
   thanks_h1: "Thank you!",
   thanks_sub: "Your answers will help us build the programs our community actually needs.",
   thanks_help: helpLink("Need help right now? ", "Fill out this form", " — we'll get in touch."),
-  thanks_care: "Take care of yourself. 🧡",
+  thanks_care: "Take care of yourself.",
   again_btn: "Fill it out again",
   tr_link: "Spotted a translation problem?",
   tr_note: "This version was translated with the help of AI. If you're a native speaker and something sounds off or inaccurate — let us know and we'll fix it. Thank you!",
@@ -664,7 +559,7 @@ uk: {
   nav_next: "Далі", nav_back: "Назад",
   send: "Надіслати відповіді", sending: "Надсилаємо…",
   err_net: "Не надіслалося. Відповіді збережено на цьому пристрої — перевірте інтернет і натисніть ще раз.",
-  save_saving: "Зберігається…", save_saved: "Збережено ✓", save_local: "Збережено на пристрої", save_restored: "Чернетку відновлено",
+  save_saving: "Зберігається…", save_saved: "Збережено", save_local: "Збережено на пристрої", save_restored: "Чернетку відновлено",
   count_sel: (n, m) => `Вибрано: ${n} із ${m}`,
   count_cap: m => `Можна вибрати до ${m === 3 ? "трьох" : m}`,
   limit_hint: m => `Не більше ${m === 3 ? "трьох" : m}: щоб вибрати це, спершу зніміть один із вибраних.`,
@@ -672,11 +567,11 @@ uk: {
   no_answer: "Відповідь не вибрано",
   xfer_link: "Продовжити на іншому пристрої",
   xfer_note: "Відкрийте це посилання на іншому пристрої — збережена чернетка підтягнеться, і можна буде продовжити з того ж місця. Не діліться посиланням: за ним відкриваються ваші відповіді.",
-  xfer_copy: "Скопіювати посилання", xfer_copied: "Скопійовано ✓", xfer_aria: "Особисте посилання для продовження",
+  xfer_copy: "Скопіювати посилання", xfer_copied: "Скопійовано", xfer_aria: "Особисте посилання для продовження",
   thanks_h1: "Дякуємо!",
   thanks_sub: "Ваші відповіді допоможуть робити програми, які спільноті справді потрібні.",
   thanks_help: helpLink("Потрібна допомога просто зараз? ", "Заповніть цю форму", " — ми зв'яжемося з вами."),
-  thanks_care: "Бережіть себе. 🧡",
+  thanks_care: "Бережіть себе.",
   again_btn: "Заповнити ще раз",
   tr_link: "Помітили помилку в перекладі?",
   tr_note: "Цю версію ми переклали за допомогою ШІ. Якщо ви носій мови і щось звучить неприродно чи неточно — напишіть, ми виправимо. Дякуємо!",
@@ -704,7 +599,7 @@ ka: {
   nav_next: "შემდეგი", nav_back: "უკან",
   send: "პასუხების გაგზავნა", sending: "იგზავნება…",
   err_net: "ვერ გაიგზავნა. პასუხები ამ მოწყობილობაზეა შენახული — შეამოწმეთ ინტერნეტი და კიდევ სცადეთ.",
-  save_saving: "ინახება…", save_saved: "შენახულია ✓", save_local: "შენახულია მოწყობილობაზე", save_restored: "მონახაზი აღდგენილია",
+  save_saving: "ინახება…", save_saved: "შენახულია", save_local: "შენახულია მოწყობილობაზე", save_restored: "მონახაზი აღდგენილია",
   count_sel: (n, m) => `არჩეულია: ${n} / ${m}`,
   count_cap: m => `შეგიძლიათ აირჩიოთ ${m}-მდე`,
   limit_hint: m => `არაუმეტეს ${m}-ისა: ამის ასარჩევად ჯერ მოხსენით ერთ-ერთი არჩეული.`,
@@ -712,11 +607,11 @@ ka: {
   no_answer: "პასუხი არ არის არჩეული",
   xfer_link: "სხვა მოწყობილობაზე გაგრძელება",
   xfer_note: "გახსენით ეს ბმული სხვა მოწყობილობაზე — შენახული მონახაზი ჩაიტვირთება და იმავე ადგილიდან გააგრძელებთ. ბმულს ნურავის გაუზიარებთ: მისით თქვენი პასუხები იხსნება.",
-  xfer_copy: "ბმულის კოპირება", xfer_copied: "დაკოპირდა ✓", xfer_aria: "პირადი ბმული გასაგრძელებლად",
+  xfer_copy: "ბმულის კოპირება", xfer_copied: "დაკოპირდა", xfer_aria: "პირადი ბმული გასაგრძელებლად",
   thanks_h1: "მადლობა!",
   thanks_sub: "თქვენი პასუხები დაგვეხმარება შევქმნათ პროგრამები, რომლებიც თემს ნამდვილად სჭირდება.",
   thanks_help: helpLink("დახმარება ახლავე გჭირდებათ? ", "შეავსეთ ეს ფორმა", " — დაგიკავშირდებით."),
-  thanks_care: "გაუფრთხილდით საკუთარ თავს. 🧡",
+  thanks_care: "გაუფრთხილდით საკუთარ თავს.",
   again_btn: "კიდევ ერთხელ შევსება",
   tr_link: "თარგმანში შეცდომა შენიშნეთ?",
   tr_note: "ეს ვერსია ხელოვნური ინტელექტის დახმარებით ვთარგმნეთ. თუ ქართული თქვენი მშობლიური ენაა და რამე უზუსტოდ ან არაბუნებრივად ჟღერს — მოგვწერეთ და გავასწორებთ. მადლობა!",
@@ -744,7 +639,7 @@ uz: {
   nav_next: "Keyingi", nav_back: "Orqaga",
   send: "Javoblarni yuborish", sending: "Yuborilmoqda…",
   err_net: "Yuborilmadi. Javoblar bu qurilmada saqlangan — internetni tekshirib, yana bosing.",
-  save_saving: "Saqlanmoqda…", save_saved: "Saqlandi ✓", save_local: "Qurilmada saqlandi", save_restored: "Qoralama tiklandi",
+  save_saving: "Saqlanmoqda…", save_saved: "Saqlandi", save_local: "Qurilmada saqlandi", save_restored: "Qoralama tiklandi",
   count_sel: (n, m) => `Tanlandi: ${n} / ${m}`,
   count_cap: m => `${m} tagacha tanlash mumkin`,
   limit_hint: m => `Koʻpi bilan ${m} ta: buni tanlash uchun avval bittasini olib tashlang.`,
@@ -752,11 +647,11 @@ uz: {
   no_answer: "Javob tanlanmagan",
   xfer_link: "Boshqa qurilmada davom ettirish",
   xfer_note: "Bu havolani boshqa qurilmada oching — saqlangan qoralama yuklanadi va oʻsha joydan davom etasiz. Havolani hech kimga bermang: u orqali javoblaringiz ochiladi.",
-  xfer_copy: "Havolani nusxalash", xfer_copied: "Nusxalandi ✓", xfer_aria: "Davom ettirish uchun shaxsiy havola",
+  xfer_copy: "Havolani nusxalash", xfer_copied: "Nusxalandi", xfer_aria: "Davom ettirish uchun shaxsiy havola",
   thanks_h1: "Rahmat!",
   thanks_sub: "Javoblaringiz hamjamiyatga chindan kerak dasturlarni yaratishga yordam beradi.",
   thanks_help: helpLink("Hozir yordam kerakmi? ", "Mana bu formani toʻldiring", " — siz bilan bogʻlanamiz."),
-  thanks_care: "Oʻzingizni asrang. 🧡",
+  thanks_care: "Oʻzingizni asrang.",
   again_btn: "Yana bir bor toʻldirish",
   tr_link: "Tarjimada xatolik sezdingizmi?",
   tr_note: "Bu versiyani sunʼiy intellekt yordamida tarjima qildik. Ona tilingiz oʻzbekcha boʻlsa va biror joy gʻaliz yoki noaniq tuyulsa — yozib qoldiring, toʻgʻrilaymiz. Rahmat!",
@@ -784,7 +679,7 @@ kk: {
   nav_next: "Келесі", nav_back: "Артқа",
   send: "Жауаптарды жіберу", sending: "Жіберілуде…",
   err_net: "Жіберілмеді. Жауаптар осы құрылғыда сақталды — интернетті тексеріп, қайта басыңыз.",
-  save_saving: "Сақталуда…", save_saved: "Сақталды ✓", save_local: "Құрылғыда сақталды", save_restored: "Қаралама қалпына келтірілді",
+  save_saving: "Сақталуда…", save_saved: "Сақталды", save_local: "Құрылғыда сақталды", save_restored: "Қаралама қалпына келтірілді",
   count_sel: (n, m) => `Таңдалды: ${n} / ${m}`,
   count_cap: m => `${m}-ге дейін таңдауға болады`,
   limit_hint: m => `Ең көбі ${m}: мұны таңдау үшін алдымен біреуін алып тастаңыз.`,
@@ -792,11 +687,11 @@ kk: {
   no_answer: "Жауап таңдалмаған",
   xfer_link: "Басқа құрылғыда жалғастыру",
   xfer_note: "Бұл сілтемені басқа құрылғыда ашыңыз — сақталған қаралама жүктеліп, сол жерден жалғастырасыз. Сілтемені ешкімге бермеңіз: ол арқылы жауаптарыңыз ашылады.",
-  xfer_copy: "Сілтемені көшіру", xfer_copied: "Көшірілді ✓", xfer_aria: "Жалғастыруға арналған жеке сілтеме",
+  xfer_copy: "Сілтемені көшіру", xfer_copied: "Көшірілді", xfer_aria: "Жалғастыруға арналған жеке сілтеме",
   thanks_h1: "Рақмет!",
   thanks_sub: "Жауаптарыңыз қауымдастыққа шынымен қажет бағдарламалар жасауға көмектеседі.",
   thanks_help: helpLink("Дәл қазір көмек керек пе? ", "Мына форманы толтырыңыз", " — сізбен хабарласамыз."),
-  thanks_care: "Өзіңізді күтіңіз. 🧡",
+  thanks_care: "Өзіңізді күтіңіз.",
   again_btn: "Тағы бір рет толтыру",
   tr_link: "Аудармадан қате байқадыңыз ба?",
   tr_note: "Бұл нұсқаны жасанды интеллект көмегімен аудардық. Қазақ тілі — ана тіліңіз болса және бірдеңе жасанды не қате естілсе — жазып қалдырыңыз, түзетеміз. Рақмет!",
@@ -963,10 +858,10 @@ function renderScale(qid, q){
     const v = A[qid];
     const answered = typeof v === "number";
     box.classList.toggle("answered", answered);
-    if (answered){ r.value = v; read.textContent = tx(q.labels[v]); r.setAttribute("aria-valuetext", tx(q.labels[v])); }
+    if (answered){ r.value = v; read.textContent = tx(q.labels[v]); r.setAttribute("aria-valuetext", tx(q.labels[v])); box.style.setProperty("--p", ((v - q.min) / (q.max - q.min) * 100) + "%"); }
     else read.textContent = v === PNTS ? tx(NO_ANS) : STR().no_answer;
     [...ticks.children].forEach((b, i) => b.classList.toggle("on", answered && q.min + i === v));
-    if (q.pnts){ const na = fs.querySelector(".na-link"); if (na) na.classList.toggle("on", v === PNTS); }
+    if (q.pnts){ const na = fs.querySelector(".na-link"); if (na){ na.classList.toggle("on", v === PNTS); na.setAttribute("aria-pressed", String(v === PNTS)); } }
   };
   const setScale = v => { A[qid] = v; sync(); touched(qid); };
   r.oninput = () => setScale(Number(r.value));
@@ -1071,7 +966,7 @@ function buildSteps(){
     host.innerHTML = "";
     const head = el("header", "sec-head");
     const eb = el("div", "eyebrow", STR().section_of(sec.n));
-    eb.style.color = SEC_COLORS[si];
+    eb.style.setProperty("--flag", SEC_COLORS[si]);   // the section colour is the eyebrow's flag, the words stay ink
     const h2 = el("h2", "sec", tx(sec.name));
     h2.id = "sech_" + sec.n; h2.tabIndex = -1;
     head.append(eb, h2);

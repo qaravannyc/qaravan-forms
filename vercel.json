@@ -42,5 +42,16 @@
       "source": "/:id(\\d+)",
       "destination": "/api/page?id=:id"
     }
+  ],
+  "headers": [
+    {
+      "source": "/assets/fonts/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
   ]
 }

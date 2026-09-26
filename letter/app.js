@@ -260,14 +260,18 @@ async function submit() {
 
 // ---------- rendering ----------
 const $ = (id) => document.getElementById(id);
-const svgTick = (c) => '<svg width="14" height="11" viewBox="0 0 14 11" aria-hidden="true"><polygon points="5.2,10.4 0.6,6 2.6,4 5.2,6.6 11.4,0.4 13.4,2.4" fill="' + c + '"></polygon></svg>';
-const svgDown = '<svg width="12" height="8" viewBox="0 0 12 8" aria-hidden="true"><polygon points="0,0 12,0 6,8" fill="#333"></polygon></svg>';
-const svgLeft = '<svg width="9" height="14" viewBox="0 0 9 14" aria-hidden="true"><polygon points="9,0 9,14 0,7" fill="#333"></polygon></svg>';
-const svgRight = '<svg width="9" height="14" viewBox="0 0 9 14" aria-hidden="true"><polygon points="0,0 0,14 9,7" fill="#333"></polygon></svg>';
-const svgX = (c) => '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><polygon points="2,0.6 0.6,2 4.6,6 0.6,10 2,11.4 6,7.4 10,11.4 11.4,10 7.4,6 11.4,2 10,0.6 6,4.6" fill="' + (c || "#333") + '"></polygon></svg>';
-const svgPlus = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><polygon points="5.5,0 8.5,0 8.5,5.5 14,5.5 14,8.5 8.5,8.5 8.5,14 5.5,14 5.5,8.5 0,8.5 0,5.5 5.5,5.5" fill="#333"></polygon></svg>';
-const wordmark = (size) => '<a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org" style="font-size:' + size + 'px"><span class="q">q</span><span class="a1">a</span><span class="r">r</span><span class="a2">a</span><span class="v">v</span><span class="a3">a</span><span class="n">n</span></a>';
-const cb = (on, green) => '<span class="cb' + (on ? " on" : "") + (green ? " green" : "") + '">' + (on ? svgTick("#fff") : "") + "</span>";
+// The design system's marks: 2px strokes with square ends on a 16px grid, in the text colour.
+const mark = (d, cls) => '<svg class="' + (cls || "mk") + '" viewBox="0 0 16 16" aria-hidden="true"><path d="' + d + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"></path></svg>';
+const svgTick = () => mark("M2.5 8.5l3.5 3.5 7.5-8");
+const svgDown = mark("M3 6l5 5 5-5", "chev");
+const svgLeft = mark("M10 3L5 8l5 5");
+const svgRight = mark("M6 3l5 5-5 5");
+const svgX = () => mark("M3.5 3.5l9 9M12.5 3.5l-9 9");
+const svgPlus = mark("M8 2.5v11M2.5 8h11");
+const svgGlobe = '<svg class="globe" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13ZM1.5 8h13M8 1.5c-1.9 1.8-2.9 4-2.9 6.5s1 4.7 2.9 6.5M8 1.5c1.9 1.8 2.9 4 2.9 6.5s-1 4.7-2.9 6.5" fill="none" stroke="currentColor" stroke-width="1.6"></path></svg>';
+// The wordmark is artwork: the official outlines, never live letters. `size` is the letter size.
+const wordmark = (size) => { const w = Math.round(size * 5.4); return '<a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><img src="/assets/logo-wordmark.svg" width="' + w + '" height="' + Math.round(w / 4.925) + '" alt="qaravan" style="width:' + w + 'px"></a>'; };
+const cb = (on) => '<span class="cb' + (on ? " on" : "") + '">' + (on ? svgTick() : "") + "</span>";
 const rd = (on) => '<span class="rd' + (on ? " on" : "") + '">' + (on ? "<i></i>" : "") + "</span>";
 const opt = () => ' <span class="opt">' + t("optional") + "</span>";
 const wide = () => window.innerWidth >= 900;
@@ -280,7 +284,7 @@ function input(path, o) {
 }
 const ferr = (key) => '<span class="ferr" role="alert" data-err="' + key + '">' + esc(S.errs[key] || "") + "</span>";
 const field = (label, path, o, hint) => '<label class="field"><span class="lbl">' + label + "</span>" + input(path, o) + (hint ? '<span class="hint">' + hint + "</span>" : "") + ferr((o && o.errKey) || path.split(".")[0]) + "</label>";
-const chips = (list, key, o) => '<div class="chips" role="' + (o && o.multi ? "group" : "radiogroup") + '">' + list.map(([v, label], i) => { const on = o && o.multi ? !!S.a[key][v] : S.a[key] === v; return '<button type="button" class="chip' + (on ? " on" : "") + (o && o.tall ? " tall" : "") + (o && o.color ? " c" + (i % 5) : "") + '" role="' + (o && o.multi ? "checkbox" : "radio") + '" aria-checked="' + on + '" data-act="' + (o && o.multi ? "check" : "chip") + '" data-k="' + key + '" data-v="' + v + '">' + esc(label) + "</button>"; }).join("") + "</div>";
+const chips = (list, key, o) => '<div class="chips" role="' + (o && o.multi ? "group" : "radiogroup") + '">' + list.map(([v, label], i) => { const on = o && o.multi ? !!S.a[key][v] : S.a[key] === v; return '<button type="button" class="chip' + (on ? " on" : "") + (o && o.tall ? " tall" : "") + '" role="' + (o && o.multi ? "checkbox" : "radio") + '" aria-checked="' + on + '" data-act="' + (o && o.multi ? "check" : "chip") + '" data-k="' + key + '" data-v="' + v + '">' + esc(label) + "</button>"; }).join("") + "</div>";
 const rowCheck = (on, act, arg, title, sub) => '<div class="row' + (on ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + on + '" data-act="' + act + '"' + (arg ? ' data-v="' + arg + '"' : "") + ">" + cb(on) + '<span class="col"><span>' + title + "</span>" + (sub ? '<span class="sub">' + sub + "</span>" : "") + "</span></div>";
 const addBtn = (act, label) => '<button type="button" class="btn outline md" data-act="' + act + '">' + svgPlus + "<span>" + esc(label) + "</span></button>";
 const sec = (i) => t("sec_" + i);
@@ -291,8 +295,8 @@ function renderHeader() {
   const cur = LANGS.find((l) => l[0] === lang);
   $("hdr").innerHTML = '<div class="hdr-in">' + wordmark(26) + '<div class="hdr-r">' +
     (showSave ? '<button type="button" class="linkbtn" data-act="saveLater"><span class="full">' + t("save_later") + '</span><span class="short">' + t("save_short") + "</span></button>" : "") +
-    '<div class="langwrap"><button type="button" class="langbtn" data-act="toggleLang" aria-haspopup="listbox" aria-expanded="' + S.langOpen + '"><span>' + cur[1] + "</span>" + svgDown + "</button>" +
-    (S.langOpen ? '<div class="langbg" data-act="closeLang"></div><div class="langlist" role="listbox" aria-label="Language">' + LANGS.map((l) => '<div class="langopt' + (l[0] === lang ? " on" : "") + '" role="option" tabindex="0" aria-selected="' + (l[0] === lang) + '" data-act="lang" data-v="' + l[0] + '"><span class="tick">' + (l[0] === lang ? svgTick("#0099CC") : "") + "</span><span>" + l[1] + "</span></div>").join("") + "</div>" : "") +
+    '<div class="langwrap"><button type="button" class="langbtn" data-act="toggleLang" aria-haspopup="listbox" aria-expanded="' + S.langOpen + '">' + svgGlobe + '<span lang="' + cur[0] + '">' + cur[1] + "</span>" + svgDown + "</button>" +
+    (S.langOpen ? '<div class="langbg" data-act="closeLang"></div><div class="langlist" role="listbox" aria-label="Language">' + LANGS.map((l) => '<div class="langopt' + (l[0] === lang ? " on" : "") + '" role="option" tabindex="0" aria-selected="' + (l[0] === lang) + '" data-act="lang" data-v="' + l[0] + '"><span class="name" lang="' + l[0] + '">' + l[1] + '</span><span class="tick">' + (l[0] === lang ? svgTick() : "") + "</span></div>").join("") + "</div>" : "") +
     "</div></div></div>" +
     (inStep() && !wide() ? '<div class="pprog"><div class="bar"><i style="width:' + Math.max(pct, 3) + '%"></i></div><div class="pmeta"><span class="eyebrow">' + esc(sec(STEPS[S.step][1])) + '</span><span style="flex:none">' + esc(t("q_of", { n: S.step + 1, total: STEPS.length })) + "</span></div></div>" : "");
 }
@@ -300,11 +304,11 @@ function renderHeader() {
 function renderRail() {
   const st = STEPS[S.step], secIdx = st[1], id = st[0], mr = maxReached(), pct = progressPct();
   const secSteps = STEPS.filter((x) => x[1] === secIdx), pos = secSteps.findIndex((x) => x[0] === id) + 1;
-  let html = '<nav class="railnav" aria-label="Sections"><div class="rail-p"><div class="top"><span class="cap">' + t("your_progress") + '</span><span style="font-size:13px;font-weight:800">' + esc(t("q_of", { n: S.step + 1, total: STEPS.length })) + '</span></div><div class="bar"><i style="width:' + Math.max(pct, 3) + '%"></i></div></div><div>';
+  let html = '<nav class="railnav" aria-label="Sections"><div class="rail-p"><div class="top"><span class="cap">' + t("your_progress") + '</span><span class="num">' + esc(t("q_of", { n: S.step + 1, total: STEPS.length })) + '</span></div><div class="bar"><i style="width:' + Math.max(pct, 3) + '%"></i></div></div><div>';
   for (let i = 0; i < SECTIONS; i++) {
     const items = STEPS.filter((x) => x[1] === i), first = stepIdx(items[0][0]);
     const cur = i === secIdx, done = items.every((x) => stepAnswered(x[0])) && !cur, expand = cur;
-    html += '<div class="rsec' + (cur ? "" : " go") + '"' + (cur ? "" : ' data-act="go" data-v="' + first + '" data-dir="' + (first > mr ? "peek" : "jump") + '"') + '><span class="dotcol"><span class="rdot' + (done ? " done" : cur ? " cur" : "") + '">' + (done ? svgTick("#fff") : i + 1) + "</span>" + (i < SECTIONS - 1 ? '<span class="rline' + (done ? " done" : "") + '"></span>' : "") + '</span><span class="rbody"><span class="rname"><b' + (cur ? ' class="cur"' : "") + ">" + esc(sec(i)) + "</b><span>" + esc(cur ? t("n_of_m", { n: pos, m: items.length }) : tn("n_questions", items.length)) + "</span></span>";
+    html += '<div class="rsec' + (cur ? "" : " go") + '"' + (cur ? "" : ' data-act="go" data-v="' + first + '" data-dir="' + (first > mr ? "peek" : "jump") + '"') + '><span class="dotcol"><span class="rdot' + (done ? " done" : cur ? " cur" : "") + '">' + (done ? svgTick() : i + 1) + "</span>" + (i < SECTIONS - 1 ? '<span class="rline' + (done ? " done" : "") + '"></span>' : "") + '</span><span class="rbody"><span class="rname"><b' + (cur ? ' class="cur"' : "") + ">" + esc(sec(i)) + "</b><span>" + esc(cur ? t("n_of_m", { n: pos, m: items.length }) : tn("n_questions", items.length)) + "</span></span>";
     if (expand) html += '<span class="ritems">' + items.map((x) => { const ii = stepIdx(x[0]), isCur = ii === S.step, isDone = stepAnswered(x[0]); return '<span class="ritem' + (isCur ? " cur" : isDone ? " done" : "") + '"' + (isCur ? "" : ' data-act="go" data-v="' + ii + '" data-dir="' + (ii > mr ? "peek" : "jump") + '"') + "><i></i><span>" + esc(cap(stepLabel(x[0]))) + "</span></span>"; }).join("") + "</span>";
     html += "</span></div>";
   }
@@ -328,7 +332,7 @@ function renderSavedScreen() {
 function renderDone() {
   const a = S.a, name = a.firstName || t("friend");
   return '<div class="stack fade">' + wordmark(44) + '<h1 class="big">' + esc(t("d_title", { name })) + "</h1><p>" + esc(t("d_body", { email: a.email, phone: a.phone ? t("d_or_call", { phone: a.phone }) : "" })) + "</p>" +
-    '<p style="font-weight:800;font-size:20px;letter-spacing:-.01em">' + t("d_luck") + '</p><p class="small">' + t("d_close") + "</p>" + renderTrBlock() + "</div>";
+    '<p class="luck">' + t("d_luck") + '</p><p class="small">' + t("d_close") + "</p>" + renderTrBlock() + "</div>";
 }
 
 // ---------- the 19 steps ----------
@@ -371,7 +375,7 @@ const STEP_RENDER = {
     const a = S.a;
     const CL = [["gay", "id_gay"], ["lesbian", "id_lesbian"], ["bi", "id_bi"], ["transw", "id_transw"], ["transm", "id_transm"], ["nb", "id_nb"], ["intersex", "id_intersex"], ["ethnic", "id_ethnic"], ["religious", "id_religious"], ["activist", "id_activist"], ["journalist", "id_journalist"], ["gbv", "id_gbv"], ["trafficking", "id_trafficking"], ["family", "id_family"], ["other", "other"]];
     const which = [["ethnic", "q8_which_ethnic"], ["religious", "q8_which_religious"], ["other", "q8_which_other"]].filter(([k]) => a.claim[k]);
-    return "<h1>" + t("q8_title") + '</h1><p class="help">' + t("q8_help") + "</p>" + chips(CL.map(([v, k]) => [v, t(k)]), "claim", { multi: true, color: true, tall: true }) +
+    return "<h1>" + t("q8_title") + '</h1><p class="help">' + t("q8_help") + "</p>" + chips(CL.map(([v, k]) => [v, t(k)]), "claim", { multi: true, tall: true }) +
       which.map(([k, lk]) => '<label class="field fade"><span class="lbl">' + t(lk) + "</span>" + input("claimWhich." + k, { max: 120 }) + "</label>").join("") + ferr("claim");
   },
   attorney() {
@@ -399,7 +403,7 @@ const STEP_RENDER = {
     return "<h1>" + t("q10_title") + '</h1><p class="help">' + t("q10_help") + "</p>" + cal + rowCheck(a.deadlineUnknown, "toggleDeadline", "", t("q10_unknown"));
   },
   incidents() {
-    return '<div class="eyebrow gray">' + t("optional_skip") + "</div><h1>" + t("q11_title") + '</h1><p class="help">' + t("q11_help") + '</p><p style="font-size:15px;font-weight:700;color:var(--q-sky)">' + t("q11_norepeat") + '</p><textarea class="in" data-f="incidents" rows="6" maxlength="300" aria-label="' + esc(t("q11_aria")) + '">' + esc(S.a.incidents) + '</textarea><span class="hint" id="inc-count" style="margin-top:-14px">' + tn("chars_left", 300 - S.a.incidents.length) + "</span>";
+    return '<div class="eyebrow gray">' + t("optional_skip") + "</div><h1>" + t("q11_title") + '</h1><p class="help">' + t("q11_help") + '</p><p class="note sky">' + t("q11_norepeat") + '</p><textarea class="in" data-f="incidents" rows="6" maxlength="300" aria-label="' + esc(t("q11_aria")) + '">' + esc(S.a.incidents) + '</textarea><span class="hint" id="inc-count" style="margin-top:-14px">' + tn("chars_left", 300 - S.a.incidents.length) + "</span>";
   },
   otherLetters() {
     const a = S.a, ol = a.otherLettersList;
@@ -435,8 +439,8 @@ const STEP_RENDER = {
     const match = (n, id, det) => { if (!f) return true; const hay = (n + " " + (det || "") + " " + allNames(id)).toLowerCase(); return hay.includes(f) || terms.some((w) => hay.includes(w)); };
     const pills = YE.map((yr) => { const c = countFor(yr.y); return '<button type="button" class="ypill' + (c ? " on" : "") + '" data-act="jumpYear" data-v="' + yr.y + '"><span>' + yr.y + "</span>" + (c ? '<span class="badge">' + c + "</span>" : "") + "</button>"; }).join("");
     const pickedIds = Object.keys(a.events).filter((k) => a.events[k] && idx[k]).sort((p, q) => idx[q].year - idx[p].year);
-    const picked = pickedIds.map((k) => '<button type="button" class="pchip" data-act="event" data-v="' + k + '" aria-label="' + esc(t("remove")) + '"><span class="y">' + idx[k].year + "</span><span>" + esc(eventName(k, idx[k].name) + (a.eventCounts[k] ? ", " + t("cnt_" + a.eventCounts[k].replace("-", "_").replace("+", "p")) : "")) + "</span>" + svgX("#0099CC") + "</button>")
-      .concat(Object.keys(a.eventsOther).filter((y) => a.eventsOther[y]).map((y) => '<button type="button" class="pchip" data-act="eventOtherClear" data-v="' + y + '"><span class="y">' + y + "</span><span>" + esc(t("other") + ": " + a.eventsOther[y]) + "</span>" + svgX("#0099CC") + "</button>"));
+    const picked = pickedIds.map((k) => '<button type="button" class="pchip" data-act="event" data-v="' + k + '" aria-label="' + esc(t("remove")) + '"><span class="y">' + idx[k].year + "</span><span>" + esc(eventName(k, idx[k].name) + (a.eventCounts[k] ? ", " + t("cnt_" + a.eventCounts[k].replace("-", "_").replace("+", "p")) : "")) + "</span>" + svgX() + "</button>")
+      .concat(Object.keys(a.eventsOther).filter((y) => a.eventsOther[y]).map((y) => '<button type="button" class="pchip" data-act="eventOtherClear" data-v="' + y + '"><span class="y">' + y + "</span><span>" + esc(t("other") + ": " + a.eventsOther[y]) + "</span>" + svgX() + "</button>"));
     const row = (id, name, det, cls) => { const on = !!a.events[id]; return '<div class="lrow ' + cls + (on ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + on + '" data-act="event" data-v="' + id + '">' + cb(on) + '<span class="col"><span>' + esc(name) + "</span>" + (det ? '<span class="det">' + esc(det) + "</span>" : "") + "</span></div>"; };
     let tl = "", any = false;
     YE.forEach((yr) => {
@@ -447,14 +451,14 @@ const STEP_RENDER = {
       tl += '<section class="yr" id="year-' + yr.y + '"><div class="yr-h"><b>' + yr.y + '</b><span class="cnt">' + (c ? esc(tn("n_selected", c)) : "") + "</span></div>";
       if (programs.length) tl += '<div class="grp"><div class="mo-h m0">' + t("regular_programs") + "</div>" + programs.map((p) => { const ev = EVI[lang] && EVI[lang][p.id]; const nm = Array.isArray(ev) ? ev[0] : ev || p.name; const dt = Array.isArray(ev) ? ev[1] : p.detail; return "<div>" + row(p.id, nm, dt, "m0") + (a.events[p.id] ? '<div class="counts fade"><span class="q">' + t("how_many") + '</span><div class="chips">' + COUNTS.map((cc) => '<button type="button" class="chip sm' + (a.eventCounts[p.id] === cc ? " on" : "") + '" aria-pressed="' + (a.eventCounts[p.id] === cc) + '" data-act="count" data-i="' + p.id + '" data-v="' + cc + '">' + t("cnt_" + cc.replace("-", "_").replace("+", "p")) + "</button>").join("") + "</div></div>" : "") + "</div>"; }).join("") + "</div>";
       tl += ms.map((m) => { const cls = "m" + ((m.mi + 1) % 5); return '<div class="grp"><div class="mo-h ' + cls + '">' + esc(months()[MONTHS_EN.indexOf(m.name)] || m.name) + "</div>" + m.events.map((e) => row(e.id, eventName(e.id, e.name), "", cls)).join("") + "</div>"; }).join("");
-      tl += '<div class="stack" style="gap:10px;margin-top:4px"><div class="lrow m0' + (otherOn ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + otherOn + '" data-act="eventOther" data-v="' + yr.y + '">' + cb(otherOn) + '<span style="color:var(--q-gray)">' + esc(t("something_else", { year: yr.y })) + "</span></div>" + (otherOn ? '<textarea class="in" data-f="eventsOther.' + yr.y + '" rows="3" maxlength="400" aria-label="' + esc(t("describe")) + '" placeholder="' + esc(t("something_else_ph")) + '" style="min-height:90px">' + esc(a.eventsOther[yr.y] || "") + "</textarea>" : "") + "</div></section>";
+      tl += '<div class="stack" style="gap:10px;margin-top:4px"><div class="lrow m0' + (otherOn ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + otherOn + '" data-act="eventOther" data-v="' + yr.y + '">' + cb(otherOn) + '<span style="color:var(--q-muted)">' + esc(t("something_else", { year: yr.y })) + "</span></div>" + (otherOn ? '<textarea class="in" data-f="eventsOther.' + yr.y + '" rows="3" maxlength="400" aria-label="' + esc(t("describe")) + '" placeholder="' + esc(t("something_else_ph")) + '" style="min-height:90px">' + esc(a.eventsOther[yr.y] || "") + "</textarea>" : "") + "</div></section>";
     });
     const noneOn = !!a.eventsNone.all;
     return "<h1>" + t("q16_title") + '</h1><p class="help">' + t("q16_help") + '</p><label class="field"><span class="lbl">' + t("q16_search") + '</span><input class="in" id="evfilter" value="' + esc(S.filter) + '" autocomplete="off" placeholder="' + esc(t("q16_search_ph")) + '"></label>' +
       '<div class="stack" style="gap:8px"><span class="card-t">' + t("jump_year") + '</span><div class="yearpills">' + pills + "</div></div>" +
       '<div class="picked"><div class="eyebrow">' + esc(picked.length ? tn("selected_so_far", picked.length) : t("nothing_selected")) + "</div>" + (picked.length ? '<div class="chips" style="gap:8px">' + picked.join("") + "</div>" : "") + "</div>" +
       '<div id="evbody">' + (f && !any ? '<p class="help">' + esc(t("q16_nomatch", { q: S.filter })) + "</p>" : "") + '<div class="timeline">' + tl + "</div></div>" +
-      '<button type="button" class="tojump" id="tojump" data-act="jumpEnd" hidden><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>' + t("jump_end") + "</span></button>" +
+      '<button type="button" class="tojump" id="tojump" data-act="jumpEnd" hidden>' + mark("M3 6l5 5 5-5") + '<span>' + t("jump_end") + "</span></button>" +
       '<div class="divider" id="evend"><div class="lrow m0' + (noneOn ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + noneOn + '" data-act="eventsNone">' + cb(noneOn) + '<span class="col"><span>' + t("q16_none") + '</span><span class="det" style="font-weight:500">' + t("q16_none_sub") + "</span></span></div></div>";
   },
   beyond() {
@@ -469,7 +473,7 @@ const STEP_RENDER = {
   },
   consent() {
     const a = S.a;
-    return "<h1>" + t("q20_title") + '</h1><div class="card plain">' + [["truth", "c_truth", "c_truth_sub"], ["share", "c_share", ""], ["contact", "c_contact", "c_contact_sub"]].map(([v, tk, sk]) => '<div class="consent' + (a.consent[v] ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + !!a.consent[v] + '" data-act="consent" data-v="' + v + '"><span class="txt"><span class="t">' + t(tk) + "</span>" + (sk ? '<span class="s">' + t(sk) + "</span>" : "") + '</span><span style="flex:none;padding-top:2px">' + cb(!!a.consent[v], true) + "</span></div>").join("") + "</div>" + ferr("consent");
+    return "<h1>" + t("q20_title") + '</h1><div class="card plain">' + [["truth", "c_truth", "c_truth_sub"], ["share", "c_share", ""], ["contact", "c_contact", "c_contact_sub"]].map(([v, tk, sk]) => '<div class="consent' + (a.consent[v] ? " on" : "") + '" role="checkbox" tabindex="0" aria-checked="' + !!a.consent[v] + '" data-act="consent" data-v="' + v + '"><span class="txt"><span class="t">' + t(tk) + "</span>" + (sk ? '<span class="s">' + t(sk) + "</span>" : "") + '</span><span style="flex:none;padding-top:2px">' + cb(!!a.consent[v]) + "</span></div>").join("") + "</div>" + ferr("consent");
   },
   anything() {
     return '<div class="eyebrow gray">' + t("optional_skip") + "</div><h1>" + t("q21_title") + '</h1><p class="help">' + t("q21_help") + '</p><textarea class="in" data-f="anythingElse" rows="6" maxlength="1000" aria-label="' + esc(t("q21_title")) + '">' + esc(S.a.anythingElse) + '</textarea><span class="hint" id="any-count" style="margin-top:-14px">' + tn("chars_left", 1000 - S.a.anythingElse.length) + "</span>";
