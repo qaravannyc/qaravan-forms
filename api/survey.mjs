@@ -15,9 +15,11 @@
 // потому что на плане Hobby в api/ не больше 12 функций. Вся её логика —
 // в lib/event-volunteers.mjs. Так же сюда приходят анкеты групп поддержки
 // (POST /api/support-groups → /api/survey?form=support-groups) — их логика
-// в lib/support-groups.mjs.
+// в lib/support-groups.mjs. И письма со ссылкой на встречу групп поддержки
+// (/api/meetings, /api/meeting-prompts → /api/survey?form=…) — lib/meetings.mjs.
 import { eventVolunteersHandler } from "../lib/event-volunteers.mjs";
 import { supportGroupsHandler } from "../lib/support-groups.mjs";
+import { meetingsHandler, meetingPromptsHandler } from "../lib/meetings.mjs";
 
 const MONDAY = "https://api.monday.com/v2";
 const SURVEY_BOARD = "18426996689";
@@ -308,6 +310,8 @@ export default async function handler(req, res) {
   const u = new URL(req.url, "https://x");
   if (u.searchParams.get("form") === "event-volunteers" || /\/api\/event-volunteers\/?$/.test(u.pathname)) return eventVolunteersHandler(req, res);
   if (u.searchParams.get("form") === "support-groups" || /\/api\/support-groups\/?$/.test(u.pathname)) return supportGroupsHandler(req, res);
+  if (u.searchParams.get("form") === "meetings" || /\/api\/meetings\/?$/.test(u.pathname)) return meetingsHandler(req, res);
+  if (u.searchParams.get("form") === "meeting-prompts" || /\/api\/meeting-prompts\/?$/.test(u.pathname)) return meetingPromptsHandler(req, res);
 
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "no-store");
