@@ -5,7 +5,8 @@
 // с lib/support-groups.mjs: там они переводятся в метки колонок на досках monday.
 
 // ===== вопросы =====
-// type: text | contact (почта и телефон) | radio | chips (несколько вариантов) | consent | textarea.
+// type: text | contact (почта и телефон) | radio | chips (несколько вариантов) | consent | textarea |
+// picks (до max вариантов по популярности, первые visible видны сразу, ниже — «своими словами»).
 // follow — поле, которое открывается под вариантом when и тогда обязательно.
 const FORMS = {
   gina: [
@@ -18,7 +19,9 @@ const FORMS = {
     { id: "intro", type: "radio", req: true, two: true, opts: ["yes", "no"] },
     { id: "rules", type: "consent", req: true },
     { id: "expect", type: "textarea", req: true, max: 4000 },
-    { id: "needs", type: "textarea", req: true, max: 4000 },
+    // варианты — по популярности в старых ответах (lib/support-groups.mjs, NEEDS); видны первые visible
+    { id: "needs", type: "picks", req: true, max: 3, visible: 8, text: { id: "needs_text", max: 2000 },
+      opts: ["talk", "mental", "support", "friends", "growth", "work", "calm", "acceptance", "belonging", "money", "legal", "safety", "health", "love", "housing", "adaptation", "loneliness", "basics", "family"] },
     { id: "notes", type: "textarea", max: 4000 },
   ],
   simon: [
@@ -50,6 +53,8 @@ ru: {
   e_phone: "В номере должно быть от 10 до 15 цифр. Проверьте, все ли цифры на месте.",
   e_choice: "Выберите ответ.",
   e_text: "Напишите хотя бы пару слов.",
+  more: "Показать ещё {n}",
+  picked: "Выбрано {n} из {max}",
   e_summary: "Проверьте отмеченные поля и снова нажмите «Отправить анкету».",
   e_net: "Не удалось отправить анкету. Ответы сохранились на этой странице: проверьте интернет и снова нажмите «Отправить анкету».",
   thanks_t: "Спасибо, {name}!",
@@ -69,6 +74,8 @@ en: {
   e_phone: "The phone number needs 10 to 15 digits. Check for missing or extra digits.",
   e_choice: "Pick an answer.",
   e_text: "Write at least a few words.",
+  more: "Show {n} more",
+  picked: "{n} of {max} picked",
   e_summary: "Check the highlighted fields and select “Send” again.",
   e_net: "We couldn’t send your form. Your answers are still on this page: check your connection and select “Send” again.",
   thanks_t: "Thank you, {name}!",
@@ -96,7 +103,7 @@ gina: {
     q_contact: "Как с вами связаться", h_contact: "Звоним мы редко, но номер телефона нам нужен.",
     q_in_us: "Группа — для русскоязычных ЛГБТК+ людей, которые живут в США. Это про вас?",
     o_in_us: { yes: "Да", partly: "Не совсем" },
-    f_in_us: "Расскажите коротко, как у вас", fp_in_us: "Например: пока живу в другой стране", e_in_us_note: "Расскажите коротко, как у вас.",
+    f_in_us: "Расскажите подробнее", fp_in_us: "Например: пока живу в другой стране", e_in_us_note: "Расскажите подробнее, чтобы мы поняли, подойдёт ли вам группа.",
     q_regular: "Получится приходить на встречи регулярно?",
     q_immig: "Вам интересно узнать, как иммиграция влияет на психическое здоровье?",
     q_intro: "Найдёте 15 минут на знакомство с Джиной в Zoom до первой встречи?",
@@ -104,7 +111,15 @@ gina: {
     c_rules: "Обещаю соблюдать правила группы и конфиденциальность: то, что сказано в группе, остаётся в группе.",
     e_rules: "Отметьте, что согласны с правилами: без этого участвовать в группе нельзя.",
     q_expect: "Чего вы ждёте от группы?",
-    q_needs: "Назовите три главные потребности на сегодня", h_needs: "Своими словами, можно коротко.",
+    q_needs: "Что вам сейчас нужнее всего?", h_needs: "Выберите до трёх. Сверху — то, что участники группы называют чаще всего.",
+    o_needs: {
+      talk: "Общение", mental: "Психологическая помощь", support: "Поддержка и понимание", friends: "Друзья и новые знакомства",
+      growth: "Развитие и учёба", work: "Работа", calm: "Спокойствие, меньше тревоги", acceptance: "Принять себя и быть собой",
+      belonging: "Свои люди, сообщество", money: "Деньги, стабильный доход", legal: "Документы и легализация", safety: "Безопасность",
+      health: "Здоровье", love: "Отношения и любовь", housing: "Жильё", adaptation: "Адаптация на новом месте",
+      loneliness: "Не чувствовать себя одиноко", basics: "Еда и самое необходимое", family: "Отношения с семьёй",
+    },
+    t_needs: "Или своими словами", e_needs: "Выберите хотя бы один вариант или напишите своими словами.",
     q_notes: "Что ещё нам важно знать?",
     thanks_p: "Анкета у нас, мы скоро с вами свяжемся.",
   },
@@ -121,7 +136,7 @@ gina: {
     q_contact: "How can we reach you?", h_contact: "We rarely call, but we need a phone number.",
     q_in_us: "The group is for Russian-speaking LGBTQ+ people who live in the US. Is that you?",
     o_in_us: { yes: "Yes", partly: "Not exactly" },
-    f_in_us: "Tell us briefly how it is for you", fp_in_us: "For example: I live in another country for now", e_in_us_note: "Tell us briefly how it is for you.",
+    f_in_us: "Tell us more", fp_in_us: "For example: I live in another country for now", e_in_us_note: "Tell us more so we can see whether the group is right for you.",
     q_regular: "Can you come to meetings regularly?",
     q_immig: "Would you like to learn how immigration affects mental health?",
     q_intro: "Can you find 15 minutes for a Zoom intro with Gina before your first meeting?",
@@ -129,7 +144,15 @@ gina: {
     c_rules: "I promise to follow the group rules and keep confidentiality: what’s said in the group stays in the group.",
     e_rules: "Tick the box to agree to the rules: you can’t join the group without it.",
     q_expect: "What do you hope to get from the group?",
-    q_needs: "Name your three main needs right now", h_needs: "In your own words; short is fine.",
+    q_needs: "What do you need most right now?", h_needs: "Pick up to three. The top ones are what group members name most often.",
+    o_needs: {
+      talk: "Talking with people", mental: "Psychological help", support: "Support and understanding", friends: "Friends and new people",
+      growth: "Growth and learning", work: "Work", calm: "Calm, less anxiety", acceptance: "Accepting and being myself",
+      belonging: "My people, community", money: "Money, steady income", legal: "Papers and legal status", safety: "Safety",
+      health: "Health", love: "Relationships and love", housing: "Housing", adaptation: "Settling in somewhere new",
+      loneliness: "Feeling less alone", basics: "Food and basic needs", family: "Relationships with family",
+    },
+    t_needs: "Or in your own words", e_needs: "Pick at least one option or write it in your own words.",
     q_notes: "Anything else we should know?",
     thanks_p: "We’ve got your form and will be in touch soon.",
   },
@@ -194,6 +217,7 @@ const DRAFT_KEY = `qaravan.support.${GROUP}.v1`;
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const params = new URLSearchParams(location.search);
 let lang = "ru", sending = false, tried = false;
+const opened = new Set(); // списки «Показать ещё», которые уже раскрыли
 const A = {}; // ответы: текст — строкой, выбор — кодом, несколько вариантов — массивом, галочка — true/false
 const T = (k) => TEXTS[GROUP][lang][k] ?? COMMON[lang][k];
 const optsOf = (f) => T("o_" + f.id) || T("o_yesno");
@@ -297,6 +321,49 @@ function renderField(f) {
     }
     sync();
     fs.append(legend(f), wrap);
+  } else if (f.type === "picks") {
+    const wrap = el("div", { className: "chips", id: f.id, role: "group" });
+    wrap.setAttribute("aria-labelledby", f.id + "Q");
+    wrap.setAttribute("aria-describedby", f.id + "Count " + f.id + "Err");
+    const labels = optsOf(f);
+    const chosen = new Set(Array.isArray(A[f.id]) ? A[f.id].filter((c) => f.opts.includes(c)).slice(0, f.max) : []);
+    // раскрыт ли список: уже раскрывали или выбран вариант из скрытой части (черновик)
+    if (f.opts.slice(f.visible).some((c) => chosen.has(c))) opened.add(f.id);
+    const count = el("p", { className: "pick-count", id: f.id + "Count" });
+    count.setAttribute("aria-live", "polite");
+    const buttons = {};
+    const sync = () => {
+      const full = chosen.size >= f.max;
+      for (const [code, b] of Object.entries(buttons)) {
+        b.setAttribute("aria-pressed", chosen.has(code) ? "true" : "false");
+        if (full && !chosen.has(code)) b.setAttribute("aria-disabled", "true"); else b.removeAttribute("aria-disabled");
+      }
+      count.textContent = T("picked").replace("{n}", chosen.size).replace("{max}", f.max);
+    };
+    f.opts.forEach((code, i) => {
+      const b = el("button", { type: "button", textContent: labels[code], hidden: i >= f.visible && !opened.has(f.id) });
+      b.onclick = () => {
+        if (chosen.has(code)) chosen.delete(code);
+        else if (chosen.size < f.max) chosen.add(code);
+        else return; // уже выбрано max — сначала снимите один из выбранных
+        A[f.id] = f.opts.filter((c) => chosen.has(c));
+        sync(); onChange();
+      };
+      buttons[code] = b; wrap.append(b);
+    });
+    const rest = f.opts.length - f.visible;
+    const more = el("button", { type: "button", className: "na-link more", textContent: T("more").replace("{n}", rest), hidden: opened.has(f.id) || rest <= 0 });
+    more.setAttribute("aria-controls", f.id);
+    more.onclick = () => {
+      opened.add(f.id);
+      for (const b of Object.values(buttons)) b.hidden = false;
+      more.hidden = true;
+      buttons[f.opts[f.visible]].focus();
+    };
+    sync();
+    const t = f.text;
+    fs.append(legend(f), wrap, more, count, errorLine(f.id, T("e_" + f.id)),
+      el("div", { className: "field own-field" }, el("label", { className: "lbl", htmlFor: t.id }, T("t_" + f.id) + " ", el("span", { className: "opt", textContent: T("optional") })), textInput(t.id, t.max, { area: true })));
   } else if (f.type === "consent") {
     const i = el("input", { type: "checkbox", id: f.id, checked: A[f.id] === true });
     i.setAttribute("aria-describedby", f.id + "Err");
@@ -347,6 +414,8 @@ function problems() {
       else if (f.follow && A[f.id] === f.follow.when && !filled(f.follow.id)) bad.push(f.follow.id);
     } else if (f.type === "consent") {
       if (f.req && A[f.id] !== true) bad.push(f.id);
+    } else if (f.type === "picks") {
+      if (f.req && !(Array.isArray(A[f.id]) && A[f.id].length) && !filled(f.text.id)) bad.push(f.id);
     }
   }
   return bad;
@@ -395,7 +464,8 @@ function body() {
   const b = { website: $("website").value, group: GROUP, lang, name: A.name || "", email: A.email || "", phone: A.phone || "" };
   for (const f of FIELDS) {
     if (f.type === "contact" || f.id === "name") continue;
-    b[f.id] = f.type === "chips" ? (A[f.id] || []) : f.type === "consent" ? A[f.id] === true : (A[f.id] || "");
+    b[f.id] = f.type === "chips" || f.type === "picks" ? (A[f.id] || []) : f.type === "consent" ? A[f.id] === true : (A[f.id] || "");
+    if (f.text) b[f.text.id] = A[f.text.id] || "";
     if (f.follow) b[f.follow.id] = A[f.follow.id] || "";
   }
   return b;

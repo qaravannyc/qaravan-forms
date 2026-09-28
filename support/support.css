@@ -29,6 +29,14 @@ input[aria-invalid="true"],textarea[aria-invalid="true"]{border-color:var(--dang
 .opts.consent label:has(input:checked){font-weight:400}
 
 .opts+.field-hint,.chips+.field-hint{margin-top:12px}
+
+/* picks: ranked chips, "show more" under them, the counter, then the own-words field */
+.more{margin-top:10px}
+.more[hidden]{display:none}
+.pick-count{margin:10px 0 0; color:var(--q-muted); font:600 15px/1.2 var(--font-head); letter-spacing:.01em; font-variant-numeric:tabular-nums}
+.pick-count+.field-hint{margin-top:8px}
+.own-field{margin-top:24px}
+.own-field textarea{min-height:88px}
 .submit .err{margin-bottom:16px}
 #thanks h1:focus{outline:none}
 
