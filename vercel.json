@@ -23,6 +23,18 @@
       "destination": "/api/survey?form=event-volunteers"
     },
     {
+      "source": "/support/gina",
+      "destination": "/support/gina.html"
+    },
+    {
+      "source": "/support/simon",
+      "destination": "/support/simon.html"
+    },
+    {
+      "source": "/api/support-groups",
+      "destination": "/api/survey?form=support-groups"
+    },
+    {
       "source": "/feedback/:id(\\d+)/lead",
       "destination": "/api/page?id=:id&lead=1"
     },

@@ -1,0 +1,55 @@
+/* Support group sign-up forms (/support/gina, /support/simon). Needs qaravan.css and
+   forms.css first; only what these two pages add lives here. */
+
+/* opener: the intro in ink, the English line after it in muted (the second-language line) */
+.intro{margin:0; font:400 17px/1.5 var(--font-brand); color:var(--q-ink); text-wrap:pretty}
+.intro+.intro{margin-top:12px}
+.second{margin:12px 0 0; color:var(--q-muted); font-size:15px; line-height:1.45; text-wrap:pretty}
+.second[hidden]{display:none}
+/* the group rules: white, hairline, a sky bar */
+.note{margin:22px 0 0; padding:13px 18px 14px 24px; border:1px solid var(--q-line); box-shadow:inset 6px 0 0 var(--q-sky);
+  font:400 15.5px/1.45 var(--font-brand); text-wrap:pretty}
+.steps{margin:18px 0 0; font:600 16px/1.45 var(--font-brand); text-wrap:pretty}
+
+/* labelled fields inside one question: label, control, error as one group */
+.field+.field{margin-top:20px}
+.lbl{display:block; margin:0 0 8px; font:600 16px/1.3 var(--font-brand)}
+.field input,.field textarea{margin-top:0}
+.opt{color:var(--q-muted); font-weight:400; white-space:nowrap}
+input[aria-invalid="true"],textarea[aria-invalid="true"]{border-color:var(--danger)}
+.bad-group label,.bad-group.chips button{border-color:var(--danger)}
+
+/* two short one-choice rows side by side (Да / Нет) */
+.opts.two{grid-template-columns:1fr 1fr}
+/* a follow-up that opens under a choice (other pronouns, "not exactly") */
+.follow{margin-top:14px}
+.follow[hidden]{display:none}
+/* the rules consent: one checkbox row, the whole row is the target */
+.opts.consent label{font-weight:400}
+.opts.consent label:has(input:checked){font-weight:400}
+
+.opts+.field-hint,.chips+.field-hint{margin-top:12px}
+
+/* picked chips light up in brand colours, in the order they were picked; only colours
+   that keep the text readable (4.5:1+): orange, yellow, green with ink, purple with white */
+.chips button[aria-pressed="true"][data-c="0"]{background:var(--q-orange); border-color:var(--q-orange); color:var(--q-ink)}
+.chips button[aria-pressed="true"][data-c="1"]{background:var(--q-yellow); border-color:var(--q-yellow); color:var(--q-ink)}
+.chips button[aria-pressed="true"][data-c="2"]{background:var(--q-green); border-color:var(--q-green); color:var(--q-ink)}
+.chips button[aria-pressed="true"][data-c="3"]{background:var(--q-purple); border-color:var(--q-purple); color:var(--q-white)}
+
+/* picks: ranked chips, "show more" under them, the counter, then the "something else" field */
+.more{margin-top:10px}
+.more[hidden]{display:none}
+.pick-count{margin:10px 0 0; color:var(--q-muted); font:600 15px/1.2 var(--font-head); letter-spacing:.01em; font-variant-numeric:tabular-nums}
+.pick-count+.field-hint{margin-top:8px}
+.follow textarea{min-height:88px}
+.submit .err{margin-bottom:16px}
+#thanks h1:focus{outline:none}
+
+/* after sending: the Telegram community, white with a sky bar and one ink button */
+.tg{margin-top:28px; padding:22px 22px 24px 30px; border:1px solid var(--q-line); box-shadow:inset 6px 0 0 var(--q-sky)}
+.tg p{margin:0 0 14px; font-size:16px; text-wrap:pretty}
+.tg a{display:inline-flex; align-items:center; min-height:52px; padding:10px 24px; border:2px solid var(--q-ink); background:var(--q-ink);
+  color:var(--q-white); text-decoration:none; font:600 19px/1.15 var(--font-head); letter-spacing:.01em; transition:box-shadow .15s ease-out}
+.tg a:hover{box-shadow:inset 0 0 0 999px rgba(0,0,0,.14)}
+.tg a:active{transform:translateY(1px)}
