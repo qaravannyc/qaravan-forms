@@ -30,12 +30,12 @@ input[aria-invalid="true"],textarea[aria-invalid="true"]{border-color:var(--dang
 
 .opts+.field-hint,.chips+.field-hint{margin-top:12px}
 
-/* picked chips light up in brand colours, in the order they were picked; only colours
-   that keep the text readable (4.5:1+): orange, yellow, green with ink, purple with white */
+/* picked chips light up in brand colours, in the order they were picked. Design system:
+   only orange, yellow and green fill with ink labels (red, sky and purple never carry small
+   text), and yellow on white keeps an ink edge */
 .chips button[aria-pressed="true"][data-c="0"]{background:var(--q-orange); border-color:var(--q-orange); color:var(--q-ink)}
-.chips button[aria-pressed="true"][data-c="1"]{background:var(--q-yellow); border-color:var(--q-yellow); color:var(--q-ink)}
+.chips button[aria-pressed="true"][data-c="1"]{background:var(--q-yellow); border-color:var(--q-ink); color:var(--q-ink)}
 .chips button[aria-pressed="true"][data-c="2"]{background:var(--q-green); border-color:var(--q-green); color:var(--q-ink)}
-.chips button[aria-pressed="true"][data-c="3"]{background:var(--q-purple); border-color:var(--q-purple); color:var(--q-white)}
 
 /* picks: ranked chips, "show more" under them, the counter, then the "something else" field */
 .more{margin-top:10px}
