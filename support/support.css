@@ -15,7 +15,7 @@
 .field+.field{margin-top:20px}
 .lbl{display:block; margin:0 0 8px; font:600 16px/1.3 var(--font-brand)}
 .field input,.field textarea{margin-top:0}
-legend .opt{color:var(--q-muted); font-weight:400}
+.opt{color:var(--q-muted); font-weight:400; white-space:nowrap}
 input[aria-invalid="true"],textarea[aria-invalid="true"]{border-color:var(--danger)}
 .bad-group label,.bad-group.chips button{border-color:var(--danger)}
 
@@ -30,13 +30,19 @@ input[aria-invalid="true"],textarea[aria-invalid="true"]{border-color:var(--dang
 
 .opts+.field-hint,.chips+.field-hint{margin-top:12px}
 
-/* picks: ranked chips, "show more" under them, the counter, then the own-words field */
+/* picked chips light up in brand colours, in the order they were picked; only colours
+   that keep the text readable (4.5:1+): orange, yellow, green with ink, purple with white */
+.chips button[aria-pressed="true"][data-c="0"]{background:var(--q-orange); border-color:var(--q-orange); color:var(--q-ink)}
+.chips button[aria-pressed="true"][data-c="1"]{background:var(--q-yellow); border-color:var(--q-yellow); color:var(--q-ink)}
+.chips button[aria-pressed="true"][data-c="2"]{background:var(--q-green); border-color:var(--q-green); color:var(--q-ink)}
+.chips button[aria-pressed="true"][data-c="3"]{background:var(--q-purple); border-color:var(--q-purple); color:var(--q-white)}
+
+/* picks: ranked chips, "show more" under them, the counter, then the "something else" field */
 .more{margin-top:10px}
 .more[hidden]{display:none}
 .pick-count{margin:10px 0 0; color:var(--q-muted); font:600 15px/1.2 var(--font-head); letter-spacing:.01em; font-variant-numeric:tabular-nums}
 .pick-count+.field-hint{margin-top:8px}
-.own-field{margin-top:24px}
-.own-field textarea{min-height:88px}
+.follow textarea{min-height:88px}
 .submit .err{margin-bottom:16px}
 #thanks h1:focus{outline:none}
 

@@ -39,12 +39,12 @@ async function send(body, url) {
 }
 
 const gina = () => ({
-  group: "gina", lang: "ru", name: "  Алекс  Иванов ", email: "Alex@Example.com", phone: "(212) 555-0123",
+  group: "gina", lang: "ru", name: "  Алекс  Иванов ", email: "Alex@Example.com", phone: "(212) 555-0123", telegram: "https://t.me/alex_q", instagram: "",
   pronouns: "they", pronouns_other: "", in_us: "yes", in_us_note: "", regular: "yes", immig: "no", intro: "yes", rules: true,
   expect: "Поддержки.", needs: ["work", "talk", "nope", "work"], needs_text: "", notes: "",
 });
 const simon = () => ({
-  group: "simon", lang: "en", name: "Sasha Petrova", email: "sasha@example.com", phone: "+7 916 123-45-67",
+  group: "simon", lang: "en", name: "Sasha Petrova", email: "sasha@example.com", phone: "+7 916 123-45-67", instagram: "instagram.com/sasha.p",
   city: "Brooklyn, NY", identities: ["queer", "nonbinary", "nope"], format: "both", question: "Как найти психолога?", notes: "",
 });
 
@@ -61,6 +61,8 @@ test("Gina: a valid form becomes one row on her board with the board's labels", 
   assert.equal(cv.pronouns, "Они/Их");
   assert.deepEqual(cv.email, { email: "alex@example.com", text: "alex@example.com" });
   assert.deepEqual(cv.phone, { phone: "+12125550123", countryShortName: "US" });
+  assert.equal(cv.telegram, "@alex_q");
+  assert.equal("instagram" in cv, false);
   assert.deepEqual(cv.in_us, { label: "Yes" });
   assert.equal("in_us_note" in cv, false);
   assert.deepEqual(cv.regular, { label: "Yes" });
@@ -74,7 +76,8 @@ test("Gina: a valid form becomes one row on her board with the board's labels", 
   assert.deepEqual(cv.source, { label: "feedback.qaravan.org" });
   assert.deepEqual(cv.form_lang, { label: "RU" });
   assert.equal(upd.variables.i, "888");
-  assert.match(upd.variables.t, /^Анкета с формы feedback\.qaravan\.org\/support\/gina · язык формы: RU/);
+  assert.match(upd.variables.t, /^Анкета с формы feedback\.qaravan\.org\/support\/gina, язык формы: RU/);
+  assert.match(upd.variables.t, /Telegram: @alex_q/);
   assert.match(upd.variables.t, /Телефон: \+12125550123/);
   assert.match(upd.variables.t, /Что нужнее всего: Work, Talking with people/);
 });
@@ -88,17 +91,18 @@ test("Gina: own pronouns and «не совсем» are written as typed", async 
   assert.match(upd.variables.t, /не совсем — Пока в Мексике/);
 });
 
-test("Gina: needs — at most three picks, own words alone are enough, one of the two is required", async () => {
-  const { cv } = await send({ ...gina(), needs: ["talk", "mental", "support", "friends"], needs_text: "Найти психолога" });
-  assert.deepEqual(cv.needs_pick, { labels: ["Talking with people", "Psychological help", "Support & understanding"] });
+test("Gina: needs — up to three picks in pick order; «Другое» needs own words, which are kept only with it", async () => {
+  const { cv, upd } = await send({ ...gina(), needs: ["support", "other", "talk", "friends"], needs_text: "Найти психолога" });
+  assert.deepEqual(cv.needs_pick, { labels: ["Support & understanding", "Something else", "Talking with people"] });
   assert.deepEqual(cv.needs, { text: "Найти психолога" });
-  const { cv: cv2, upd } = await send({ ...gina(), needs: [], needs_text: "Жильё рядом с работой" });
-  assert.equal("needs_pick" in cv2, false);
-  assert.deepEqual(cv2.needs, { text: "Жильё рядом с работой" });
-  assert.match(upd.variables.t, /Что нужнее всего, своими словами:\nЖильё рядом с работой/);
-  const { res } = await send({ ...gina(), needs: ["nope"], needs_text: " " });
+  assert.match(upd.variables.t, /Что нужнее всего: Support & understanding, Something else, Talking with people\nДругое, своими словами:\nНайти психолога/);
+  const { cv: cv2 } = await send({ ...gina(), needs: ["talk"], needs_text: "осталось от «Другого»" });
+  assert.equal("needs" in cv2, false);
+  const { res } = await send({ ...gina(), needs: ["other"], needs_text: " " });
   assert.equal(res.statusCode, 400);
-  assert.deepEqual(JSON.parse(res.body).fields, ["needs"]);
+  assert.deepEqual(JSON.parse(res.body).fields, ["needs_text"]);
+  const { res: res2 } = await send({ ...gina(), needs: ["nope"], needs_text: "только текст" });
+  assert.deepEqual(JSON.parse(res2.body).fields, ["needs"]);
 });
 
 test("Gina: missing answers → 400 with the list, nothing written", async () => {
@@ -121,7 +125,9 @@ test("Simon: a valid form lands in the existing board's columns, labels as on th
   assert.deepEqual(cv.color, { label: "Remote and in-person" });
   assert.deepEqual(cv.long_text, { text: "Как найти психолога?" });
   assert.equal("long_text7" in cv, false);
-  assert.match(upd.variables.t, /support\/simon · язык формы: EN/);
+  assert.match(upd.variables.t, /support\/simon, язык формы: EN/);
+  assert.equal(cv.instagram, "@sasha.p");
+  assert.equal("telegram" in cv, false);
   assert.match(upd.variables.t, /Как удобнее встречаться: и так, и так/);
 });
 
@@ -147,7 +153,7 @@ test("every label the forms write exists on the boards", () => {
   for (const l of Object.values(S.IDENTITIES)) assert.ok(simonIdentities.includes(l), l);
   for (const l of Object.values(S.FORMAT)) assert.ok(simonFormat.includes(l), l);
   assert.deepEqual(Object.values(S.IN_US), ["Yes", "Not exactly"]);
-  const ginaNeeds = ["Talking with people", "Psychological help", "Support & understanding", "Friends & new people", "Growth & learning", "Work", "Calm, less anxiety", "Self-acceptance", "Community & belonging", "Money & steady income", "Papers & legal status", "Safety", "Health", "Relationships & love", "Housing", "Settling in", "Feeling less alone", "Food & basics", "Family relationships"];
+  const ginaNeeds = ["Something else", "Talking with people", "Psychological help", "Support & understanding", "Friends & new people", "Growth & learning", "Work", "Calm, less anxiety", "Self-acceptance", "Community & belonging", "Money & steady income", "Papers & legal status", "Safety", "Health", "Relationships & love", "Housing", "Settling in", "Feeling less alone", "Food & basics", "Family relationships"];
   assert.deepEqual(Object.values(S.NEEDS).sort(), [...ginaNeeds].sort());
 });
 

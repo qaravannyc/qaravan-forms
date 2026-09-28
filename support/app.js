@@ -6,7 +6,8 @@
 
 // ===== вопросы =====
 // type: text | contact (почта и телефон) | radio | chips (несколько вариантов) | consent | textarea |
-// picks (до max вариантов по популярности, первые visible видны сразу, ниже — «своими словами»).
+// picks (до max вариантов по популярности, первые visible видны сразу, «Другое» открывает поле).
+// Выбранные варианты chips и picks загораются цветами бренда по очереди выбора (PICK_COLORS).
 // follow — поле, которое открывается под вариантом when и тогда обязательно.
 const FORMS = {
   gina: [
@@ -20,8 +21,9 @@ const FORMS = {
     { id: "rules", type: "consent", req: true },
     { id: "expect", type: "textarea", req: true, max: 4000 },
     // варианты — по популярности в старых ответах (lib/support-groups.mjs, NEEDS); видны первые visible
-    { id: "needs", type: "picks", req: true, max: 3, visible: 8, text: { id: "needs_text", max: 2000 },
-      opts: ["talk", "mental", "support", "friends", "growth", "work", "calm", "acceptance", "belonging", "money", "legal", "safety", "health", "love", "housing", "adaptation", "loneliness", "basics", "family"] },
+    // «Другое» (other) — всегда видно последним и открывает поле text
+    { id: "needs", type: "picks", req: true, max: 3, visible: 8, other: "other", text: { id: "needs_text", max: 2000 },
+      opts: ["talk", "mental", "support", "friends", "growth", "work", "calm", "acceptance", "belonging", "money", "legal", "safety", "health", "love", "housing", "adaptation", "loneliness", "basics", "family", "other"] },
     { id: "notes", type: "textarea", max: 4000 },
   ],
   simon: [
@@ -43,8 +45,8 @@ const FORMS = {
 const COMMON = {
 ru: {
   language_label: "Язык формы",
-  optional: "·\u00a0по\u00a0желанию",
-  email: "Email", phone: "Телефон",
+  optional: "по\u00a0желанию",
+  email: "Email", phone: "Телефон", handle_ph: "@ник",
   o_yesno: { yes: "Да", no: "Нет" },
   send: "Отправить анкету",
   sending: "Отправляем…",
@@ -64,8 +66,8 @@ ru: {
 },
 en: {
   language_label: "Form language",
-  optional: "·\u00a0optional",
-  email: "Email", phone: "Phone",
+  optional: "optional",
+  email: "Email", phone: "Phone", handle_ph: "@username",
   o_yesno: { yes: "Yes", no: "No" },
   send: "Send",
   sending: "Sending…",
@@ -95,7 +97,7 @@ gina: {
     intro: ["Раз в неделю мы встречаемся в Zoom и говорим о жизни здесь, какая она есть: ожидание документов, поиск работы и жилья, семья на расстоянии, одиночество в большом городе. Это постоянная группа для русскоязычных ЛГБТК+ людей, которые живут в США. Ведёт группу Джина."],
     second: "A weekly Zoom support group for Russian-speaking LGBTQ+ people in the US, led by Gina.",
     note: RULES_RU,
-    steps: "Заполните анкету: мы свяжемся с вами, договоримся о коротком знакомстве с Джиной в Zoom и пришлём ссылку на встречу.",
+    steps: "Заполните анкету: мы свяжемся с вами, договоримся о коротком знакомстве в Zoom и пришлём ссылку на встречу.",
     q_name: "Как вас зовут?", h_name: "Имя и фамилия",
     q_pronouns: "Какие местоимения вы используете?", h_pronouns: "Так к вам будут обращаться в группе.",
     o_pronouns: { she: "Она/её", he: "Он/его", they: "Они/их", other: "Другие" },
@@ -106,7 +108,7 @@ gina: {
     f_in_us: "Расскажите подробнее", fp_in_us: "Например: пока живу в другой стране", e_in_us_note: "Расскажите подробнее, чтобы мы поняли, подойдёт ли вам группа.",
     q_regular: "Получится приходить на встречи регулярно?",
     q_immig: "Вам интересно узнать, как иммиграция влияет на психическое здоровье?",
-    q_intro: "Найдёте 15 минут на знакомство с Джиной в Zoom до первой встречи?",
+    q_intro: "Найдёте 15 минут на знакомство в Zoom до первой встречи?",
     q_rules: "Правила группы", h_rules: "Мы бережём комфорт и приватность каждого участника.",
     c_rules: "Обещаю соблюдать правила группы и конфиденциальность: то, что сказано в группе, остаётся в группе.",
     e_rules: "Отметьте, что согласны с правилами: без этого участвовать в группе нельзя.",
@@ -117,9 +119,9 @@ gina: {
       growth: "Развитие и учёба", work: "Работа", calm: "Спокойствие, меньше тревоги", acceptance: "Принять себя и быть собой",
       belonging: "Свои люди, сообщество", money: "Деньги, стабильный доход", legal: "Документы и легализация", safety: "Безопасность",
       health: "Здоровье", love: "Отношения и любовь", housing: "Жильё", adaptation: "Адаптация на новом месте",
-      loneliness: "Не чувствовать себя одиноко", basics: "Еда и самое необходимое", family: "Отношения с семьёй",
+      loneliness: "Не чувствовать себя одиноко", basics: "Еда и самое необходимое", family: "Отношения с семьёй", other: "Другое",
     },
-    t_needs: "Или своими словами", e_needs: "Выберите хотя бы один вариант или напишите своими словами.",
+    t_needs: "Напишите, что вам нужно", e_needs: "Выберите хотя бы один вариант.", e_needs_text: "Напишите, что вам нужно, или снимите «Другое».",
     q_notes: "Что ещё нам важно знать?",
     thanks_p: "Анкета у нас, мы скоро с вами свяжемся.",
   },
@@ -128,7 +130,7 @@ gina: {
     eyebrow: "Support group",
     intro: ["Once a week we meet on Zoom to talk about life here as it actually is: waiting on paperwork, looking for work and housing, family far away, feeling alone in a big city. It’s an ongoing group for Russian-speaking LGBTQ+ people living in the US. Gina leads the group."],
     note: RULES_EN,
-    steps: "Fill in the form: we’ll get in touch, set up a short Zoom intro with Gina and send you the meeting link.",
+    steps: "Fill in the form: we’ll get in touch, set up a short Zoom intro and send you the meeting link.",
     q_name: "What’s your name?", h_name: "First and last name",
     q_pronouns: "What are your pronouns?", h_pronouns: "So the group addresses you the right way.",
     o_pronouns: { she: "She/her", he: "He/him", they: "They/them", other: "Other" },
@@ -139,7 +141,7 @@ gina: {
     f_in_us: "Tell us more", fp_in_us: "For example: I live in another country for now", e_in_us_note: "Tell us more so we can see whether the group is right for you.",
     q_regular: "Can you come to meetings regularly?",
     q_immig: "Would you like to learn how immigration affects mental health?",
-    q_intro: "Can you find 15 minutes for a Zoom intro with Gina before your first meeting?",
+    q_intro: "Can you find 15 minutes for a Zoom intro before your first meeting?",
     q_rules: "Group rules", h_rules: "We look after every member’s comfort and privacy.",
     c_rules: "I promise to follow the group rules and keep confidentiality: what’s said in the group stays in the group.",
     e_rules: "Tick the box to agree to the rules: you can’t join the group without it.",
@@ -150,9 +152,9 @@ gina: {
       growth: "Growth and learning", work: "Work", calm: "Calm, less anxiety", acceptance: "Accepting and being myself",
       belonging: "My people, community", money: "Money, steady income", legal: "Papers and legal status", safety: "Safety",
       health: "Health", love: "Relationships and love", housing: "Housing", adaptation: "Settling in somewhere new",
-      loneliness: "Feeling less alone", basics: "Food and basic needs", family: "Relationships with family",
+      loneliness: "Feeling less alone", basics: "Food and basic needs", family: "Relationships with family", other: "Something else",
     },
-    t_needs: "Or in your own words", e_needs: "Pick at least one option or write it in your own words.",
+    t_needs: "Tell us what you need", e_needs: "Pick at least one option.", e_needs_text: "Tell us what you need, or unselect “Something else”.",
     q_notes: "Anything else we should know?",
     thanks_p: "We’ve got your form and will be in touch soon.",
   },
@@ -218,6 +220,26 @@ const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const params = new URLSearchParams(location.search);
 let lang = "ru", sending = false, tried = false;
 const opened = new Set(); // списки «Показать ещё», которые уже раскрыли
+// Цвета выбранных вариантов по очереди выбора — только те цвета бренда, на которых
+// текст читается (контраст ≥ 4,5): оранжевый, жёлтый, зелёный — с тёмным текстом,
+// фиолетовый — со светлым (support.css, .chips button[data-c]). Красный и голубой не проходят.
+const PICK_COLORS = 4;
+// Цвет держится за вариантом, пока он выбран: новому достаётся первый свободный.
+function paint(buttons, chosen) {
+  const used = new Set();
+  for (const [code, b] of Object.entries(buttons)) {
+    if (!chosen.has(code)) delete b.dataset.c;
+    else if (b.dataset.c != null) used.add(b.dataset.c);
+  }
+  for (const code of chosen) {
+    const b = buttons[code];
+    if (!b || b.dataset.c != null) continue;
+    let c = 0;
+    while (used.has(String(c)) && c < PICK_COLORS) c++;
+    if (c >= PICK_COLORS) c = used.size % PICK_COLORS; // выбрано больше, чем цветов, — по кругу
+    b.dataset.c = String(c); used.add(String(c));
+  }
+}
 const A = {}; // ответы: текст — строкой, выбор — кодом, несколько вариантов — массивом, галочка — true/false
 const T = (k) => TEXTS[GROUP][lang][k] ?? COMMON[lang][k];
 const optsOf = (f) => T("o_" + f.id) || T("o_yesno");
@@ -269,9 +291,15 @@ function renderField(f) {
     const email = textInput("email", 200, { auto: "email", type: "email", ph: "name@example.com" });
     const phone = textInput("phone", 40, { auto: "tel", type: "tel", ph: "+1 212 555 0123" });
     for (const i of [email, phone]) i.setAttribute("aria-required", "true");
+    const handle = (id, name) => {
+      const i = textInput(id, 100, { ph: T("handle_ph") });
+      i.autocomplete = "off"; i.autocapitalize = "off"; i.spellcheck = false;
+      return el("div", { className: "field" }, el("label", { className: "lbl", htmlFor: id }, name + " ", el("span", { className: "opt", textContent: T("optional") })), i);
+    };
     fs.append(legend(f),
       el("div", { className: "field" }, el("label", { className: "lbl", htmlFor: "email" }, T("email") + " ", star()), email, errorLine("email", T("e_email"))),
-      el("div", { className: "field" }, el("label", { className: "lbl", htmlFor: "phone" }, T("phone") + " ", star()), phone, errorLine("phone", T("e_phone"))));
+      el("div", { className: "field" }, el("label", { className: "lbl", htmlFor: "phone" }, T("phone") + " ", star()), phone, errorLine("phone", T("e_phone"))),
+      handle("telegram", "Telegram"), handle("instagram", "Instagram"));
   } else if (f.type === "radio") {
     const wrap = el("div", { className: "opts" + (f.two ? " two" : ""), id: f.id, role: "radiogroup" });
     wrap.setAttribute("aria-labelledby", f.id + "Q");
@@ -305,7 +333,7 @@ function renderField(f) {
     // по алфавиту на языке формы; «предпочитаю не отвечать» — всегда последним
     const order = [...f.opts].sort((a, b) => (a === f.exclusive) - (b === f.exclusive) || labels[a].localeCompare(labels[b], lang));
     const buttons = {};
-    const sync = () => { for (const [code, b] of Object.entries(buttons)) b.setAttribute("aria-pressed", chosen.has(code) ? "true" : "false"); };
+    const sync = () => { for (const [code, b] of Object.entries(buttons)) b.setAttribute("aria-pressed", chosen.has(code) ? "true" : "false"); paint(buttons, chosen); };
     for (const code of order) {
       const b = el("button", { type: "button", textContent: labels[code] });
       b.onclick = () => {
@@ -314,7 +342,7 @@ function renderField(f) {
           if (code === f.exclusive) chosen.clear(); else chosen.delete(f.exclusive);
           chosen.add(code);
         }
-        A[f.id] = f.opts.filter((c) => chosen.has(c));
+        A[f.id] = [...chosen]; // в порядке выбора
         sync(); onChange();
       };
       buttons[code] = b; wrap.append(b);
@@ -328,7 +356,7 @@ function renderField(f) {
     const labels = optsOf(f);
     const chosen = new Set(Array.isArray(A[f.id]) ? A[f.id].filter((c) => f.opts.includes(c)).slice(0, f.max) : []);
     // раскрыт ли список: уже раскрывали или выбран вариант из скрытой части (черновик)
-    if (f.opts.slice(f.visible).some((c) => chosen.has(c))) opened.add(f.id);
+    if (f.opts.slice(f.visible).some((c) => c !== f.other && chosen.has(c))) opened.add(f.id);
     const count = el("p", { className: "pick-count", id: f.id + "Count" });
     count.setAttribute("aria-live", "polite");
     const buttons = {};
@@ -339,19 +367,22 @@ function renderField(f) {
         if (full && !chosen.has(code)) b.setAttribute("aria-disabled", "true"); else b.removeAttribute("aria-disabled");
       }
       count.textContent = T("picked").replace("{n}", chosen.size).replace("{max}", f.max);
+      paint(buttons, chosen);
+      own.hidden = !chosen.has(f.other);
     };
     f.opts.forEach((code, i) => {
-      const b = el("button", { type: "button", textContent: labels[code], hidden: i >= f.visible && !opened.has(f.id) });
+      const b = el("button", { type: "button", textContent: labels[code], hidden: i >= f.visible && code !== f.other && !opened.has(f.id) });
       b.onclick = () => {
         if (chosen.has(code)) chosen.delete(code);
         else if (chosen.size < f.max) chosen.add(code);
         else return; // уже выбрано max — сначала снимите один из выбранных
-        A[f.id] = f.opts.filter((c) => chosen.has(c));
+        A[f.id] = [...chosen]; // в порядке выбора: первое — самое важное
         sync(); onChange();
+        if (code === f.other && chosen.has(code)) $(f.text.id).focus();
       };
       buttons[code] = b; wrap.append(b);
     });
-    const rest = f.opts.length - f.visible;
+    const rest = f.opts.length - f.visible - (f.other ? 1 : 0);
     const more = el("button", { type: "button", className: "na-link more", textContent: T("more").replace("{n}", rest), hidden: opened.has(f.id) || rest <= 0 });
     more.setAttribute("aria-controls", f.id);
     more.onclick = () => {
@@ -360,10 +391,13 @@ function renderField(f) {
       more.hidden = true;
       buttons[f.opts[f.visible]].focus();
     };
-    sync();
     const t = f.text;
-    fs.append(legend(f), wrap, more, count, errorLine(f.id, T("e_" + f.id)),
-      el("div", { className: "field own-field" }, el("label", { className: "lbl", htmlFor: t.id }, T("t_" + f.id) + " ", el("span", { className: "opt", textContent: T("optional") })), textInput(t.id, t.max, { area: true })));
+    const ownInput = textInput(t.id, t.max, { area: true });
+    ownInput.setAttribute("aria-required", "true");
+    const own = el("div", { className: "follow field", id: t.id + "Wrap" },
+      el("label", { className: "lbl", htmlFor: t.id, textContent: T("t_" + f.id) }), ownInput, errorLine(t.id, T("e_" + t.id)));
+    sync();
+    fs.append(legend(f), wrap, more, count, errorLine(f.id, T("e_" + f.id)), own);
   } else if (f.type === "consent") {
     const i = el("input", { type: "checkbox", id: f.id, checked: A[f.id] === true });
     i.setAttribute("aria-describedby", f.id + "Err");
@@ -415,7 +449,9 @@ function problems() {
     } else if (f.type === "consent") {
       if (f.req && A[f.id] !== true) bad.push(f.id);
     } else if (f.type === "picks") {
-      if (f.req && !(Array.isArray(A[f.id]) && A[f.id].length) && !filled(f.text.id)) bad.push(f.id);
+      const picked = Array.isArray(A[f.id]) ? A[f.id] : [];
+      if (f.req && !picked.length) bad.push(f.id);
+      else if (picked.includes(f.other) && !filled(f.text.id)) bad.push(f.text.id);
     }
   }
   return bad;
@@ -427,6 +463,7 @@ function errorIds() {
     if (f.type === "contact") ids.push("email", "phone");
     else if (f.type !== "chips") ids.push(f.id);
     if (f.follow) ids.push(f.follow.id);
+    if (f.text) ids.push(f.text.id);
   }
   return ids;
 }
@@ -461,11 +498,11 @@ function onChange() {
 
 // ===== отправка =====
 function body() {
-  const b = { website: $("website").value, group: GROUP, lang, name: A.name || "", email: A.email || "", phone: A.phone || "" };
+  const b = { website: $("website").value, group: GROUP, lang, name: A.name || "", email: A.email || "", phone: A.phone || "", telegram: A.telegram || "", instagram: A.instagram || "" };
   for (const f of FIELDS) {
     if (f.type === "contact" || f.id === "name") continue;
     b[f.id] = f.type === "chips" || f.type === "picks" ? (A[f.id] || []) : f.type === "consent" ? A[f.id] === true : (A[f.id] || "");
-    if (f.text) b[f.text.id] = A[f.text.id] || "";
+    if (f.text) b[f.text.id] = (A[f.id] || []).includes(f.other) ? A[f.text.id] || "" : "";
     if (f.follow) b[f.follow.id] = A[f.follow.id] || "";
   }
   return b;
