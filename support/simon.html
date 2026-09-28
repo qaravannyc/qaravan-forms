@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Группа равной поддержки с Саймоном</title>
+<meta name="description" content="Онлайн-группа равной поддержки: говорим на равных, делимся опытом и поддерживаем друг друга. Ведёт Саймон. Вход по анкете.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://feedback.qaravan.org/support/simon">
+<meta property="og:title" content="Группа равной поддержки с Саймоном">
+<meta property="og:description" content="Онлайн-группа равной поддержки: говорим на равных, делимся опытом и поддерживаем друг друга. Ведёт Саймон. Вход по анкете.">
+<meta name="theme-color" content="#ffffff">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/survey/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/survey/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/survey/apple-touch-icon.png">
+<link rel="preload" href="/assets/fonts/FiraSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/FiraSansCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/qaravan.css">
+<link rel="stylesheet" href="/assets/forms.css">
+<link rel="stylesheet" href="/support/support.css">
+</head>
+<!-- Sign-up form for the Peer Support Group with Simon: feedback.qaravan.org/support/simon.
+     The questions and all the texts live in /support/app.js; answers go to /api/support-groups
+     (lib/support-groups.mjs). -->
+<body data-group="simon">
+<div class="wrap">
+  <div class="top">
+    <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><img src="/assets/logo-wordmark.svg" width="140" height="28" alt="qaravan"></a>
+    <div class="lang" role="group" id="langSwitch" aria-label="Язык формы">
+      <button type="button" id="btnRu" aria-pressed="true">RU</button>
+      <button type="button" id="btnEn" aria-pressed="false">EN</button>
+    </div>
+  </div>
+
+  <div id="formView">
+    <header class="hero" id="hero">
+      <div class="eyebrow" style="--flag:var(--q-green)" id="eyebrow"></div>
+      <h1 id="title">Группа равной поддержки с Саймоном</h1>
+      <div id="intro"></div>
+      <p class="second" id="second" lang="en" hidden></p>
+      <p class="note" id="note"></p>
+      <p class="steps" id="steps"></p>
+    </header>
+
+    <noscript><p class="err show">Анкета работает только с включённым JavaScript. · The form needs JavaScript turned on.</p></noscript>
+
+    <form id="f" novalidate>
+      <input class="hp" type="text" name="website" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div id="fields"></div>
+      <div class="submit">
+        <p class="err" id="err" role="alert"></p>
+        <button type="submit" id="send">Отправить анкету</button>
+        <footer>qaravan.org</footer>
+      </div>
+    </form>
+  </div>
+
+  <div id="thanks">
+    <h1 id="thanksT" tabindex="-1"></h1>
+    <p class="intro" id="thanksP"></p>
+    <div class="tg">
+      <p id="tgP"></p>
+      <a id="tgBtn" href="https://t.me/rusaconnects" target="_blank" rel="noopener"></a>
+    </div>
+    <footer>qaravan.org</footer>
+  </div>
+</div>
+<script src="/support/app.js"></script>
+</body>
+</html>
