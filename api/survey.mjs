@@ -9,6 +9,13 @@
 // колонок (правило репозитория: структура доски — по-английски, содержимое —
 // можно по-русски). Коды и соответствия задокументированы в survey/CODEBOOK.md
 // и должны совпадать с конфигом Q в survey/index.html.
+//
+// Эта же функция принимает анкету волонтёра (POST /api/volunteer →
+// /api/survey?form=volunteer, см. vercel.json): отдельной функции у неё нет,
+// потому что на плане Hobby в api/ не больше 12 функций. Вся её логика —
+// в lib/volunteer.mjs.
+import { volunteerHandler } from "../lib/volunteer.mjs";
+
 const MONDAY = "https://api.monday.com/v2";
 const SURVEY_BOARD = "18426996689";
 const GROUP_IN_PROGRESS = "group_mm6bbh6g";
@@ -295,6 +302,9 @@ function updateText(a, meta, repeat) {
 }
 
 export default async function handler(req, res) {
+  const u = new URL(req.url, "https://x");
+  if (u.searchParams.get("form") === "volunteer" || /\/api\/volunteer\/?$/.test(u.pathname)) return volunteerHandler(req, res);
+
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "no-store");
 
