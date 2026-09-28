@@ -8,7 +8,10 @@ import assert from "node:assert/strict";
 process.env.MONDAY_TOKEN = "fake";
 const calls = [];
 let failFirstCreate = false;
+const mails = [];
 globalThis.fetch = async (url, opts = {}) => {
+  if (String(url).startsWith("https://oauth2.googleapis.com/")) return new Response(JSON.stringify({ access_token: "tok" }));
+  if (String(url).startsWith("https://gmail.googleapis.com/")) { mails.push(Buffer.from(JSON.parse(opts.body).raw, "base64url").toString("utf8")); return new Response("{}"); }
   const { query, variables } = JSON.parse(opts.body);
   calls.push({ query, variables });
   if (query.includes("create_item")) {
@@ -20,6 +23,7 @@ globalThis.fetch = async (url, opts = {}) => {
 };
 
 const S = await import("../lib/support-groups.mjs");
+const M = await import("../lib/support-mail.mjs");
 const survey = (await import("../api/survey.mjs")).default;
 
 function fakeReq(body, url = "/api/survey?form=support-groups", method = "POST") {
@@ -182,4 +186,49 @@ test("the plain /api/support-groups path is routed too; event volunteers still g
   const { res: res2 } = await send({}, "/api/event-volunteers");
   assert.equal(res2.statusCode, 400); // event volunteers' own validation answered
   assert.deepEqual(JSON.parse(res2.body).fields, ["name", "phone", "email", "roles", "months"]);
+});
+
+test("team email: sections, links, needs in Russian, everything escaped, no middle dots", () => {
+  const { p } = S.parseSignup({ ...gina(), name: "Алекс <b>Иванов</b>", needs: ["mental", "other"], needs_text: "Психолог & юрист", notes: "Строка 1\nСтрока 2" });
+  const { subject, html } = M.signupEmail(p, { itemUrl: "https://qaravan.monday.com/boards/1/pulses/2", now: new Date("2026-09-28T22:20:00Z") });
+  assert.equal(subject, "Новая анкета в группу поддержки с Джиной: Алекс <b>Иванов</b>");
+  assert.match(html, /Алекс &lt;b&gt;Иванов&lt;\/b&gt;/);
+  assert.doesNotMatch(html, /<b>Иванов/);
+  assert.match(html, /28 сентября в 18:20 по Нью-Йорку/);
+  assert.match(html, /href="mailto:alex@example\.com"/);
+  assert.match(html, /href="tel:\+12125550123"/);
+  assert.match(html, /href="https:\/\/t\.me\/alex_q"/);
+  assert.match(html, /Психологическая помощь/);
+  assert.match(html, /Другое: Психолог &amp; юрист/);
+  assert.match(html, /Строка 1<br>Строка 2/);
+  assert.match(html, /href="https:\/\/qaravan\.monday\.com\/boards\/1\/pulses\/2"/);
+  assert.equal(html.includes("·"), false);
+  const { p: ps } = S.parseSignup(simon());
+  const s2 = M.signupEmail(ps, {});
+  assert.match(s2.html, /Квир/);
+  assert.match(s2.html, /href="https:\/\/instagram\.com\/sasha\.p"/);
+  assert.doesNotMatch(s2.html, /Открыть в monday/); // без ссылки на строку — без кнопки
+});
+
+test("team email: every option has a Russian name; recipients can be overridden", () => {
+  assert.deepEqual(Object.keys(M.NEEDS_RU).sort(), Object.keys(S.NEEDS).sort());
+  assert.deepEqual(Object.keys(M.IDENTITIES_RU).sort(), Object.keys(S.IDENTITIES).sort());
+  assert.deepEqual(M.recipients("simon", {}), ["ezra@qaravan.org"]);
+  assert.deepEqual(M.recipients("gina", { SUPPORT_NOTIFY_GINA: " gina@rusalgbtq.org, nope ,ezra@qaravan.org" }), ["gina@rusalgbtq.org", "ezra@qaravan.org"]);
+  assert.deepEqual(M.recipients("gina", { SUPPORT_NOTIFY_GINA: "" }), []);
+});
+
+test("a sign-up sends the team email with the row link; a failed email doesn't fail the sign-up", async () => {
+  process.env.GOOGLE_REFRESH_TOKEN = "fake";
+  mails.length = 0;
+  const { res } = await send(gina());
+  assert.equal(res.body, '{"ok":true}');
+  assert.equal(mails.length, 1);
+  assert.match(mails[0], /^From: QARAVAN <info@qaravan\.org>\r\nTo: ezra@qaravan\.org\r\n/);
+  assert.match(mails[0], /boards\/18433061986\/pulses\/888/);
+  delete process.env.GOOGLE_REFRESH_TOKEN; // без токена письмо не уходит, а анкета принимается
+  mails.length = 0;
+  const { res: res2 } = await send(simon());
+  assert.equal(res2.body, '{"ok":true}');
+  assert.equal(mails.length, 0);
 });
