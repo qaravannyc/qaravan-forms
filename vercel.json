@@ -15,6 +15,14 @@
       "destination": "/letter/index.html"
     },
     {
+      "source": "/event-volunteers",
+      "destination": "/event-volunteers/index.html"
+    },
+    {
+      "source": "/api/event-volunteers",
+      "destination": "/api/survey?form=event-volunteers"
+    },
+    {
       "source": "/feedback/:id(\\d+)/lead",
       "destination": "/api/page?id=:id&lead=1"
     },
