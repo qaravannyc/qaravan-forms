@@ -1,7 +1,7 @@
-// Checks for the volunteer sign-up handler (lib/volunteer.mjs) with a fake
+// Checks for the volunteer sign-up handler (lib/event-volunteers.mjs) with a fake
 // monday API: code → label mapping, phone and handle clean-up, the month
 // window, validation, the honeypot and the retry without the phone column.
-// Run: node --test tools/volunteer.test.mjs
+// Run: node --test tools/event-volunteers.test.mjs
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -19,10 +19,10 @@ globalThis.fetch = async (url, opts = {}) => {
   return new Response(JSON.stringify({ errors: [{ message: "unexpected" }] }));
 };
 
-const V = await import("../lib/volunteer.mjs");
+const V = await import("../lib/event-volunteers.mjs");
 const survey = (await import("../api/survey.mjs")).default;
 
-function fakeReq(body, url = "/api/survey?form=volunteer", method = "POST") {
+function fakeReq(body, url = "/api/survey?form=event-volunteers", method = "POST") {
   const buf = Buffer.from(typeof body === "string" ? body : JSON.stringify(body));
   return { method, url, async *[Symbol.asyncIterator]() { yield buf; } };
 }
@@ -140,10 +140,10 @@ test("if monday rejects the phone, the row is created without it and the number 
   assert.match(calls.find((c) => c.query.includes("create_update")).variables.t, /Телефон: \+12125550123/);
 });
 
-test("the plain /api/volunteer path is routed too; other survey requests are untouched", async () => {
+test("the plain /api/event-volunteers path is routed too; other survey requests are untouched", async () => {
   calls.length = 0;
   const res = fakeRes();
-  await survey(fakeReq(valid(), "/api/volunteer"), res);
+  await survey(fakeReq(valid(), "/api/event-volunteers"), res);
   assert.equal(res.body, '{"ok":true}');
   const res2 = fakeRes();
   await survey(fakeReq({}, "/api/survey", "PUT"), res2);

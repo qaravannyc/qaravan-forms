@@ -2,11 +2,11 @@
 <html lang="ru"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Стать волонтёром QARAVAN</title>
+<title>Стать волонтёром событий QARAVAN</title>
 <meta name="description" content="События QARAVAN теперь придумывают и ведут люди из сообщества. Шесть ролей, помогать можно хоть раз в пару месяцев.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://feedback.qaravan.org/volunteer">
-<meta property="og:title" content="Стать волонтёром QARAVAN">
+<meta property="og:url" content="https://feedback.qaravan.org/event-volunteers">
+<meta property="og:title" content="Стать волонтёром событий QARAVAN">
 <meta property="og:description" content="События QARAVAN теперь придумывают и ведут люди из сообщества. Шесть ролей, помогать можно хоть раз в пару месяцев.">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/survey/favicon.svg" type="image/svg+xml">
@@ -21,6 +21,10 @@
 .intro{margin:0; font:400 17px/1.5 var(--font-brand); color:var(--q-ink); text-wrap:pretty}
 .second{margin:12px 0 0; color:var(--q-muted); font-size:15px; line-height:1.45; text-wrap:pretty}
 .second[hidden]{display:none}
+
+/* the note that tells the events team apart from general volunteering: white, hairline, a sky bar */
+.note{margin:22px 0 0; padding:13px 18px 14px 24px; border:1px solid var(--q-line); box-shadow:inset 6px 0 0 var(--q-sky);
+  font:400 15.5px/1.45 var(--font-brand); text-wrap:pretty}
 
 /* labelled fields inside one question: label, control, error as one group */
 .field+.field{margin-top:20px}
@@ -72,10 +76,11 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 
   <div id="formView">
     <header class="hero" id="hero">
-      <div class="eyebrow" style="--flag:var(--q-orange)" data-i18n="eyebrow">Волонтёрство</div>
-      <h1 data-i18n="title">Стать волонтёром QARAVAN</h1>
+      <div class="eyebrow" style="--flag:var(--q-orange)" data-i18n="eyebrow">Волонтёры событий</div>
+      <h1 data-i18n="title">Стать волонтёром событий QARAVAN</h1>
       <p class="intro" data-i18n="intro">События QARAVAN теперь придумывают и ведут люди из сообщества, а мы помогаем. Есть шесть ролей на выбор, и помогать можно хоть раз в пару месяцев. Мы всё покажем и дадим доступы.</p>
       <p class="second" id="second" lang="en">Help run QARAVAN events: pick a role and the months that work for you, and we’ll show you the ropes.</p>
+      <p class="note"><span data-i18n="note"></span> <a href="https://www.qaravan.org/volunteer" data-i18n="note_link"></a></p>
     </header>
 
     <form id="f" novalidate>
@@ -163,7 +168,7 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 // продлевается сам: править ничего не нужно. Метки месяцев на доске monday
 // («Октябрь 2026») сервер создаёт сам, когда месяц впервые выбирают.
 const MONTHS_AHEAD = 6;
-const DRAFT_KEY = "qaravan.volunteer.v1";
+const DRAFT_KEY = "qaravan.event-volunteers.v1";
 
 // ===== все тексты — редактируются здесь =====
 // Названия ролей остаются по-английски в обоих языках: так они называются на доске.
@@ -172,9 +177,11 @@ const ROLE_NAMES = { lead: "Event lead", planner: "Planner", maker: "Maker", pub
 const STRINGS = {
 ru: {
   language_label: "Язык формы",
-  eyebrow: "Волонтёрство",
-  title: "Стать волонтёром QARAVAN",
+  eyebrow: "Волонтёры событий",
+  title: "Стать волонтёром событий QARAVAN",
   intro: "События QARAVAN теперь придумывают и ведут люди из сообщества, а мы помогаем. Есть шесть ролей на выбор, и помогать можно хоть раз в пару месяцев. Мы всё покажем и дадим доступы.",
+  note: "Это запись в команду, которая делает события. Хотите помогать QARAVAN по-другому — с переводами, на Прайде или как-то ещё?",
+  note_link: "Заполните общую анкету волонтёра",
   q_name: "Как вас зовут?",
   name_hint: "Имя, которым вы пользуетесь",
   pronouns: "Местоимения",
@@ -217,9 +224,11 @@ ru: {
 },
 en: {
   language_label: "Form language",
-  eyebrow: "Volunteering",
-  title: "Volunteer with QARAVAN",
+  eyebrow: "Event volunteers",
+  title: "Volunteer at QARAVAN events",
   intro: "QARAVAN events are now created and led by people from our community, with our support. There are six roles to choose from, and you can help as little as once every couple of months. We’ll walk you through everything and set up your access.",
+  note: "This sign-up is for the team that runs our events. Want to help QARAVAN in another way — with translation, at Pride or otherwise?",
+  note_link: "Fill in the general volunteer form",
   q_name: "What’s your name?",
   name_hint: "The name you go by",
   pronouns: "Pronouns",
@@ -408,7 +417,7 @@ $("f").addEventListener("submit", async (ev) => {
     frequency: freq, attended, notes: $("notes").value, lang,
   };
   try {
-    const r = await fetch("/api/volunteer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const r = await fetch("/api/event-volunteers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
     // сервер проверяет те же поля; если он что-то отклонил — показываем, что именно
     if (r.status === 400 && Array.isArray(j.fields) && j.fields.length) {

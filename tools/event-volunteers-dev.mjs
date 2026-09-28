@@ -1,8 +1,8 @@
-// Local dev/test server for the volunteer sign-up page (/volunteer): serves the
+// Local dev/test server for the event volunteers sign-up page (/event-volunteers): serves the
 // repo's static files and mounts api/survey.mjs the way vercel.json does
-// (/api/volunteer → /api/survey?form=volunteer) against an in-memory fake of
+// (/api/event-volunteers → /api/survey?form=event-volunteers) against an in-memory fake of
 // the monday API (no token needed, nothing is written anywhere).
-// Usage: node tools/volunteer-dev.mjs [port]   — then open http://localhost:3998/volunteer
+// Usage: node tools/event-volunteers-dev.mjs [port]   — then open http://localhost:3998/event-volunteers
 // GET /__db shows what the form would have written to the board.
 import http from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
@@ -36,11 +36,11 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; ch
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
-    if (u.pathname === "/api/volunteer") { req.url = "/api/survey?form=volunteer"; return await survey(req, res); }
+    if (u.pathname === "/api/event-volunteers") { req.url = "/api/survey?form=event-volunteers"; return await survey(req, res); }
     if (u.pathname === "/__db") { res.setHeader("Content-Type", "application/json"); return res.end(JSON.stringify(DB, null, 1)); }
-    const p = u.pathname === "/volunteer" ? "/volunteer/index.html" : u.pathname;
+    const p = u.pathname === "/event-volunteers" ? "/event-volunteers/index.html" : u.pathname;
     const f = join(root, p);
     if (existsSync(f) && statSync(f).isFile()) { res.setHeader("Content-Type", TYPES[extname(f)] || "application/octet-stream"); return res.end(readFileSync(f)); }
     res.statusCode = 404; res.end("not found");
   } catch (e) { console.error(e); res.statusCode = 500; res.end("error"); }
-}).listen(port, () => console.log("volunteer dev server on http://localhost:" + port + "/volunteer"));
+}).listen(port, () => console.log("event volunteers dev server on http://localhost:" + port + "/event-volunteers"));

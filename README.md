@@ -14,7 +14,7 @@ Vercel на плане Hobby не деплоит приватные репози
 - `/feedback/<monday-item-id>` и `/feedback/<monday-item-id>/lead` — те же формы, старый вид ссылки
 - `/survey` — исследование потребностей сообщества 2026 (папка `survey/`, отправка через `api/survey.mjs`)
 - `/letter` — анкета на письмо поддержки для иммиграционного дела (папка `letter/`, приём через `api/letter.mjs`)
-- `/volunteer` — запись волонтёров на роли организаторов событий по месяцам (папка `volunteer/`, приём через `/api/volunteer`)
+- `/event-volunteers` — запись волонтёров событий на роли организаторов по месяцам (папка `event-volunteers/`, приём через `/api/event-volunteers`). Это не общая запись волонтёров — та живёт на qaravan.org/volunteer
 
 ID в ссылке — это id строки события на доске Event Calendar в monday.
 
@@ -101,9 +101,9 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
 - Локально: `node tools/letter-dev.mjs` — сервер на :3999 с поддельным monday
   (ничего никуда не пишет), удобно прокликать анкету целиком.
 
-## Запись волонтёров (`/volunteer`)
+## Запись волонтёров событий (`/event-volunteers`)
 
-Анкета «Стать волонтёром QARAVAN»: `feedback.qaravan.org/volunteer`. Одна
+Анкета «Стать волонтёром событий QARAVAN» — для команды, которая придумывает и ведёт события (не путать с общей записью волонтёров на qaravan.org/volunteer, куда пишутся все; анкета сама отсылает туда тех, кто хочет помогать иначе): `feedback.qaravan.org/event-volunteers`. Одна
 страница, RU/EN: имя, местоимения, Telegram, Instagram, телефон и почта
 (обязательны), шесть ролей карточками с описанием и часами, месяцы, как часто,
 был(а) ли на событиях, комментарий. Черновик держится в localStorage до отправки.
@@ -114,18 +114,18 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
   со следующего. Метку нового месяца («Апрель 2027») на доске сервер создаёт сам
   при первой заявке (`create_labels_if_missing`). Представление «Команда: …» и
   график в «Сводке» для нового месяца на доске добавляются вручную.
-- Приём — `lib/volunteer.mjs`. Своей функции нет (лимит 12 функций на Hobby):
-  `vercel.json` переписывает `/api/volunteer` на `/api/survey?form=volunteer`,
-  и `api/survey.mjs` первой строкой отдаёт такой запрос в `lib/volunteer.mjs`.
+- Приём — `lib/event-volunteers.mjs`. Своей функции нет (лимит 12 функций на Hobby):
+  `vercel.json` переписывает `/api/event-volunteers` на `/api/survey?form=event-volunteers`,
+  и `api/survey.mjs` первой строкой отдаёт такой запрос в `lib/event-volunteers.mjs`.
 - Заявки ложатся на приватную доску monday **Волонтёры — запись на роли**
   (id `18432838181`), группа «Заявки»: одна заявка — одна строка со статусом
   «Новая», плюс апдейт с полным текстом ответов. Колонки и метки этой доски
   названы по-русски по просьбе команды — исключение из правила выше; метки в
-  `lib/volunteer.mjs` должны совпадать с доской символ в символ. Уведомление
+  `lib/event-volunteers.mjs` должны совпадать с доской символ в символ. Уведомление
   о новой заявке и напоминания — автоматизации самой доски.
-- Локально: `node tools/volunteer-dev.mjs` — сервер на :3998 с поддельным
+- Локально: `node tools/event-volunteers-dev.mjs` — сервер на :3998 с поддельным
   monday, `/__db` показывает, что ушло бы на доску. Проверки:
-  `node --test tools/volunteer.test.mjs`.
+  `node --test tools/event-volunteers.test.mjs`.
 
 ## Дизайн
 
