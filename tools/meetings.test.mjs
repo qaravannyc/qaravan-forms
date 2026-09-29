@@ -1,7 +1,7 @@
 // Checks for the meeting-link emails (lib/meetings.mjs) with an in-memory store instead of
 // monday and a fake Gmail: the private link, defaults from the last meeting, the send
-// (one email, everyone in Bcc, the leader in To), the remembered ticks, people added by
-// hand, and the day-before prompt. Run: node --test tools/meetings.test.mjs
+// (one email, everyone in Bcc, the leader in To), the remembered ticks (Gina: status Joined),
+// people added by hand, and the day-before prompt. Run: node --test tools/meetings.test.mjs
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -114,6 +114,40 @@ test("send: one email, leader in To, everyone else in Bcc, replies to the leader
   assert.equal(saved.mail.text, "Всем привет!\n\nС любовью, Джина 🌈");
   assert.equal(saved.mail.sent.at(-1).n, 2);
   assert.doesNotMatch(s.notes[0].text, /@example\.com/); // в ленте календаря — без адресов участников
+});
+
+test("who gets the emails on the board: Gina — status Joined, Simon — the checkbox", async () => {
+  assert.equal(M.isOn("gina", { sg_status: { text: "Joined" } }), true);
+  for (const st of ["New", "Contacted", "Intro call done", "Not now", ""]) assert.equal(M.isOn("gina", { sg_status: { text: st } }), false);
+  assert.equal(M.isOn("simon", { mailing: { value: '{"checked":"true"}' } }), true);
+  assert.equal(M.isOn("simon", { mailing: { value: null } }), false);
+  assert.deepEqual(M.mailingValue("gina", true), { sg_status: { label: "Joined" } });
+  assert.deepEqual(M.mailingValue("gina", false), { sg_status: { label: "Not now" } });
+  assert.deepEqual(M.mailingValue("simon", false), { mailing: null });
+
+  // настоящий store против поддельного monday: что читается и что пишется на доску Джины
+  const calls = [], real = globalThis.fetch;
+  globalThis.fetch = async (url, opts = {}) => {
+    if (String(url) !== "https://api.monday.com/v2") return real(url, opts);
+    const { query, variables } = JSON.parse(opts.body); calls.push({ query, variables });
+    if (query.includes("items_page")) return new Response(JSON.stringify({ data: { boards: [{ items_page: { items: [
+      { id: "1", name: "Алекс", created_at: "2026-01-01T10:00:00Z", column_values: [{ id: "email", text: "alex@example.com" }, { id: "sg_status", text: "Joined" }] },
+      { id: "2", name: "Мария", created_at: "2026-09-29T10:00:00Z", column_values: [{ id: "email", text: "maria@example.com" }, { id: "sg_status", text: "New" }] },
+    ] } }] } }));
+    return new Response(JSON.stringify({ data: { create_item: { id: "3" } } }));
+  };
+  try {
+    M.setStore(null);
+    const rows = await M.mondayStore.people("gina");
+    assert.deepEqual(rows.map((r) => [r.email, r.checked, r.status]), [["alex@example.com", true, "Joined"], ["maria@example.com", false, "New"]]);
+    assert.doesNotMatch(calls[0].query, /mailing/);
+    await M.mondayStore.setMailing("gina", [{ id: "1", checked: false }, { id: "2", checked: true }]);
+    assert.deepEqual([calls[1].variables.v0, calls[1].variables.v1].map((v) => JSON.parse(v)), [{ sg_status: { label: "Not now" } }, { sg_status: { label: "Joined" } }]);
+    await M.mondayStore.addPerson("gina", { name: "Новый", email: "new@example.com" });
+    assert.deepEqual(JSON.parse(calls[2].variables.v), { email: { email: "new@example.com", text: "new@example.com" }, sg_status: { label: "Joined" }, source: { label: "Added by hand" } });
+    await M.mondayStore.addPerson("simon", { name: "Новый", email: "new@example.com" });
+    assert.deepEqual(JSON.parse(calls[3].variables.v), { email_2: { email: "new@example.com", text: "new@example.com" }, mailing: { checked: "true" } });
+  } finally { globalThis.fetch = real; }
 });
 
 test("send: bad input is refused before anything is written or sent", async () => {

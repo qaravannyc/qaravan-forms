@@ -187,7 +187,9 @@ function renderSent() {
   document.title = `Письмо участникам: ${j.meeting.line}`;
   $("groupTitle").textContent = j.title;
   $("when").textContent = j.meeting.line;
-  $("bccHint").textContent = `Все получат одно письмо в скрытой копии и не увидят адреса друг друга. Копия придёт вам на ${j.leaderEmail}, ответы участников — тоже вам. Галочки запоминаются до следующей встречи.`;
+  $("bccHint").textContent = `Все получат одно письмо в скрытой копии и не увидят адреса друг друга. Копия придёт вам на ${j.leaderEmail}, ответы участников — тоже вам. ` +
+    (j.member ? "Галочка — это статус на доске: отметите человека — он станет «в группе» и будет получать письма и дальше; снимете — «не сейчас». Новые анкеты приходят без галочки."
+      : "Галочки запоминаются до следующей встречи.");
   $("cancelNote").hidden = !j.meeting.cancelled;
   $("link").value = j.link || ""; $("dial").value = j.dial || ""; $("subject").value = j.subject || ""; $("text").value = j.text || "";
   loadDraft();
