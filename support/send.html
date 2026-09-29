@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Письмо участникам встречи</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="/survey/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/survey/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="preload" href="/assets/fonts/FiraSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/FiraSansCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/qaravan.css">
+<link rel="stylesheet" href="/assets/forms.css">
+<link rel="stylesheet" href="/support/support.css">
+<style>
+/* the send page for support group leaders: see /support/send.js and lib/meetings.mjs */
+.hero{opacity:1; transform:none}
+.field .hint{margin:0 0 10px}
+input[type="url"]{width:100%; min-height:44px; padding:9px 12px; border:2px solid var(--q-edge); border-radius:0; background:var(--q-white);
+  color:var(--q-ink); font:400 16px/1.4 var(--font-brand); -webkit-appearance:none; appearance:none}
+input[type="url"]:hover{border-color:var(--q-ink)}
+input[type="url"]:focus{border-color:var(--q-ink); outline:3px solid var(--accent); outline-offset:0}
+#text{min-height:300px}
+
+/* who gets it: tools row, then one row per person under hairlines */
+.tools{display:flex; flex-wrap:wrap; align-items:center; gap:6px 18px; margin:14px 0 4px}
+.tools .na-link{margin-top:0; min-height:40px}
+.count{margin:0 0 0 auto; font:600 15px/1.2 var(--font-head); letter-spacing:.01em; color:var(--q-muted); font-variant-numeric:tabular-nums}
+.people{margin-top:8px; border-top:1px solid var(--q-line)}
+.people h3{margin:22px 0 4px; font:700 18px/1.2 var(--font-head); letter-spacing:-.005em}
+.person{display:grid; grid-template-columns:22px minmax(0,1fr); column-gap:14px; align-items:start; padding:12px 0 13px;
+  border-bottom:1px solid var(--q-line); cursor:pointer}
+.person input{margin-top:1px}
+.person .nm{font:600 16px/1.35 var(--font-brand)}
+.person .em{font-size:15px; line-height:1.4; color:var(--q-muted); overflow-wrap:anywhere}
+.person .meta{margin-top:3px; font:600 13.5px/1.3 var(--font-head); letter-spacing:.01em; color:var(--q-muted)}
+.person:hover .nm{text-decoration:underline; text-decoration-color:var(--q-sky); text-decoration-thickness:2px; text-underline-offset:3px}
+.person[hidden]{display:none}
+.empty{margin:14px 0 0; color:var(--q-muted); font-size:15px}
+
+/* add someone by hand */
+.add{display:grid; grid-template-columns:1fr; gap:10px; margin-top:24px; padding-top:20px; border-top:1px solid var(--q-line)}
+.add .lbl{margin:0}
+.add input{margin-top:0}
+@media (min-width:520px){ .add{grid-template-columns:1fr 1fr auto; align-items:end} .add .lbl{grid-column:1 / -1} }
+.btn-line{display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 18px; border:2px solid var(--q-ink);
+  background:var(--q-white); color:var(--q-ink); font:600 17px/1.15 var(--font-head); letter-spacing:.01em; cursor:pointer}
+.btn-line:hover{background:var(--q-line)}
+.btn-line:active{transform:translateY(1px)}
+
+/* how participants will see it */
+.preview{margin-top:14px; padding:22px 22px 24px; border:1px solid var(--q-line)}
+.preview p{margin:0 0 14px; white-space:pre-wrap; text-wrap:pretty}
+.preview .block{margin-top:10px; padding-top:18px; border-top:1px solid var(--q-line)}
+.preview .when{margin:10px 0 16px; font:700 22px/1.15 var(--font-head); letter-spacing:-.005em}
+.preview .fake-btn{display:inline-flex; min-height:44px; align-items:center; padding:10px 20px; background:var(--q-ink); color:var(--q-white); font:600 17px/1.15 var(--font-head)}
+.preview .small{margin:12px 0 0; color:var(--q-muted); font-size:15px; overflow-wrap:anywhere}
+details summary{cursor:pointer; font:600 16px/1.3 var(--font-brand); text-decoration:underline; text-decoration-color:var(--q-sky); text-decoration-thickness:2px; text-underline-offset:4px}
+
+/* the confirm step before sending */
+.confirm{margin-top:16px; padding:16px 18px 18px 24px; border:1px solid var(--q-line); box-shadow:inset 6px 0 0 var(--q-sky)}
+.confirm p{margin:0 0 14px; font:600 16px/1.45 var(--font-brand)}
+.confirm .row{display:flex; flex-wrap:wrap; gap:10px}
+.confirm .row button{min-height:48px}
+.confirm .go{padding:10px 22px; border:2px solid var(--q-ink); background:var(--q-ink); color:var(--q-white); font:600 17px/1.15 var(--font-head); cursor:pointer}
+.confirm .go:disabled{background:var(--q-disabled); border-color:var(--q-disabled); color:var(--q-disabled-ink); cursor:not-allowed}
+#view[hidden],#done[hidden],#problem[hidden],#loading[hidden],.confirm[hidden],#sentNote[hidden],#cancelNote[hidden]{display:none}
+#done h1:focus,#problem h1:focus{outline:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><img src="/assets/logo-wordmark.svg" width="140" height="28" alt="qaravan"></a>
+  </div>
+
+  <p id="loading" class="sub">Загружаем…</p>
+
+  <div id="problem" hidden>
+    <h1 id="problemT" tabindex="-1"></h1>
+    <p class="intro" id="problemP"></p>
+  </div>
+
+  <div id="view" hidden>
+    <header class="hero" id="hero">
+      <div class="eyebrow" style="--flag:var(--q-purple)" id="groupTitle"></div>
+      <h1 id="when"></h1>
+      <p class="sub">Письмо со ссылкой на встречу для участников группы.</p>
+      <p class="note" id="sentNote" hidden></p>
+      <p class="note" id="cancelNote" hidden>В календаре эта встреча отмечена как отменённая. Проверьте, прежде чем отправлять.</p>
+    </header>
+
+    <form id="f" novalidate>
+      <fieldset>
+        <legend><label for="link">Ссылка на встречу</label> <span class="req" aria-hidden="true">*</span>
+          <span class="hint">Постоянная ссылка группы. Если поменяете, новая подставится и в следующий раз.</span></legend>
+        <div class="field">
+          <input type="url" id="link" maxlength="500" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="https://meet.google.com/…" aria-describedby="linkErr" aria-required="true">
+          <p class="field-hint" id="linkErr">Нужна ссылка, которая начинается с https://</p>
+        </div>
+        <div class="field">
+          <label class="lbl" for="dial">Подключение по телефону <span class="opt">по желанию</span></label>
+          <input type="text" id="dial" maxlength="200" placeholder="(US) +1 …, PIN: …">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><label for="subject">Тема письма</label> <span class="req" aria-hidden="true">*</span></legend>
+        <div class="field">
+          <input type="text" id="subject" maxlength="200" aria-describedby="subjectErr" aria-required="true">
+          <p class="field-hint" id="subjectErr">Напишите тему письма.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><label for="text">Текст письма</label> <span class="req" aria-hidden="true">*</span>
+          <span class="hint">Под текстом письмо само добавит дату и время, кнопку «Присоединиться к встрече», ссылку и телефон.</span></legend>
+        <div class="field">
+          <textarea id="text" maxlength="5000" aria-describedby="textErr" aria-required="true"></textarea>
+          <p class="field-hint" id="textErr">Напишите текст письма.</p>
+        </div>
+        <details id="previewBox">
+          <summary>Как увидят участники</summary>
+          <div class="preview" id="preview"></div>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend id="peopleQ">Кому <span class="req" aria-hidden="true">*</span>
+          <span class="hint" id="bccHint"></span></legend>
+        <div class="field">
+          <label class="lbl" for="q">Найти <span class="opt">по имени или почте</span></label>
+          <input type="text" id="q" maxlength="100" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="tools">
+          <button type="button" class="na-link" id="all">Выбрать всех</button>
+          <button type="button" class="na-link" id="none">Снять всех</button>
+          <p class="count" id="count" aria-live="polite"></p>
+        </div>
+        <p class="field-hint" id="peopleErr">Отметьте хотя бы одного человека или добавьте нового.</p>
+        <div class="people" id="people" role="group" aria-labelledby="peopleQ"></div>
+
+        <div class="add" id="addBox">
+          <p class="lbl">Добавить человека</p>
+          <input type="text" id="addName" maxlength="120" placeholder="Имя" aria-label="Имя">
+          <input type="email" id="addEmail" maxlength="200" placeholder="name@example.com" aria-label="Почта" autocapitalize="off" spellcheck="false" aria-describedby="addErr">
+          <button type="button" class="btn-line" id="addBtn">Добавить</button>
+          <p class="field-hint" id="addErr">Проверьте почту: нужен адрес в формате name@example.com.</p>
+        </div>
+      </fieldset>
+
+      <div class="submit">
+        <p class="err" id="err" role="alert"></p>
+        <button type="submit" id="send">Отправить</button>
+        <div class="confirm" id="confirm" hidden>
+          <p id="confirmText"></p>
+          <div class="row">
+            <button type="button" class="go" id="go">Да, отправить</button>
+            <button type="button" class="btn-line" id="cancel">Отмена</button>
+          </div>
+        </div>
+        <footer>qaravan.org</footer>
+      </div>
+    </form>
+  </div>
+
+  <div id="done" hidden>
+    <h1 id="doneT" tabindex="-1"></h1>
+    <p class="intro" id="doneP"></p>
+    <p style="margin-top:24px"><button type="button" class="btn-line" id="back">Вернуться к письму</button></p>
+    <footer>qaravan.org</footer>
+  </div>
+</div>
+<script src="/support/send.js"></script>
+</body>
+</html>

@@ -3,6 +3,10 @@
     {
       "path": "/api/aggregate",
       "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/meeting-prompts",
+      "schedule": "0 16 * * *"
     }
   ],
   "rewrites": [
@@ -33,6 +37,18 @@
     {
       "source": "/api/support-groups",
       "destination": "/api/survey?form=support-groups"
+    },
+    {
+      "source": "/support/send",
+      "destination": "/support/send.html"
+    },
+    {
+      "source": "/api/meetings",
+      "destination": "/api/survey?form=meetings"
+    },
+    {
+      "source": "/api/meeting-prompts",
+      "destination": "/api/survey?form=meeting-prompts"
     },
     {
       "source": "/feedback/:id(\\d+)/lead",
