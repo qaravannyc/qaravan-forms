@@ -44,7 +44,7 @@ async function send(body, url) {
 
 const gina = () => ({
   group: "gina", lang: "ru", name: "  Алекс  Иванов ", email: "Alex@Example.com", phone: "(212) 555-0123", telegram: "https://t.me/alex_q", instagram: "",
-  pronouns: "they", pronouns_other: "", in_us: "yes", in_us_note: "", regular: "yes", immig: "no", intro: "yes", rules: true,
+  pronouns: "they", pronouns_other: "", in_us: "yes", in_us_note: "", regular: "yes", intro: "yes", rules: true,
   expect: "Поддержки.", needs: ["work", "talk", "nope", "work"], needs_text: "", notes: "",
 });
 const simon = () => ({
@@ -70,7 +70,7 @@ test("Gina: a valid form becomes one row on her board with the board's labels", 
   assert.deepEqual(cv.in_us, { label: "Yes" });
   assert.equal("in_us_note" in cv, false);
   assert.deepEqual(cv.regular, { label: "Yes" });
-  assert.deepEqual(cv.immig_mh, { label: "No" });
+  assert.equal(cv.immig_mh, undefined); // вопрос убран 30.09.2026
   assert.deepEqual(cv.intro_call, { label: "Yes" });
   assert.deepEqual(cv.rules, { label: "Yes" });
   assert.deepEqual(cv.expect, { text: "Поддержки." });
@@ -112,7 +112,7 @@ test("Gina: needs — up to three picks in pick order; «Другое» needs ow
 test("Gina: missing answers → 400 with the list, nothing written", async () => {
   const { res } = await send({ group: "gina", name: " ", email: "nope", phone: "123", pronouns: "other", in_us: "partly", regular: "maybe", rules: "true" });
   assert.equal(res.statusCode, 400);
-  assert.deepEqual(JSON.parse(res.body).fields, ["name", "email", "phone", "pronouns_other", "in_us_note", "regular", "immig", "intro", "rules", "expect", "needs"]);
+  assert.deepEqual(JSON.parse(res.body).fields, ["name", "email", "phone", "pronouns_other", "in_us_note", "regular", "intro", "rules", "expect", "needs"]);
   assert.equal(calls.length, 0);
 });
 
