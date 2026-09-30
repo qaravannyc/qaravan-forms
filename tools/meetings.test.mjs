@@ -65,7 +65,7 @@ test("dates are New York time; the subject says tomorrow", () => {
   const s = at("2026-09-30T23:30:00Z");
   assert.equal(M.when(s, 60).line, "Среда, 30 сентября, 19:30–20:30 по Нью-Йорку");
   assert.equal(M.when(at("2026-10-03T15:00:00Z")).line, "Суббота, 3 октября, 11:00 по Нью-Йорку");
-  assert.equal(M.defaultSubject("gina", s, NOW), "Группа поддержки с Джиной: встреча завтра, 30 сентября, в 19:30");
+  assert.equal(M.defaultSubject("gina", s, NOW), "Группа поддержки: встреча завтра, 30 сентября, в 19:30");
   assert.equal(M.relDay(s, at("2026-09-30T14:00:00Z")), "сегодня");
   assert.equal(M.people(1), "1 человек"); assert.equal(M.people(3), "3 человека"); assert.equal(M.people(14), "14 человек");
 });
@@ -73,11 +73,11 @@ test("dates are New York time; the subject says tomorrow", () => {
 test("page data: last meeting's link and text by default, one row per email, ticked first", async () => {
   M.setStore(fakeStore());
   const d = await M.pageData(token(), NOW);
-  assert.equal(d.title, "Группа поддержки с Джиной");
+  assert.equal(d.title, "Группа поддержки");
   assert.equal(d.leaderEmail, "gina@rusalgbtq.org");
   assert.equal(d.link, "https://meet.google.com/old-link");
   assert.equal(d.text, "Прошлый текст Джины");
-  assert.equal(d.subject, "Группа поддержки с Джиной: встреча завтра, 30 сентября, в 19:30");
+  assert.equal(d.subject, "Группа поддержки: встреча завтра, 30 сентября, в 19:30");
   assert.deepEqual(d.people.map((p) => [p.email, p.name, p.checked]), [["alex@example.com", "Алекс И.", true], ["maria@example.com", "Мария", false]]);
   const none = fakeStore(); none.meetings["800"].mail = {}; none.meetings["800"].link = ""; M.setStore(none);
   const d2 = await M.pageData(token(), NOW);
@@ -108,7 +108,7 @@ test("send: one email, leader in To, everyone else in Bcc, replies to the leader
   const html = Buffer.from(raw.split("Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n")[1].split("\r\n")[0], "base64").toString("utf8");
   assert.match(html, /Присоединиться к встрече/);
   assert.match(html, /href="https:\/\/meet\.google\.com\/tyu-nksn-hpd"/);
-  assert.match(html, /Среда, 30 сентября, 19:30–20:30 по <span style="white-space:nowrap;">Нью-Йорку<\/span>/);
+  assert.match(html, /Среда, 30 сентября, 19:30–20:45 по <span style="white-space:nowrap;">Нью-Йорку<\/span>/);
   assert.match(html, /С любовью, Джина 🌈/);
   assert.match(html, /По телефону: \(US\) \+1 216-839-9317/);
   // Алекс был отмечен — теперь снят (на обеих его строках), Мария отмечена, Глеб добавлен

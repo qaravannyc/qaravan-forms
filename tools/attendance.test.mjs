@@ -22,7 +22,7 @@ const survey = (await import("../api/survey.mjs")).default;
 
 const at = (iso) => new Date(iso);
 const decode = (mime) => mime.split(/\r\n/).filter((l) => /^[A-Za-z0-9+/=]{40,}$/.test(l)).map((l) => Buffer.from(l, "base64").toString("utf8")).join("\n");
-const START = at("2026-09-30T23:30:00Z"); // среда, 19:30 по Нью-Йорку; у Джины 60 минут → конец в 00:30Z
+const START = at("2026-09-30T23:30:00Z"); // среда, 19:30 по Нью-Йорку; у Джины 75 минут → конец в 00:45Z
 
 function meetingsFake() {
   const s = {
@@ -81,7 +81,7 @@ function attendanceFake() {
   };
   return s;
 }
-const AFTER = at("2026-10-01T00:40:00Z"); // через 10 минут после конца встречи 900
+const AFTER = at("2026-10-01T00:55:00Z"); // через 10 минут после конца встречи 900
 const attToken = (item = "900", group = "gina", exp = START.getTime() + 14 * 86400000) => M.signToken({ item, group, exp, kind: "att" });
 
 async function call(method, url, body) {
@@ -102,13 +102,13 @@ test("links: the attendance key opens only the attendance page, for two weeks af
   assert.deepEqual(M.verifyToken(send, START.getTime(), process.env, "att"), { error: "bad" }); // и наоборот
   assert.deepEqual(M.verifyToken(t, START.getTime() + 13 * 86400000, process.env, "att"), { item: "900", group: "gina" });
   assert.deepEqual(M.verifyToken(t, START.getTime() + 15 * 86400000, process.env, "att"), { error: "expired" });
-  assert.equal(M.meetingEnd("gina", START).toISOString(), "2026-10-01T00:30:00.000Z");
+  assert.equal(M.meetingEnd("gina", START).toISOString(), "2026-10-01T00:45:00.000Z");
   assert.equal(M.meetingEnd("simon", START).toISOString(), "2026-10-01T01:00:00.000Z"); // длительность не указана — 90 минут
 });
 
 test("ask: right after the meeting ends, once, to the leader; not before the end, not for cancelled ones", async () => {
   const s = meetingsFake(); M.setStore(s); mails.length = 0;
-  // 00:20Z: встреча Джины ещё идёт (до 00:30Z), у Саймона 701 уже кончилась (22:30Z), 700 отменена
+  // 00:20Z: встреча Джины ещё идёт (до 00:45Z), у Саймона 701 уже кончилась (22:30Z), 700 отменена
   assert.deepEqual((await M.askAttendance({ now: at("2026-10-01T00:20:00Z") })).map((d) => [d.item, d.to]), [["701", "simon@rusalgbtq.org"]]);
   mails.length = 0;
   const done = await M.askAttendance({ now: AFTER });
@@ -119,12 +119,12 @@ test("ask: right after the meeting ends, once, to the leader; not before the end
   const body = decode(gina);
   assert.match(body, /Отметить, кто пришёл/);
   assert.match(body, /https:\/\/feedback\.qaravan\.org\/support\/attendance\?t=[\w-]+\.[\w-]+/);
-  assert.match(body, /Среда, 30 сентября, 19:30–20:30 по/);
+  assert.match(body, /Среда, 30 сентября, 19:30–20:45 по/);
   assert.doesNotMatch(gina, /^Bcc:/m);
   assert.deepEqual(Object.keys(s.meetings["900"].mail).sort(), ["attendanceAsked", "prompted"]); // прежние отметки на строке сохранились
   // второй прогон через 15 минут — уже спрашивали
   mails.length = 0;
-  assert.deepEqual(await M.askAttendance({ now: at("2026-10-01T00:55:00Z") }), []);
+  assert.deepEqual(await M.askAttendance({ now: at("2026-10-01T01:10:00Z") }), []);
   assert.equal(mails.length, 0);
   // через 13 часов после конца — поздно (например, если запуски долго не шли)
   s.meetings["900"].mail = {};
@@ -160,8 +160,8 @@ test("people: one row per person, by email and «Other emails»; ticked, then gr
 test("page: the list for the leader; bad, expired, early and missing meetings are refused", async () => {
   const s = attendanceFake(); A.setStore(s);
   const d = await A.pageData(attToken(), AFTER);
-  assert.equal(d.title, "Группа поддержки с Джиной");
-  assert.equal(d.meeting.line, "Среда, 30 сентября, 19:30–20:30 по Нью-Йорку");
+  assert.equal(d.title, "Группа поддержки");
+  assert.equal(d.meeting.line, "Среда, 30 сентября, 19:30–20:45 по Нью-Йорку");
   assert.equal(d.people.length, 5);
   assert.deepEqual(Object.keys(d.people[0]).sort(), ["checked", "email", "key", "member", "name", "past", "status"]); // без id карточек
   assert.equal(d.saved, null);
