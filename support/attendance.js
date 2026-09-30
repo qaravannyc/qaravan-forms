@@ -21,9 +21,11 @@ function problem(title, text) {
   $("problemT").textContent = title; $("problemP").textContent = text; $("problem").hidden = false;
 }
 
-// ===== черновик: отметки переживают перезагрузку до сохранения =====
+// ===== черновик: свои правки переживают перезагрузку до сохранения =====
+// Хранятся только собственные изменения (галочка не такая, как при загрузке, или добавленный
+// вручную): чужие отметки, сохранённые за это время другим человеком, черновик не перебивает.
 function saveDraft() {
-  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(people.map((p) => [p.key, p.name, p.email, p.checked, !!p.added]))); } catch (e) {}
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(people.filter((p) => p.added || p.checked !== p.was).map((p) => [p.key, p.name, p.email, p.checked, !!p.added]))); } catch (e) {}
 }
 function loadDraft() {
   let d = null;
@@ -54,6 +56,7 @@ const SECTIONS = [
 ];
 function arrange() {
   const show = data.show || [];
+  for (const p of people) if (p.was === undefined) p.was = !!p.checked; // как было при загрузке: снять можно только своё
   for (const p of people) if (!p.sec) p.sec = p.member ? "member" : show.includes(p.status) ? "new" : p.checked ? "marked" : "old";
   const rank = { member: 0, new: 1, marked: 2, old: 3, added: 4 };
   people.sort((a, b) => rank[a.sec] - rank[b.sec] || (a.sec === "added" ? 0 : COLL.compare(a.name || a.email, b.name || b.email)));
@@ -91,8 +94,10 @@ $("f").addEventListener("submit", async (ev) => {
   const body = {
     t: T,
     selected: people.filter((p) => p.checked && known.has(p.key)).map((p) => p.key),
-    unselected: people.filter((p) => !p.checked && known.has(p.key)).map((p) => p.key),
+    // снятые этим человеком галочки (были при загрузке, теперь нет); чужие отметки сохраняются
+    unselected: people.filter((p) => p.was && !p.checked && known.has(p.key)).map((p) => p.key),
     add: people.filter((p) => p.checked && !known.has(p.key)).map((p) => ({ name: p.name, email: p.email })),
+    seen: data.saved?.at || null, // от какого сохранения открыта страница
   };
   try {
     const r = await fetch("/api/attendance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -101,13 +106,15 @@ $("f").addEventListener("submit", async (ev) => {
     if (!r.ok || !j.ok) throw new Error(j.error || "HTTP " + r.status);
     clearDraft();
     $("view").hidden = true; $("done").hidden = false;
-    $("doneT").textContent = j.n ? `Сохранено: ${ppl(j.n)}` : "Сохранено: никто не отмечен";
-    $("doneP").textContent = "Отметки уже в «Confirmed attendees» этой встречи в календаре событий. Если кого-то забыли, вернитесь к списку, поправьте и сохраните ещё раз.";
+    $("doneT").textContent = j.test ? `Тест: отмечено ${ppl(j.n)}` : j.n ? `Сохранено: ${ppl(j.n)}` : "Сохранено: никто не отмечен";
+    $("doneP").textContent = j.test ? "Это тестовая копия: в monday ничего не записано."
+      : (j.other ? `Пока вы отмечали, ${j.other.byName || "кто-то ещё"} тоже сохранил(а) отметки (${fmtWhen(j.other.at)}): они сложились с вашими, ничьи не пропали. ` : "")
+        + "Отметки уже в «Confirmed attendees» этой встречи в календаре событий. Если кого-то забыли или отметили лишнего, вернитесь к списку, поправьте и сохраните ещё раз.";
     window.scrollTo(0, 0); $("doneT").focus();
-    data.saved = { at: j.at, n: j.n };
+    if (!j.test) data.saved = { at: j.at, n: j.n, byName: data.meName };
     for (const p of people) if (p.added) { p.added = false; p.key = j.keys?.[p.email] || p.key; }
     data.people = people.map((p) => ({ ...p }));
-    refresh(); // список с сервера: новые карточки, слитые по почте люди
+    if (!j.test) refresh(); // список с сервера: новые карточки, слитые по почте люди
   } catch (e) {
     $("err").textContent = "Не удалось сохранить. Отметки остались на странице: проверьте интернет и нажмите «Сохранить» ещё раз.";
     $("err").classList.add("show");
@@ -116,10 +123,11 @@ $("f").addEventListener("submit", async (ev) => {
   }
 });
 $("back").onclick = () => { $("done").hidden = true; $("view").hidden = false; renderSaved(); window.scrollTo(0, 0); };
+// кто и когда уже отмечал — видно тем, кто открывает ссылку вторым и третьим
 function renderSaved() {
-  const s = data.saved;
-  $("savedNote").hidden = !s;
-  if (s) $("savedNote").textContent = `Уже сохраняли ${fmtWhen(s.at)}: ${ppl(s.n)}. Можно поправить и сохранить ещё раз.`;
+  const log = (data.log || []).length ? data.log : data.saved ? [data.saved] : [];
+  $("savedNote").hidden = !log.length;
+  if (log.length) $("savedNote").textContent = "Уже отмечали: " + log.slice(-3).map((x) => `${x.byName || "кто-то из команды"} — ${fmtWhen(x.at)}, ${ppl(x.n)}`).join("; ") + ". Галочки ниже — как сохранено сейчас: поправьте, если нужно, и сохраните.";
 }
 
 async function refresh() {
@@ -151,6 +159,9 @@ async function refresh() {
   $("groupTitle").textContent = j.title;
   $("when").textContent = j.meeting.line;
   $("cancelNote").hidden = !j.meeting.cancelled;
+  // тестовая копия: сохранение ничего не записывает в monday
+  $("testNote").hidden = !j.test;
+  if (j.test) $("testNote").textContent = "Тестовая копия. «Сохранить» ничего не запишет в monday — это проверка страницы.";
   arrange(); loadDraft();
   renderSaved(); renderPeople();
   $("loading").hidden = true; $("view").hidden = false;

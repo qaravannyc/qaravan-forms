@@ -174,32 +174,102 @@ test("send: bad input is refused before anything is written or sent", async () =
   assert.deepEqual([r3.status, r3.error], [403, "expired"]);
 });
 
-test("prompt: tomorrow's meetings only, once, not for cancelled ones; the button opens the send page", async () => {
+test("prompt: the evening before, from 8 pm New York time, to the leader and the team (own buttons), once; missed — the meeting day from 8 am; DST-proof", async () => {
   const s = fakeStore(); M.setStore(s); mails.length = 0;
-  const done = await M.promptTomorrow({ now: NOW });
-  assert.deepEqual(done.map((d) => [d.item, d.to, d.inList]), [["900", "gina@rusalgbtq.org", 1]]);
-  assert.equal(mails.length, 1);
+  assert.deepEqual(await M.promptDue({ now: NOW }), []); // накануне днём — рано
+  assert.deepEqual(await M.promptDue({ now: at("2026-09-29T23:59:00Z") }), []); // 19:59 по Нью-Йорку — рано
+  const done = await M.promptDue({ now: at("2026-09-30T00:03:00Z") }); // 20:03 накануне — пора
+  assert.deepEqual(done.map((d) => [d.item, d.to, d.inList]), [["900", ["gina@rusalgbtq.org", "gleb@rusalgbtq.org", "anna@rusalgbtq.org"], 1]]);
+  assert.equal(mails.length, 3); // три письма в одно время, каждому своё
   assert.match(mails[0], /\r\nTo: gina@rusalgbtq\.org\r\n/);
-  const html = Buffer.from(mails[0].split("Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n")[1].split("\r\n")[0], "base64").toString("utf8");
-  const url = /href="(https:\/\/feedback\.qaravan\.org\/support\/send\?t=[^"]+)"/.exec(html)[1];
-  assert.deepEqual(M.verifyToken(new URL(url).searchParams.get("t"), NOW.getTime()), { item: "900", group: "gina" });
+  assert.match(mails[1], /\r\nTo: gleb@rusalgbtq\.org\r\n/);
+  assert.match(mails[2], /\r\nTo: anna@rusalgbtq\.org\r\n/);
+  assert.match(mails[0], new RegExp("Subject: =\\?UTF-8\\?B\\?" + Buffer.from("Завтра встреча в 19:30: отправьте ссылку участникам").toString("base64").replace(/[+/=]/g, "\\$&")));
+  const htmlOf = (m) => Buffer.from(m.split("Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n")[1].split("\r\n")[0], "base64").toString("utf8");
+  const html = htmlOf(mails[0]);
+  const keyOf = (h) => new URL(/href="(https:\/\/feedback\.qaravan\.org\/support\/send\?t=[^"]+)"/.exec(h)[1]).searchParams.get("t");
+  assert.deepEqual(M.verifyToken(keyOf(html), NOW.getTime()), { item: "900", group: "gina", who: "gina@rusalgbtq.org" });
+  assert.deepEqual(M.verifyToken(keyOf(htmlOf(mails[2])), NOW.getTime()).who, "anna@rusalgbtq.org");
   assert.match(html, /Сейчас в списке: 1 человек/);
+  assert.match(html, /Такое же письмо со своей кнопкой получили Глеб и Анна/);
   assert.ok(s.meetings["900"].mail.prompted);
   mails.length = 0;
-  assert.deepEqual(await M.promptTomorrow({ now: NOW }), []); // второй раз не спрашиваем
+  assert.deepEqual(await M.promptDue({ now: at("2026-09-30T01:10:00Z") }), []); // второй крон, 21:10 — уже спрашивали
   assert.equal(mails.length, 0);
-  const forced = await M.promptTomorrow({ now: NOW, item: "900", dry: true });
-  assert.equal(forced.length, 1); assert.match(forced[0].url, /\/support\/send\?t=/); assert.equal(mails.length, 0);
-  // тестовая копия: то же письмо с настоящей кнопкой, но на другой адрес; отметку не трогает
-  const s2 = fakeStore(); M.setStore(s2); mails.length = 0;
-  const test1 = await M.promptTomorrow({ now: NOW, item: "900", to: "me@example.org" });
-  assert.deepEqual(test1.map((d) => [d.item, d.to]), [["900", "me@example.org"]]);
-  assert.match(mails[0], /\r\nTo: me@example\.org\r\n/);
-  assert.doesNotMatch(mails[0], /gina@rusalgbtq\.org/);
-  assert.equal(s2.meetings["900"].mail.prompted, undefined);
+  // вечер пропустили — уйдёт в день встречи с 8 утра, но только до начала
+  const late = fakeStore(); M.setStore(late);
+  assert.deepEqual(await M.promptDue({ now: at("2026-09-30T11:30:00Z") }), []); // 7:30 утра
+  assert.equal((await M.promptDue({ now: at("2026-09-30T12:30:00Z") })).length, 1); // 8:30 утра
+  const after = fakeStore(); M.setStore(after);
+  assert.deepEqual(await M.promptDue({ now: at("2026-09-30T23:40:00Z") }), []);
+  // зимой (EST) крон в 00 UTC — это 19:00: рано; в 01 UTC — 20:00: пора
+  const w = fakeStore(); w.meetings["900"].start = at("2026-12-03T00:30:00Z"); M.setStore(w); // среда, 2 декабря, 19:30 EST
+  assert.deepEqual(await M.promptDue({ now: at("2026-12-02T00:20:00Z") }), []);
+  assert.equal((await M.promptDue({ now: at("2026-12-02T01:20:00Z") })).length, 1);
+  M.setStore(s);
+  const forced = await M.promptDue({ now: NOW, item: "900", dry: true });
+  assert.equal(forced.length, 1); assert.match(forced[0].url, /\/support\/send\?t=/); assert.equal(forced[0].urls.length, 3);
   // флажок у надзаголовка — ячейкой с bgcolor (пустой span Gmail не рисует)
   assert.match(html, /<td width="8" height="8" bgcolor="#7668AA"/);
   assert.doesNotMatch(html, /display:inline-block/);
+});
+
+test("send by several people: the second one sees who sent and must confirm sending again; the sender gets a copy", async () => {
+  const s = fakeStore(); M.setStore(s); mails.length = 0;
+  const key = (who) => M.signToken({ item: "900", group: "gina", exp: Date.parse("2026-10-01T05:30:00Z"), who });
+  const anna = key("anna@rusalgbtq.org"), gleb = key("gleb@rusalgbtq.org");
+  const pa = await M.pageData(anna, NOW), pg = await M.pageData(gleb, NOW); // обе страницы открыты до отправки
+  assert.deepEqual([pa.meName, pa.sentCount], ["Анна", 0]);
+  const body = { link: "https://meet.google.com/abc-defg-hij", text: "Текст", subject: "Тема", selected: ["alex@example.com"] };
+  const r1 = await M.sendMeeting(anna, { ...body, seenSent: pa.sentCount }, NOW);
+  assert.deepEqual([r1.status, r1.sent, r1.sentCount], [200, 1, 1]);
+  assert.match(mails[0], /\r\nTo: gina@rusalgbtq\.org\r\n/);
+  assert.match(mails[0], /\r\nBcc: alex@example\.com, anna@rusalgbtq\.org\r\n/); // Анне — копия, участникам не видно
+  assert.deepEqual(s.meetings["900"].mail.sent.at(-1), { at: NOW.toISOString(), n: 1, by: "anna@rusalgbtq.org" });
+  assert.match(s.notes.at(-1).text, /отправил\(а\): Анна/);
+  // Глеб со старой страницы: второй раз не уходит без явного «ещё раз»
+  mails.length = 0;
+  const r2 = await M.sendMeeting(gleb, { ...body, seenSent: pg.sentCount }, NOW);
+  assert.deepEqual([r2.status, r2.error, r2.last.byName, r2.last.n], [409, "already", "Анна", 1]);
+  assert.equal(mails.length, 0);
+  const again = await M.pageData(gleb, NOW);
+  assert.deepEqual([again.sentCount, again.sent.at(-1).byName], [1, "Анна"]); // на странице — кто уже отправил
+  const r3 = await M.sendMeeting(gleb, { ...body, seenSent: pg.sentCount, again: true }, NOW);
+  assert.equal(r3.status, 200); assert.equal(mails.length, 1);
+});
+
+test("test copy: the button opens the real page, but sending reaches only the tester; the board and the meeting row stay as they were", async () => {
+  const s = fakeStore(); M.setStore(s); mails.length = 0;
+  const [d] = await M.promptDue({ now: NOW, item: "900", to: "me@example.org" });
+  assert.deepEqual(d.to, ["me@example.org"]);
+  assert.equal(mails.length, 1); // тестовая копия — только проверяющему
+  assert.match(mails[0], /\r\nTo: me@example\.org\r\n/);
+  assert.equal(s.meetings["900"].mail.prompted, undefined);
+  const html = Buffer.from(mails[0].split("Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n")[1].split("\r\n")[0], "base64").toString("utf8");
+  const t = new URL(/href="(https:\/\/feedback\.qaravan\.org\/support\/send\?t=[^"]+)"/.exec(html)[1]).searchParams.get("t");
+  assert.deepEqual(M.verifyToken(t, NOW.getTime()), { item: "900", group: "gina", test: "me@example.org" });
+  const page = await M.pageData(t, NOW);
+  assert.equal(page.test, "me@example.org");
+  mails.length = 0;
+  const r = await M.sendMeeting(t, { link: "https://meet.google.com/abc-defg-hij", text: "Текст", subject: "Тема", selected: ["alex@example.com", "maria@example.com"] }, NOW);
+  assert.deepEqual([r.status, r.ok, r.sent, r.test], [200, true, 0, "me@example.org"]);
+  assert.equal(mails.length, 1);
+  assert.match(mails[0], /\r\nTo: me@example\.org\r\n/);
+  assert.doesNotMatch(mails[0], /^Bcc:/m);
+  assert.doesNotMatch(mails[0], /alex@example\.com|maria@example\.com|gina@rusalgbtq\.org/);
+  assert.deepEqual([s.changes.length, s.added.length, s.saved.length, s.notes.length], [0, 0, 0, 0]);
+  // подделать адрес в ключе нельзя: подпись не сойдётся
+  const [body, sig] = t.split(".");
+  const forged = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(body, "base64url").toString()), r: undefined })).toString("base64url");
+  assert.deepEqual(M.verifyToken(`${forged}.${sig}`, NOW.getTime()), { error: "bad" });
+});
+
+test("addresses: only plain addresses reach the email headers", () => {
+  const mime = M.buildMime({ fromName: "Q", to: "gina@rusalgbtq.org", bcc: ["ok@example.com", "a@b.c,d.com", "x@y.com\r\nBcc: evil@z.com", "<e@f.com>"], subject: "s", html: "h", text: "t" });
+  assert.match(mime, /\r\nBcc: ok@example\.com\r\n/);
+  assert.doesNotMatch(mime, /evil|d\.com|e@f/);
+  assert.throws(() => M.buildMime({ fromName: "Q", to: "a@b.com, c@d.com", subject: "s", html: "h", text: "t" }));
+  assert.equal(M.parseSend({ link: "https://x.y", text: "t", subject: "s", add: [{ email: "a@b.c,d.com" }, { email: "ok@example.com" }] }).s.add.length, 1);
 });
 
 function fakeReq(url, method = "GET", body = null, headers = {}) {
@@ -208,14 +278,18 @@ function fakeReq(url, method = "GET", body = null, headers = {}) {
 }
 function fakeRes() { const r = { statusCode: 200, headers: {}, body: "", setHeader(k, v) { r.headers[k] = v; }, end(b) { r.body = b || ""; } }; return r; }
 
-test("routes: /api/meetings answers through the survey function; prompts need the cron secret", async () => {
+test("routes: /api/meetings answers through the survey function; prompts: a plain run is open, manual modes need the cron secret", async () => {
   M.setStore(fakeStore());
   const res = fakeRes();
   await survey(fakeReq("/api/meetings?t=bad"), res);
   assert.equal(res.statusCode, 403);
   const r2 = fakeRes();
-  await survey(fakeReq("/api/meeting-prompts"), r2);
-  assert.equal(r2.statusCode, 401);
+  await survey(fakeReq("/api/meeting-prompts"), r2); // обычный прогон (крон, GitHub) — без секрета
+  assert.equal(r2.statusCode, 200);
+  assert.doesNotMatch(r2.body, /support\/send|"to"/); // в ответе без ссылок и адресов
+  const r8 = fakeRes();
+  await survey(fakeReq("/api/meeting-prompts?dry=1"), r8);
+  assert.equal(r8.statusCode, 401);
   const r3 = fakeRes();
   await survey(fakeReq("/api/meeting-prompts?dry=1", "GET", null, { authorization: "Bearer cron" }), r3);
   assert.equal(r3.statusCode, 200);

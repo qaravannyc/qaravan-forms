@@ -65,7 +65,7 @@ details summary{cursor:pointer; font:600 16px/1.3 var(--font-brand); text-decora
 .confirm .row button{min-height:48px}
 .confirm .go{padding:10px 22px; border:2px solid var(--q-ink); background:var(--q-ink); color:var(--q-white); font:600 17px/1.15 var(--font-head); cursor:pointer}
 .confirm .go:disabled{background:var(--q-disabled); border-color:var(--q-disabled); color:var(--q-disabled-ink); cursor:not-allowed}
-#view[hidden],#done[hidden],#problem[hidden],#loading[hidden],.confirm[hidden],#sentNote[hidden],#cancelNote[hidden]{display:none}
+#view[hidden],#done[hidden],#problem[hidden],#loading[hidden],.confirm[hidden],#sentNote[hidden],#cancelNote[hidden],#testNote[hidden]{display:none}
 #done h1:focus,#problem h1:focus{outline:none}
 </style>
 </head>
@@ -88,6 +88,7 @@ details summary{cursor:pointer; font:600 16px/1.3 var(--font-brand); text-decora
       <h1 id="when"></h1>
       <p class="sub">Письмо со ссылкой на встречу для участников группы.</p>
       <p class="note" id="sentNote" hidden></p>
+      <p class="note" id="testNote" hidden></p>
       <p class="note" id="cancelNote" hidden>В календаре эта встреча отмечена как отменённая. Проверьте, прежде чем отправлять.</p>
     </header>
 

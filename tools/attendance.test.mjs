@@ -106,21 +106,26 @@ test("links: the attendance key opens only the attendance page, for two weeks af
   assert.equal(M.meetingEnd("simon", START).toISOString(), "2026-10-01T01:00:00.000Z"); // длительность не указана — 90 минут
 });
 
-test("ask: right after the meeting ends, once, to the leader; not before the end, not for cancelled ones", async () => {
+test("ask: right after the meeting ends, once, to the leader and the team, each with their own button; not before the end, not for cancelled ones", async () => {
   const s = meetingsFake(); M.setStore(s); mails.length = 0;
   // 00:20Z: встреча Джины ещё идёт (до 00:45Z), у Саймона 701 уже кончилась (22:30Z), 700 отменена
-  assert.deepEqual((await M.askAttendance({ now: at("2026-10-01T00:20:00Z") })).map((d) => [d.item, d.to]), [["701", "simon@rusalgbtq.org"]]);
+  assert.deepEqual((await M.askAttendance({ now: at("2026-10-01T00:20:00Z") })).map((d) => [d.item, d.to]), [["701", ["simon@rusalgbtq.org"]]]);
   mails.length = 0;
   const done = await M.askAttendance({ now: AFTER });
-  assert.deepEqual(done.map((d) => [d.item, d.to]), [["900", "gina@rusalgbtq.org"]]);
-  assert.equal(mails.length, 1);
+  assert.deepEqual(done.map((d) => [d.item, d.to]), [["900", ["gina@rusalgbtq.org", "gleb@rusalgbtq.org", "anna@rusalgbtq.org"]]]);
+  assert.equal(mails.length, 3); // три отдельных письма в одно время
   const gina = mails[0];
   assert.match(gina, /^To: gina@rusalgbtq\.org/m);
   const body = decode(gina);
   assert.match(body, /Отметить, кто пришёл/);
   assert.match(body, /https:\/\/feedback\.qaravan\.org\/support\/attendance\?t=[\w-]+\.[\w-]+/);
   assert.match(body, /Среда, 30 сентября, 19:30–20:45 по/);
+  assert.match(body, /Такое же письмо со своей кнопкой получили Глеб и Анна/);
   assert.doesNotMatch(gina, /^Bcc:/m);
+  // у каждого своя кнопка: по ключу видно, кто отмечает
+  const who = mails.map((m) => M.verifyToken(new URL(/https:\/\/feedback\.qaravan\.org\/support\/attendance\?t=[\w.-]+/.exec(decode(m))[0]).searchParams.get("t"), AFTER.getTime(), process.env, "att").who);
+  assert.deepEqual(who, ["gina@rusalgbtq.org", "gleb@rusalgbtq.org", "anna@rusalgbtq.org"]);
+  assert.match(mails[1], /^To: gleb@rusalgbtq\.org/m); assert.match(decode(mails[1]), /получили Джина и Анна/);
   assert.deepEqual(Object.keys(s.meetings["900"].mail).sort(), ["attendanceAsked", "prompted"]); // прежние отметки на строке сохранились
   // второй прогон через 15 минут — уже спрашивали
   mails.length = 0;
@@ -134,13 +139,29 @@ test("ask: right after the meeting ends, once, to the leader; not before the end
 test("ask: item + to sends a test copy elsewhere without marking; dry sends nothing", async () => {
   const s = meetingsFake(); M.setStore(s); mails.length = 0;
   const [d] = await M.askAttendance({ now: AFTER, item: "900", to: "studio@rusalgbtq.org" });
-  assert.equal(d.to, "studio@rusalgbtq.org");
+  assert.deepEqual(d.to, ["studio@rusalgbtq.org"]);
+  assert.equal(mails.length, 1); // тестовая копия — только проверяющему
   assert.match(mails[0], /To: studio@rusalgbtq\.org/);
   assert.equal(s.meetings["900"].mail.attendanceAsked, undefined);
   mails.length = 0;
   const [dry] = await M.askAttendance({ now: AFTER, item: "900", dry: true });
   assert.equal(mails.length, 0);
   assert.match(dry.url, /\/support\/attendance\?t=/);
+});
+
+test("test copy: the attendance page opens, but saving writes nothing to monday", async () => {
+  const ms = meetingsFake(); M.setStore(ms); mails.length = 0;
+  const [d] = await M.askAttendance({ now: AFTER, item: "900", to: "studio@example.org", dry: true });
+  const t = new URL(d.url).searchParams.get("t");
+  assert.deepEqual(M.verifyToken(t, AFTER.getTime(), process.env, "att"), { item: "900", group: "gina", test: "studio@example.org" });
+  const [real] = await M.askAttendance({ now: AFTER, item: "900", dry: true }); // ведущей — настоящий ключ с её адресом
+  assert.deepEqual(M.verifyToken(new URL(real.url).searchParams.get("t"), AFTER.getTime(), process.env, "att"), { item: "900", group: "gina", who: "gina@rusalgbtq.org" });
+  assert.equal(real.urls.length, 3);
+  const s = attendanceFake(); A.setStore(s);
+  assert.equal((await A.pageData(t, AFTER)).test, "studio@example.org");
+  const r = await A.saveAttendance(t, { selected: ["maria@example.com"], add: [{ name: "Новенькая", email: "new@example.com" }] }, AFTER);
+  assert.deepEqual([r.status, r.ok, r.test, r.n], [200, true, true, 2]);
+  assert.equal(s.evidence.length + s.created.length + s.mail.length + s.notes.length + s.found.length, 0);
 });
 
 test("people: one row per person, by email and «Other emails»; ticked, then group members and regulars, then the rest", () => {
@@ -191,10 +212,10 @@ test("save: ticked people become Confirmed attendees; cards found by email or ot
   assert.deepEqual(s.created.map(({ name, email, date }) => [name, email, date]), [["Глеб Руденко", "gleb@example.com", "2026-09-30"], ["Новенькая", "new.person@example.com", "2026-09-30"]]);
   assert.equal(r.n, 6); assert.equal(r.created, 2);
   assert.deepEqual(r.keys, { "new.person@example.com": "new.person@example.com", "alex.old@example.com": "alex@example.com" });
-  assert.deepEqual(s.meetings["900"].mail, { prompted: "x", attendanceAsked: "y", attendance: { at: AFTER.toISOString(), n: 6 } });
+  assert.deepEqual(s.meetings["900"].mail, { prompted: "x", attendanceAsked: "y", attendance: { at: AFTER.toISOString(), n: 6 }, attendanceLog: [{ at: AFTER.toISOString(), n: 6, added: 4, removed: 0 }] });
   assert.equal(s.notes.length, 1);
   assert.doesNotMatch(s.notes[0].text, /@/); // без адресов
-  assert.match(s.notes[0].text, /6 в «Confirmed attendees», новых карточек на доске посетителей мероприятий: 2/);
+  assert.match(s.notes[0].text, /6 в «Confirmed attendees» \(добавлено 4, снято 0\), новых карточек на доске посетителей мероприятий: 2/);
 
   // второй раз: сняли Глеба — уходит из «Confirmed attendees», карточка остаётся; excluded не пишем, если не менялся
   const again = await A.pageData(attToken(), AFTER);
@@ -204,6 +225,33 @@ test("save: ticked people become Confirmed attendees; cards found by email or ot
   assert.deepEqual([...s.evidence.at(-1).confirmed].sort(), ["c1", "c2", "c5", "c7", "new2"].sort());
   assert.equal("excluded" in s.evidence.at(-1), false);
   assert.equal(s.created.length, 2);
+});
+
+test("several people check in at once: ticks add up, nobody's are lost; the second one sees who saved and can fix it", async () => {
+  const s = attendanceFake(); A.setStore(s);
+  s.meetings["900"].confirmed = [card("c1", "Алекс Иванов", "alex@example.com", ["alex.old@example.com"])]; s.meetings["900"].excluded = [];
+  const key = (who) => M.signToken({ item: "900", group: "gina", exp: START.getTime() + 14 * 86400000, kind: "att", who });
+  const gina = key("gina@rusalgbtq.org"), anna = key("anna@rusalgbtq.org");
+  // обе открыли страницу одновременно: видят Алекса отмеченным
+  const pg = await A.pageData(gina, AFTER), pa = await A.pageData(anna, AFTER);
+  assert.equal(pg.meName, "Джина"); assert.equal(pa.meName, "Анна"); assert.equal(pa.saved, null);
+  // Джина отмечает Марию и сохраняет
+  const r1 = await A.saveAttendance(gina, { selected: ["alex@example.com", "maria@example.com"], unselected: [], seen: pg.saved?.at || null }, AFTER);
+  assert.equal(r1.other, undefined);
+  // Анна со старой страницы отмечает Надю — Мария Джины не пропадает
+  const later = new Date(AFTER.getTime() + 60000);
+  const r2 = await A.saveAttendance(anna, { selected: ["alex@example.com", "nadia@example.com"], unselected: [], seen: pa.saved?.at || null }, later);
+  assert.deepEqual([...s.evidence.at(-1).confirmed].sort(), ["c1", "c2", "c5"]); // Алекс, Мария, Надя (c5)
+  assert.equal(r2.other.byName, "Джина"); // «пока вы отмечали, Джина тоже сохранила»
+  // третий открывает: видит, кто и когда отмечал, и все галочки как сохранено сейчас
+  const p3 = await A.pageData(key("gleb@rusalgbtq.org"), later);
+  assert.deepEqual(p3.log.map((x) => [x.byName, x.n]), [["Джина", 2], ["Анна", 3]]);
+  // Надя теперь — её карточка c5 (основная почта nadia.k@, анкета nadia@ — в «Other emails»)
+  assert.deepEqual(p3.people.filter((p) => p.checked).map((p) => p.key).sort(), ["alex@example.com", "maria@example.com", "nadia.k@example.com"]);
+  // и может поправить: сам снимает Надю — только её
+  await A.saveAttendance(key("gleb@rusalgbtq.org"), { selected: ["alex@example.com", "maria@example.com"], unselected: ["nadia.k@example.com"], seen: p3.saved.at }, new Date(later.getTime() + 60000));
+  assert.deepEqual([...s.evidence.at(-1).confirmed].sort(), ["c1", "c2"]);
+  assert.match(s.notes.at(-1).text, /^Глеб: отметки, кто пришёл, — 2 в «Confirmed attendees» \(добавлено 0, снято 1\)/);
 });
 
 test("save: refused with a bad key or before the meeting; nothing written", async () => {

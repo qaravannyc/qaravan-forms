@@ -7,7 +7,7 @@ const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.crea
 const T = new URLSearchParams(location.search).get("t") || "";
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DRAFT_KEY = "qaravan.meeting-send." + T.slice(0, 24);
-let data = null, people = [], sending = false, tried = false;
+let data = null, people = [], sending = false, tried = false, again = false;
 const COLL = new Intl.Collator("ru", { sensitivity: "base" });
 
 const fmtWhen = (iso) => new Intl.DateTimeFormat("ru-RU", { timeZone: "America/New_York", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
@@ -135,11 +135,17 @@ $("f").addEventListener("submit", (ev) => {
     return;
   }
   $("err").classList.remove("show");
-  const n = people.filter((p) => p.checked).length;
-  $("confirmText").textContent = `Отправить письмо ${n} ${plural(n)}? Все получат его в скрытой копии, копия придёт вам на ${data.leaderEmail}.`;
+  const n = people.filter((p) => p.checked).length, last = (data.sent || []).at(-1);
+  // письмо уже уходило (кем-то из команды или раньше) — подтверждение говорит об этом прямо
+  $("confirmText").textContent = (last ? `Письмо участникам уже отправляли: ${sentBy(last)}. Отправить ещё раз ${n} ${plural(n)}?` : `Отправить письмо ${n} ${plural(n)}?`) + ` Все получат его в скрытой копии. ${copies()}`;
+  $("go").textContent = last ? "Да, отправить ещё раз" : "Да, отправить";
+  again = !!last;
   $("send").hidden = true; $("confirm").hidden = false; $("go").focus();
 });
 $("cancel").onclick = () => { $("confirm").hidden = true; $("send").hidden = false; $("send").focus(); };
+// «Джина, 30 сентября в 12:10 — 32 участникам»
+const sentBy = (x) => `${x.byName ? x.byName + ", " : ""}${fmtWhen(x.at)} — ${x.n} ${plural(x.n)}`;
+const copies = () => `Копия придёт на ${data.leaderEmail}${data.me && data.me !== data.leaderEmail ? ` и вам на ${data.me}` : ""}.`;
 $("go").onclick = async () => {
   if (sending) return;
   sending = true; $("go").disabled = true; $("go").textContent = "Отправляем…";
@@ -148,26 +154,37 @@ $("go").onclick = async () => {
     t: T, link: $("link").value.trim(), dial: $("dial").value.trim(), subject: $("subject").value.trim(), text: $("text").value,
     selected: people.filter((p) => p.checked && known.has(p.email)).map((p) => p.email),
     add: people.filter((p) => p.checked && !known.has(p.email)).map((p) => ({ name: p.name, email: p.email })),
+    seenSent: data.sentCount || 0, again,
   };
+  let conflict = false;
   try {
     const r = await fetch("/api/meetings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
     if (r.status === 403) return problem("Ссылка больше не работает", j.error === "expired" ? "Она работала до конца встречи. Новая придёт накануне следующей встречи." : "Откройте кнопку из последнего письма о встрече.");
     if (r.status === 400 && Array.isArray(j.fields)) { showErrors(j.fields); throw new Error("invalid"); }
+    // пока страница была открыта, письмо уже отправил кто-то другой — второй раз только явно
+    if (r.status === 409 && j.error === "already") {
+      conflict = true; again = true;
+      data.sent = [...(data.sent || []), j.last]; data.sentCount = j.sentCount; renderSent();
+      $("confirmText").textContent = `Пока вы проверяли, письмо участникам уже отправили: ${sentBy(j.last)}. Отправить ещё раз?`;
+      return;
+    }
     if (!r.ok || !j.ok) throw new Error(j.error || "HTTP " + r.status);
     clearDraft();
     $("view").hidden = true; $("done").hidden = false;
-    $("doneT").textContent = `Отправлено ${j.sent} ${plural(j.sent)}`;
-    $("doneP").textContent = `Копия пришла вам на ${data.leaderEmail}. Список и ссылка запомнились до следующей встречи.`;
+    $("doneT").textContent = j.test ? "Тест: письмо ушло только вам" : `Отправлено ${j.sent} ${plural(j.sent)}`;
+    $("doneP").textContent = j.test ? `Проверьте почту ${j.test}. Участникам ничего не отправлено, доска не изменилась.` : `${copies()} Список и ссылка запомнились до следующей встречи.`;
     window.scrollTo(0, 0); $("doneT").focus();
-    data.sent = [...(data.sent || []), { at: j.at, n: j.sent }];
+    if (!j.test) { data.sent = [...(data.sent || []), { at: j.at, n: j.sent, byName: data.meName }]; data.sentCount = j.sentCount; }
+    again = false;
     people.forEach((p) => { if (p.checked && !known.has(p.email)) { known.add(p.email); data.people.push({ email: p.email, name: p.name, checked: true }); } });
   } catch (e) {
     $("err").textContent = "Не удалось отправить письмо. Всё, что вы ввели, осталось на странице: проверьте интернет и нажмите «Отправить» ещё раз.";
     $("err").classList.add("show");
   } finally {
-    sending = false; $("go").disabled = false; $("go").textContent = "Да, отправить";
-    $("confirm").hidden = true; $("send").hidden = false;
+    sending = false; $("go").disabled = false;
+    if (conflict) { $("go").textContent = "Да, отправить ещё раз"; $("go").focus(); }
+    else { $("go").textContent = "Да, отправить"; $("confirm").hidden = true; $("send").hidden = false; }
   }
 };
 $("back").onclick = () => { $("done").hidden = true; $("view").hidden = false; renderSent(); window.scrollTo(0, 0); };
@@ -175,7 +192,7 @@ $("back").onclick = () => { $("done").hidden = true; $("view").hidden = false; r
 function renderSent() {
   const last = (data.sent || []).at(-1);
   $("sentNote").hidden = !last;
-  if (last) $("sentNote").textContent = `Уже отправлено ${fmtWhen(last.at)}: ${last.n} ${plural(last.n)}. Можно отправить ещё раз, например если поменялась ссылка.`;
+  if (last) $("sentNote").textContent = `Письмо участникам уже отправлено: ${sentBy(last)}. Второй раз обычно не нужно — разве что поменялась ссылка.`;
 }
 
 // ===== старт =====
@@ -199,6 +216,9 @@ function renderSent() {
     (j.member ? "Сверху участники группы (статус Joined), под ними новые анкеты (New), остальные анкеты свёрнуты. Галочка — это статус на доске: отметите человека — он станет Joined и будет получать письма и дальше; снимете — Not now."
       : "Галочки запоминаются до следующей встречи.");
   $("cancelNote").hidden = !j.meeting.cancelled;
+  // тестовая копия: отправка — только проверяющему, участникам ничего не уходит
+  $("testNote").hidden = !j.test;
+  if (j.test) $("testNote").textContent = `Тестовая копия. «Отправить» пришлёт письмо только вам на ${j.test}: участникам ничего не уйдёт, статусы на доске не изменятся.`;
   $("link").value = j.link || ""; $("dial").value = j.dial || ""; $("subject").value = j.subject || ""; $("text").value = j.text || "";
   arrange(); loadDraft();
   renderSent(); renderPeople(); renderPreview();
