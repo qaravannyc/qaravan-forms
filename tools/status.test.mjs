@@ -116,6 +116,7 @@ test("team email: Gina's has «Изменить статус» leading to the st
   assert.ok(btn > 0 && mon > btn);
   assert.ok(html.includes(`href="${statusUrl}"`));
   assert.match(html, /Статус на доске сейчас — New/);
+  assert.match(Mail.signupEmail(p, { itemUrl: "https://x/1", statusUrl, status: "Joined", now: NOW }).html, /Статус на доске сейчас — Joined/); // пересылка старой анкеты
   const { p: ps } = SG.parseSignup({ group: "simon", lang: "ru", name: "Боря", email: "b@example.com", phone: "2125550123", format: "remote", city: "NYC" });
   const simon = Mail.signupEmail(ps, { itemUrl: "https://qaravan.monday.com/boards/5469799506/pulses/7", now: NOW }).html;
   assert.doesNotMatch(simon, /Изменить статус/);

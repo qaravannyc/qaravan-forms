@@ -162,8 +162,9 @@ test("page: the list for the leader; bad, expired, early and missing meetings ar
   const d = await A.pageData(attToken(), AFTER);
   assert.equal(d.title, "Группа поддержки");
   assert.equal(d.meeting.line, "Среда, 30 сентября, 19:30–20:45 по Нью-Йорку");
-  // только участники группы и уже отмеченные: без Глеба (New) и карточки c9 (была раньше, не в группе)
-  assert.deepEqual(d.people.map((p) => p.key), ["alex@example.com", "maria@example.com", "nadia@example.com"]);
+  // все, со статусом: страница показывает участников и New (d.show), остальных сворачивает
+  assert.deepEqual(d.show, ["New"]);
+  assert.deepEqual(d.people.map((p) => [p.key, p.member, p.status]), [["alex@example.com", true, "Joined"], ["maria@example.com", true, "Joined"], ["nadia@example.com", true, "Joined"], ["card:c9", false, ""], ["gleb@example.com", false, "New"]]);
   assert.deepEqual(Object.keys(d.people[0]).sort(), ["checked", "email", "key", "member", "name", "past", "status"]); // без id карточек
   assert.equal(d.saved, null);
   assert.deepEqual(await A.pageData(M.signToken({ item: "900", group: "gina", exp: Date.parse("2026-10-20T00:00:00Z") }), AFTER), { error: "bad" }); // ключ страницы отправки
@@ -218,7 +219,7 @@ test("routes: /api/attendance through the survey function; /api/meeting-attendan
   s.meetings["900"].start = past;
   const t = attToken("900", "gina", past.getTime() + 14 * 86400000);
   const g = await call("GET", `/api/survey?form=attendance&t=${t}`);
-  assert.equal(g.status, 200); assert.equal(g.json.people.length, 3);
+  assert.equal(g.status, 200); assert.equal(g.json.people.length, 5);
   assert.equal((await call("GET", "/api/survey?form=attendance&t=bad")).status, 403);
   const p = await call("POST", "/api/survey?form=attendance", { t, selected: ["maria@example.com"], unselected: [] });
   assert.equal(p.status, 200); assert.equal(p.json.ok, true);
