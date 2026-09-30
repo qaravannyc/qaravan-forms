@@ -16,10 +16,12 @@
 // в lib/event-volunteers.mjs. Так же сюда приходят анкеты групп поддержки
 // (POST /api/support-groups → /api/survey?form=support-groups) — их логика
 // в lib/support-groups.mjs. И письма со ссылкой на встречу групп поддержки
-// (/api/meetings, /api/meeting-prompts → /api/survey?form=…) — lib/meetings.mjs.
+// (/api/meetings, /api/meeting-prompts → /api/survey?form=…) — lib/meetings.mjs, и отметки
+// пришедших после встречи (/api/meeting-attendance — lib/meetings.mjs, /api/attendance — lib/attendance.mjs).
 import { eventVolunteersHandler } from "../lib/event-volunteers.mjs";
 import { supportGroupsHandler } from "../lib/support-groups.mjs";
-import { meetingsHandler, meetingPromptsHandler } from "../lib/meetings.mjs";
+import { meetingsHandler, meetingPromptsHandler, meetingAttendanceHandler } from "../lib/meetings.mjs";
+import { attendanceHandler } from "../lib/attendance.mjs";
 
 const MONDAY = "https://api.monday.com/v2";
 const SURVEY_BOARD = "18426996689";
@@ -312,6 +314,8 @@ export default async function handler(req, res) {
   if (u.searchParams.get("form") === "support-groups" || /\/api\/support-groups\/?$/.test(u.pathname)) return supportGroupsHandler(req, res);
   if (u.searchParams.get("form") === "meetings" || /\/api\/meetings\/?$/.test(u.pathname)) return meetingsHandler(req, res);
   if (u.searchParams.get("form") === "meeting-prompts" || /\/api\/meeting-prompts\/?$/.test(u.pathname)) return meetingPromptsHandler(req, res);
+  if (u.searchParams.get("form") === "meeting-attendance" || /\/api\/meeting-attendance\/?$/.test(u.pathname)) return meetingAttendanceHandler(req, res);
+  if (u.searchParams.get("form") === "attendance" || /\/api\/attendance\/?$/.test(u.pathname)) return attendanceHandler(req, res);
 
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "no-store");

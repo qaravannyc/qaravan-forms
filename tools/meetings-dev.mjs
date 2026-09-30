@@ -1,7 +1,9 @@
-// Local dev server for the meeting-link send page (/support/send): serves the repo's static
-// files and mounts api/survey.mjs the way vercel.json does (/api/meetings, /api/meeting-prompts)
-// against an in-memory store with sample people and a fake Gmail — nothing is written or sent.
-// Usage: node tools/meetings-dev.mjs [port] — it prints the send page link for a sample meeting.
+// Local dev server for the meeting-link send page (/support/send) and the after-meeting
+// attendance page (/support/attendance): serves the repo's static files and mounts
+// api/survey.mjs the way vercel.json does (/api/meetings, /api/meeting-prompts,
+// /api/attendance, /api/meeting-attendance) against in-memory stores with sample people and a
+// fake Gmail — nothing is written or sent.
+// Usage: node tools/meetings-dev.mjs [port] — it prints both page links for sample meetings.
 // GET /__mail shows the emails that would have gone out; GET /__store the board state.
 import http from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
@@ -22,6 +24,7 @@ globalThis.fetch = async (url, opts = {}) => {
 };
 
 const M = await import("../lib/meetings.mjs");
+const A = await import("../lib/attendance.mjs");
 const survey = (await import("../api/survey.mjs")).default;
 const start = new Date(Date.now() + 26 * 3600000); start.setUTCMinutes(30, 0, 0);
 const names = ["Алекс", "Мария Фомина", "Глеб Руденко", "Надежда", "Sasha Su", "Lana K", "Maksim", "Юлия", "Акжол (Nate)", "Людмила"];
@@ -39,15 +42,34 @@ const S = {
 };
 M.setStore(S);
 
+// прошедшая встреча для страницы отметок: двое уже отмечены, у троих — прошлые встречи
+const past = new Date(Date.now() - 2 * 3600000); past.setUTCMinutes(30, 0, 0);
+const card = (k) => ({ id: "c" + (k + 1), name: names[k], email: `person${k + 1}@example.com`, other: [] });
+const AS = {
+  meetings: { "901": { id: "901", name: "Support Group with Gina", group: "gina", start: past, status: "Confirmed", mail: {}, confirmed: [card(1), card(2)], excluded: [] } },
+  past: [{ id: "801", start: new Date(past.getTime() - 7 * 86400000), confirmed: [card(1), card(2), card(4)] }, { id: "800", start: new Date(past.getTime() - 14 * 86400000), confirmed: [card(1), card(4), card(6)] }],
+  cards: names.map((n, k) => card(k)), created: [],
+  async meeting(id) { const m = AS.meetings[id]; return m ? { ...m, confirmed: [...m.confirmed], excluded: [...m.excluded] } : null; },
+  async pastMeetings() { return AS.past; },
+  async people(g) { return S.rows[g].map((r) => ({ ...r })); },
+  async findCards(emails) { return new Map(emails.map((e) => [e, AS.cards.find((c) => c.email === e)]).filter(([, c]) => c)); },
+  async createCard(p) { const c = { id: "new" + AS.cards.length, name: p.name, email: p.email, other: [] }; AS.cards.push(c); AS.created.push(p); return c.id; },
+  async setEvidence(id, v) { AS.meetings[id].confirmed = v.confirmed.map((cid) => AS.cards.find((c) => c.id === cid)); if (v.excluded) AS.meetings[id].excluded = v.excluded; },
+  async saveMail(id, mail) { AS.meetings[id].mail = mail; },
+  async note() {},
+};
+A.setStore(AS);
+
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2" };
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
-    if (u.pathname === "/api/meetings" || u.pathname === "/api/meeting-prompts") return await survey(req, res);
+    if (["/api/meetings", "/api/meeting-prompts", "/api/attendance", "/api/meeting-attendance"].includes(u.pathname)) return await survey(req, res);
     if (u.pathname === "/__mail") { res.setHeader("Content-Type", "text/plain; charset=utf-8"); return res.end(MAIL.join("\n\n=====\n\n")); }
-    if (u.pathname === "/__store") { res.setHeader("Content-Type", "application/json"); return res.end(JSON.stringify(S, null, 1)); }
-    const f = join(root, u.pathname === "/support/send" ? "/support/send.html" : u.pathname);
+    if (u.pathname === "/__store") { res.setHeader("Content-Type", "application/json"); return res.end(JSON.stringify({ ...S, attendance: AS }, null, 1)); }
+    const page = { "/support/send": "/support/send.html", "/support/attendance": "/support/attendance.html" }[u.pathname];
+    const f = join(root, page || u.pathname);
     if (existsSync(f) && statSync(f).isFile()) { res.setHeader("Content-Type", TYPES[extname(f)] || "application/octet-stream"); return res.end(readFileSync(f)); }
     res.statusCode = 404; res.end("not found");
   } catch (e) { console.error(e); res.statusCode = 500; res.end("error"); }
-}).listen(port, () => console.log(`meetings dev server: ${M.sendUrl("900", "gina", start)}`));
+}).listen(port, () => console.log(`meetings dev server:\n  send: ${M.sendUrl("900", "gina", start)}\n  attendance: ${M.attendanceUrl("901", "gina", past)}`));
