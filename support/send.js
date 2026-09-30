@@ -40,9 +40,9 @@ const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch (e)
 function meta(p) {
   if (p.added) return "добавлен(а) вручную";
   const bits = [];
-  // статусы с доски Джины (по-английски на доске) — по-русски на странице
+  // статус с доски Джины — как на доске, с пояснением по-русски
   const ST = { New: "новая анкета", Contacted: "связались", "Intro call done": "знакомство прошло", Joined: "в группе", "Not now": "не сейчас" };
-  if (p.status) bits.push(ST[p.status] || p.status);
+  if (p.status) bits.push(ST[p.status] ? `${p.status} — ${ST[p.status]}` : p.status);
   if (p.source === "Typeform") bits.push("Typeform");
   if (p.city) bits.push(p.city);
   if (p.date) bits.push("анкета от " + new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(p.date.slice(0, 10) + "T12:00:00Z")));
@@ -61,7 +61,7 @@ function renderPeople() {
     return el("label", { className: "person", hidden: hide }, i, el("span", {}, el("div", { className: "nm", textContent: p.name || p.email }), el("div", { className: "em", textContent: p.email }), meta(p) ? el("div", { className: "meta", textContent: meta(p) }) : null));
   };
   if (on.length) { wrap.append(el("h3", { textContent: `Получат письмо (${on.length})` })); on.forEach((p) => wrap.append(row(p))); }
-  if (off.length) { wrap.append(el("h3", { textContent: `Остальные анкеты (${off.length})` })); off.forEach((p) => wrap.append(row(p))); }
+  if (off.length) { wrap.append(el("h3", { textContent: `${data.member ? "Не получат письмо" : "Остальные анкеты"} (${off.length})` })); off.forEach((p) => wrap.append(row(p))); }
   if (!shown) wrap.append(el("p", { className: "empty", textContent: q ? "Никого не нашли. Проверьте написание или добавьте человека ниже." : "На доске группы пока нет анкет." }));
   $("count").textContent = `Выбрано ${on.length} из ${people.length}`;
   $("send").textContent = on.length ? `Отправить ${on.length} ${plural(on.length)}` : "Отправить";
@@ -188,7 +188,7 @@ function renderSent() {
   $("groupTitle").textContent = j.title;
   $("when").textContent = j.meeting.line;
   $("bccHint").textContent = `Все получат одно письмо в скрытой копии и не увидят адреса друг друга. Копия придёт вам на ${j.leaderEmail}, ответы участников — тоже вам. ` +
-    (j.member ? "Галочка — это статус на доске: отметите человека — он станет «в группе» и будет получать письма и дальше; снимете — «не сейчас». Новые анкеты приходят без галочки."
+    (j.member ? "Здесь участники группы (статус Joined) и новые анкеты (New). Галочка — это статус на доске: отметите человека — он станет Joined и будет получать письма и дальше; снимете — Not now. Остальных (Contacted, Intro call done, Not now) здесь нет: если нужно, добавьте человека по почте внизу."
       : "Галочки запоминаются до следующей встречи.");
   $("cancelNote").hidden = !j.meeting.cancelled;
   $("link").value = j.link || ""; $("dial").value = j.dial || ""; $("subject").value = j.subject || ""; $("text").value = j.text || "";

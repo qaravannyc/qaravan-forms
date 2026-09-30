@@ -63,6 +63,14 @@
       "destination": "/api/survey?form=meeting-attendance"
     },
     {
+      "source": "/support/status",
+      "destination": "/support/status.html"
+    },
+    {
+      "source": "/api/status",
+      "destination": "/api/survey?form=status"
+    },
+    {
       "source": "/feedback/:id(\\d+)/lead",
       "destination": "/api/page?id=:id&lead=1"
     },

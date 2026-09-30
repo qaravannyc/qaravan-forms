@@ -65,20 +65,26 @@ test("dates are New York time; the subject says tomorrow", () => {
   const s = at("2026-09-30T23:30:00Z");
   assert.equal(M.when(s, 60).line, "Среда, 30 сентября, 19:30–20:30 по Нью-Йорку");
   assert.equal(M.when(at("2026-10-03T15:00:00Z")).line, "Суббота, 3 октября, 11:00 по Нью-Йорку");
-  assert.equal(M.defaultSubject("gina", s, NOW), "Группа поддержки: встреча завтра, 30 сентября, в 19:30");
+  assert.equal(M.defaultSubject("gina", s, NOW), "Еженедельная группа поддержки🏳️‍🌈"); // у Джины — постоянная тема
+  assert.equal(M.defaultSubject("simon", at("2026-10-03T15:00:00Z"), at("2026-10-02T16:00:00Z")), "Группа равной поддержки с Саймоном: встреча завтра, 3 октября, в 11:00");
   assert.equal(M.relDay(s, at("2026-09-30T14:00:00Z")), "сегодня");
   assert.equal(M.people(1), "1 человек"); assert.equal(M.people(3), "3 человека"); assert.equal(M.people(14), "14 человек");
 });
 
-test("page data: last meeting's link and text by default, one row per email, ticked first", async () => {
-  M.setStore(fakeStore());
+test("page data: last meeting's link and text by default, one row per email, ticked first; Gina: only Joined and New", async () => {
+  const st = fakeStore();
+  st.rows.gina.push({ id: "5", name: "Нина", email: "nina@example.com", checked: false, status: "New", source: "feedback.qaravan.org", date: "2026-09-29 10:00" },
+    { id: "6", name: "Олег", email: "oleg@example.com", checked: false, status: "Not now", source: "Typeform", date: "2025-01-01 10:00" },
+    { id: "7", name: "Таня", email: "tanya@example.com", checked: false, status: "Contacted", source: "Typeform", date: "2025-02-01 10:00" });
+  M.setStore(st);
   const d = await M.pageData(token(), NOW);
   assert.equal(d.title, "Группа поддержки");
   assert.equal(d.leaderEmail, "gina@rusalgbtq.org");
   assert.equal(d.link, "https://meet.google.com/old-link");
   assert.equal(d.text, "Прошлый текст Джины");
-  assert.equal(d.subject, "Группа поддержки: встреча завтра, 30 сентября, в 19:30");
-  assert.deepEqual(d.people.map((p) => [p.email, p.name, p.checked]), [["alex@example.com", "Алекс И.", true], ["maria@example.com", "Мария", false]]);
+  assert.equal(d.subject, "Еженедельная группа поддержки🏳️‍🌈");
+  // Мария (без статуса), Олег (Not now) и Таня (Contacted) не показываются; Нина (New) — со статусом
+  assert.deepEqual(d.people.map((p) => [p.email, p.name, p.checked, p.status]), [["alex@example.com", "Алекс И.", true, "Joined"], ["nina@example.com", "Нина", false, "New"]]);
   const none = fakeStore(); none.meetings["800"].mail = {}; none.meetings["800"].link = ""; M.setStore(none);
   const d2 = await M.pageData(token(), NOW);
   assert.equal(d2.link, "https://meet.google.com/tyu-nksn-hpd"); // постоянная ссылка Джины

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Статус анкеты</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="/survey/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/survey/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="preload" href="/assets/fonts/FiraSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/FiraSansCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/qaravan.css">
+<link rel="stylesheet" href="/assets/forms.css">
+<link rel="stylesheet" href="/support/support.css">
+<style>
+/* статус анкеты группы поддержки по кнопке из письма команде: см. /support/status.js и lib/status.mjs */
+.hero{opacity:1; transform:none}
+.who{margin:8px 0 0; font-size:15px; line-height:1.4; color:var(--q-muted); overflow-wrap:anywhere}
+.opts label .st{display:block; font:600 17px/1.3 var(--font-head); letter-spacing:.01em}
+.opts label .ht{display:block; margin-top:2px; font:400 15px/1.4 var(--font-brand); color:var(--q-muted)}
+.opts label .now{margin-left:8px; font:600 13.5px/1.2 var(--font-head); letter-spacing:.1em; text-transform:uppercase; color:var(--q-muted)}
+.opts label:has(input:checked) .ht{font-weight:400}
+.mlink{display:inline-block; margin-top:20px; color:var(--q-ink); font-weight:600; text-decoration:underline; text-decoration-color:var(--q-sky);
+  text-decoration-thickness:2px; text-underline-offset:4px}
+.btn-line{display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 18px; border:2px solid var(--q-ink);
+  background:var(--q-white); color:var(--q-ink); font:600 17px/1.15 var(--font-head); letter-spacing:.01em; cursor:pointer}
+.btn-line:hover{background:var(--q-line)}
+.btn-line:active{transform:translateY(1px)}
+#view[hidden],#done[hidden],#problem[hidden],#loading[hidden]{display:none}
+#done h1:focus,#problem h1:focus{outline:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><img src="/assets/logo-wordmark.svg" width="140" height="28" alt="qaravan"></a>
+  </div>
+
+  <p id="loading" class="sub">Загружаем…</p>
+
+  <div id="problem" hidden>
+    <h1 id="problemT" tabindex="-1"></h1>
+    <p class="intro" id="problemP"></p>
+  </div>
+
+  <div id="view" hidden>
+    <header class="hero">
+      <div class="eyebrow" style="--flag:var(--q-purple)" id="groupTitle"></div>
+      <h1 id="name"></h1>
+      <p class="who" id="who"></p>
+    </header>
+
+    <form id="f" novalidate>
+      <fieldset>
+        <legend id="stQ">Статус
+          <span class="hint">Те же статусы, что в колонке Status на доске группы в monday. Выбор сразу запишется туда.</span></legend>
+        <div class="opts" id="opts" role="radiogroup" aria-labelledby="stQ"></div>
+      </fieldset>
+
+      <div class="submit">
+        <p class="err" id="err" role="alert"></p>
+        <button type="submit" id="save">Сохранить статус</button>
+        <p><a class="mlink" id="mlink" href="#" target="_blank" rel="noopener">Открыть в monday</a></p>
+        <footer>qaravan.org</footer>
+      </div>
+    </form>
+  </div>
+
+  <div id="done" hidden>
+    <h1 id="doneT" tabindex="-1"></h1>
+    <p class="intro" id="doneP"></p>
+    <p style="margin-top:24px"><button type="button" class="btn-line" id="back">Изменить ещё раз</button></p>
+    <footer>qaravan.org</footer>
+  </div>
+</div>
+<script src="/support/status.js"></script>
+</body>
+</html>

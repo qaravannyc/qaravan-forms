@@ -1,9 +1,9 @@
-// Local dev server for the meeting-link send page (/support/send) and the after-meeting
-// attendance page (/support/attendance): serves the repo's static files and mounts
+// Local dev server for the meeting-link send page (/support/send), the after-meeting
+// attendance page (/support/attendance) and the sign-up status page (/support/status): serves the repo's static files and mounts
 // api/survey.mjs the way vercel.json does (/api/meetings, /api/meeting-prompts,
-// /api/attendance, /api/meeting-attendance) against in-memory stores with sample people and a
+// /api/attendance, /api/meeting-attendance, /api/status) against in-memory stores with sample people and a
 // fake Gmail — nothing is written or sent.
-// Usage: node tools/meetings-dev.mjs [port] — it prints both page links for sample meetings.
+// Usage: node tools/meetings-dev.mjs [port] — it prints the page links for sample data.
 // GET /__mail shows the emails that would have gone out; GET /__store the board state.
 import http from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
@@ -25,12 +25,13 @@ globalThis.fetch = async (url, opts = {}) => {
 
 const M = await import("../lib/meetings.mjs");
 const A = await import("../lib/attendance.mjs");
+const ST = await import("../lib/status.mjs");
 const survey = (await import("../api/survey.mjs")).default;
 const start = new Date(Date.now() + 26 * 3600000); start.setUTCMinutes(30, 0, 0);
 const names = ["Алекс", "Мария Фомина", "Глеб Руденко", "Надежда", "Sasha Su", "Lana K", "Maksim", "Юлия", "Акжол (Nate)", "Людмила"];
 const S = {
   meetings: { "900": { id: "900", name: "Support Group with Gina", group: "gina", start, status: "Confirmed", link: "", mail: {} } },
-  rows: { gina: names.map((n, k) => ({ id: String(k + 1), name: n, email: `person${k + 1}@example.com`, checked: k < 4, status: k === 0 ? "New" : k < 4 ? "Joined" : "", source: k < 2 ? "feedback.qaravan.org" : "Typeform", date: `2026-0${9 - (k % 8)}-1${k % 9} 10:00` })), simon: [] },
+  rows: { gina: names.map((n, k) => ({ id: String(k + 1), name: n, email: `person${k + 1}@example.com`, checked: k >= 1 && k < 4, status: [0, 4].includes(k) ? "New" : k < 4 ? "Joined" : k === 5 ? "Contacted" : k === 6 ? "Not now" : "", source: k < 2 ? "feedback.qaravan.org" : "Typeform", date: `2026-0${9 - (k % 8)}-1${k % 9} 10:00` })), simon: [] },
   async meeting(id) { return S.meetings[id] || null; },
   async meetingsBetween() { return Object.values(S.meetings); },
   async previousMeetings() { return []; },
@@ -60,16 +61,24 @@ const AS = {
 };
 A.setStore(AS);
 
+// статус анкеты (/support/status): первая строка доски Джины, метки — как на доске
+const LABELS = ["New", "Contacted", "Intro call done", "Joined", "Not now"];
+ST.setStore({
+  async load(g, id) { const r = S.rows[g].find((x) => x.id === id); return { item: r ? { id: r.id, name: r.name, status: r.status, email: r.email, date: r.date } : null, labels: LABELS }; },
+  async setStatus(g, id, label) { const r = S.rows[g].find((x) => x.id === id); r.status = label; r.checked = label === "Joined"; },
+  async note() {},
+});
+
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2" };
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   try {
-    if (["/api/meetings", "/api/meeting-prompts", "/api/attendance", "/api/meeting-attendance"].includes(u.pathname)) return await survey(req, res);
+    if (["/api/meetings", "/api/meeting-prompts", "/api/attendance", "/api/meeting-attendance", "/api/status"].includes(u.pathname)) return await survey(req, res);
     if (u.pathname === "/__mail") { res.setHeader("Content-Type", "text/plain; charset=utf-8"); return res.end(MAIL.join("\n\n=====\n\n")); }
     if (u.pathname === "/__store") { res.setHeader("Content-Type", "application/json"); return res.end(JSON.stringify({ ...S, attendance: AS }, null, 1)); }
-    const page = { "/support/send": "/support/send.html", "/support/attendance": "/support/attendance.html" }[u.pathname];
+    const page = { "/support/send": "/support/send.html", "/support/attendance": "/support/attendance.html", "/support/status": "/support/status.html" }[u.pathname];
     const f = join(root, page || u.pathname);
     if (existsSync(f) && statSync(f).isFile()) { res.setHeader("Content-Type", TYPES[extname(f)] || "application/octet-stream"); return res.end(readFileSync(f)); }
     res.statusCode = 404; res.end("not found");
   } catch (e) { console.error(e); res.statusCode = 500; res.end("error"); }
-}).listen(port, () => console.log(`meetings dev server:\n  send: ${M.sendUrl("900", "gina", start)}\n  attendance: ${M.attendanceUrl("901", "gina", past)}`));
+}).listen(port, () => console.log(`meetings dev server:\n  send: ${M.sendUrl("900", "gina", start)}\n  attendance: ${M.attendanceUrl("901", "gina", past)}\n  status: ${ST.statusUrl("1", "gina")}`));
