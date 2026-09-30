@@ -99,12 +99,15 @@ test("team email: the context section comes first, escaped; a failed check says 
   const { p } = S.parseSignup({ group: "gina", lang: "ru", name: "Алекс", email: "alex@example.com", phone: "2125550123", pronouns: "they", in_us: "yes", regular: "yes", intro: "yes", rules: true, expect: "Поддержки.", needs: ["work"] });
   const d = L.withoutItem(L.buildDossier(FIRST, EVENTS, { now: NOW, group: GINA }), "888");
   const { html } = Mail.signupEmail(p, { itemUrl: "https://qaravan.monday.com/boards/1/pulses/2", now: NOW, known: d });
-  assert.ok(html.indexOf(L.TITLE) > 0 && html.indexOf(L.TITLE) < html.indexOf("Контакты"));
+  // как SectionHeader: заголовок «Контекст», под ним приглушённая строка; раздел — до «Контактов»
+  const at = html.indexOf(`>${L.HEAD_TITLE}</div>`), line = html.indexOf(L.HEAD_LINE);
+  assert.ok(at > 0 && line > at && line < html.indexOf("Контакты"));
   assert.match(html, /href="https:\/\/qaravan\.monday\.com\/boards\/18425190164\/pulses\/500"[^>]*>Открыть карточку</);
   assert.match(html, /10 января 2025 — Группа поддержки &lt;с Региной&gt;/);
   assert.match(html, /Подписано 28 сентября 2026/);
   const failed = Mail.signupEmail(p, { now: NOW, known: { ok: false } }).html;
   assert.match(failed, /Проверить не получилось: monday не ответил/);
-  assert.doesNotMatch(Mail.signupEmail(p, { now: NOW }).html, /Контекст: что робот нашёл/);
+  assert.doesNotMatch(Mail.signupEmail(p, { now: NOW }).html, /Что робот нашёл/);
+  assert.match(html, /<div style="padding-top:4px;font-size:15px;line-height:1\.4;color:#5E5A53;">и ещё|10 января 2025/); // список событий построчно
   assert.match(S.updateText(p, d), /\n\nКонтекст: что робот нашёл про этого человека на разных досках Monday\nКарточка на доске посетителей мероприятий: Есть/);
 });
