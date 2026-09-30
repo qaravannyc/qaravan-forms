@@ -236,3 +236,20 @@ test("routes: /api/meetings answers through the survey function; prompts need th
   process.env.CRON_SECRET = "cron";
   M.setStore(null);
 });
+
+test("board rows: the sign-up date comes only from Submitted on Gina's board; Simon's rows use when the form created them", async () => {
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    if (!String(url).startsWith("https://api.monday.com/")) return real(url, opts);
+    const gina = JSON.parse(opts.body).variables.b[0] === "18433061986";
+    const items = gina
+      ? [{ id: "1", name: "Добавлена вручную", created_at: "2026-09-30T13:49:34Z", column_values: [{ id: "email", text: "a@example.com" }, { id: "sg_status", text: "Joined" }, { id: "submitted", text: "" }] },
+        { id: "2", name: "Из Typeform", created_at: "2026-09-28T18:46:47Z", column_values: [{ id: "email", text: "b@example.com" }, { id: "submitted", text: "2026-09-28 11:08" }] }]
+      : [{ id: "3", name: "Из формы monday", created_at: "2026-05-01T10:00:00Z", column_values: [{ id: "email_2", text: "c@example.com" }] }];
+    return new Response(JSON.stringify({ data: { boards: [{ items_page: { items } }] } }));
+  };
+  try {
+    assert.deepEqual((await M.mondayStore.people("gina")).map((r) => [r.id, r.date]), [["1", ""], ["2", "2026-09-28 11:08"]]); // не день, когда завели строку
+    assert.equal((await M.mondayStore.people("simon"))[0].date, "2026-05-01T10:00:00Z");
+  } finally { globalThis.fetch = real; }
+});
