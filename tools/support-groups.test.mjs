@@ -259,13 +259,13 @@ test("before the team email: what monday knows goes into the update and the emai
     const { res, upd } = await send(gina());
     assert.equal(res.body, '{"ok":true}');
     const t = upd.variables.t;
-    assert.match(t, /Что уже есть в monday:\nКарточка в Attendees: Есть, в базе с 18 мая 2024, https:\/\/qaravan\.monday\.com\/boards\/18425190164\/pulses\/500/);
+    assert.match(t, /Контекст: что робот нашёл про этого человека на разных досках Monday\nКарточка на доске посетителей мероприятий: Есть, в базе с 18 мая 2024, https:\/\/qaravan\.monday\.com\/boards\/18425190164\/pulses\/500/);
     assert.match(t, /Мероприятия \(1\): 1 июня 2025 — Пикник/);
-    assert.match(t, /Community Agreement: Не подписан/);
+    assert.match(t, /Community Agreement: Не подписано/);
     assert.doesNotMatch(t, /Прежние анкеты/); // 888 — это сама новая строка
     assert.equal(mails.length, 1);
     const html = Buffer.from(mails[0].split("\r\n\r\n").slice(1).join("\r\n\r\n"), "utf8").toString("utf8");
-    assert.match(html, /Что уже есть в monday/);
+    assert.match(html, /Контекст: что робот нашёл/);
     assert.match(html, /1 июня 2025 — Пикник/);
   } finally { lookupReply = null; delete process.env.GOOGLE_REFRESH_TOKEN; }
 });
