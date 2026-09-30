@@ -87,6 +87,21 @@ en: {
 
 const RULES_RU = "Правила простые: то, что сказано в группе, остаётся в группе; никто не обязан рассказывать больше, чем хочет, можно просто слушать.";
 const RULES_EN = "The rules are simple: what’s said in the group stays in the group, nobody has to share more than they want to, and it’s fine to just listen.";
+// Правила группы Джины (её текст): показываются списком над галочкой «Обещаю соблюдать».
+const GINA_RULES_RU = [
+  ["Соблюдаем конфиденциальность.", "Не рассказываем и не пишем о том, что говорят участники группы на встречах."],
+  ["Агрессия недопустима.", "Общаемся с уважением."],
+  ["Откровенность и участие каждого.", "Говорим о себе от первого лица."],
+  ["Национальные распри запрещены.", "Каждый человек индивидуален, и мы не обобщаем по расовому или этническому признаку."],
+  ["Относимся друг к другу бережно.", "Цель нашей группы — взаимоподдержка. Думаем о том, как наши слова и поступки влияют на других."],
+];
+const GINA_RULES_EN = [
+  ["We keep it confidential.", "We don’t retell or write about what members say at meetings."],
+  ["No aggression.", "We treat each other with respect."],
+  ["Openness, and everyone takes part.", "We speak about ourselves, in the first person."],
+  ["No national feuds.", "Everyone is an individual, and we don’t generalize by race or ethnicity."],
+  ["We take care of each other.", "Our group is here for mutual support. We think about how our words and actions affect others."],
+];
 
 const TEXTS = {
 gina: {
@@ -95,7 +110,7 @@ gina: {
     eyebrow: "Группа поддержки",
     intro: ["Раз в неделю мы встречаемся в Zoom и говорим о жизни здесь, какая она есть: ожидание документов, поиск работы и жилья, семья на расстоянии, одиночество в большом городе. Это постоянная группа для русскоязычных ЛГБТК+ людей, которые живут в США. Ведёт группу Джина."],
     second: "A weekly Zoom support group for Russian-speaking LGBTQ+ people in the US, led by Gina.",
-    note: RULES_RU,
+    note: "Правила группы — в конце анкеты. Главное из них: то, что сказано в группе, остаётся в группе.",
     steps: "Заполните анкету: мы свяжемся с вами, договоримся о коротком знакомстве в Zoom и пришлём ссылку на встречу.",
     q_name: "Как вас зовут?", h_name: "Имя и фамилия",
     q_pronouns: "Какие местоимения вы используете?", h_pronouns: "Так к вам будут обращаться в группе.",
@@ -107,8 +122,8 @@ gina: {
     f_in_us: "Расскажите подробнее", fp_in_us: "Например: пока живу в другой стране", e_in_us_note: "Расскажите подробнее, чтобы мы поняли, подойдёт ли вам группа.",
     q_regular: "Получится приходить на встречи регулярно?",
     q_intro: "Найдёте 15 минут на знакомство в Zoom до первой встречи?",
-    q_rules: "Правила группы", h_rules: "Мы бережём комфорт и приватность каждого участника.",
-    c_rules: "Обещаю соблюдать правила группы и конфиденциальность: то, что сказано в группе, остаётся в группе.",
+    q_rules: "Правила группы", h_rules: "Мы бережём комфорт и приватность каждого участника.", list_rules: GINA_RULES_RU,
+    c_rules: "Обещаю соблюдать эти правила.",
     e_rules: "Отметьте, что согласны с правилами: без этого участвовать в группе нельзя.",
     q_expect: "Чего вы ждёте от группы?",
     q_needs: "Что вам сейчас нужнее всего?", h_needs: "Выберите до трёх. Сверху — то, что участники группы называют чаще всего.",
@@ -127,7 +142,7 @@ gina: {
     title: "Support Group with Gina",
     eyebrow: "Support group",
     intro: ["Once a week we meet on Zoom to talk about life here as it actually is: waiting on paperwork, looking for work and housing, family far away, feeling alone in a big city. It’s an ongoing group for Russian-speaking LGBTQ+ people living in the US. Gina leads the group."],
-    note: RULES_EN,
+    note: "The group rules are at the end of the form. The main one: what’s said in the group stays in the group.",
     steps: "Fill in the form: we’ll get in touch, set up a short Zoom intro and send you the meeting link.",
     q_name: "What’s your name?", h_name: "First and last name",
     q_pronouns: "What are your pronouns?", h_pronouns: "So the group addresses you the right way.",
@@ -139,8 +154,8 @@ gina: {
     f_in_us: "Tell us more", fp_in_us: "For example: I live in another country for now", e_in_us_note: "Tell us more so we can see whether the group is right for you.",
     q_regular: "Can you come to meetings regularly?",
     q_intro: "Can you find 15 minutes for a Zoom intro before your first meeting?",
-    q_rules: "Group rules", h_rules: "We look after every member’s comfort and privacy.",
-    c_rules: "I promise to follow the group rules and keep confidentiality: what’s said in the group stays in the group.",
+    q_rules: "Group rules", h_rules: "We look after every member’s comfort and privacy.", list_rules: GINA_RULES_EN,
+    c_rules: "I promise to follow these rules.",
     e_rules: "Tick the box to agree to the rules: you can’t join the group without it.",
     q_expect: "What do you hope to get from the group?",
     q_needs: "What do you need most right now?", h_needs: "Pick up to three. The top ones are what group members name most often.",
@@ -400,7 +415,11 @@ function renderField(f) {
     i.setAttribute("aria-describedby", f.id + "Err");
     i.setAttribute("aria-required", "true");
     i.onchange = () => { A[f.id] = i.checked; onChange(); };
-    fs.append(legend(f), el("div", { className: "opts consent", id: f.id + "Box" }, el("label", {}, i, el("span", { textContent: T("c_" + f.id) }))), errorLine(f.id, T("e_" + f.id)));
+    // сами правила — нумерованным списком перед галочкой (у Джины их пять)
+    const list = T("list_" + f.id);
+    const rules = Array.isArray(list) ? el("ol", { className: "rules", id: f.id + "List" }, ...list.map(([t, d]) => el("li", {}, el("span", {}, el("b", { textContent: t }), " ", d)))) : null;
+    if (rules) i.setAttribute("aria-describedby", `${f.id}List ${f.id}Err`);
+    fs.append(legend(f), rules, el("div", { className: "opts consent", id: f.id + "Box" }, el("label", {}, i, el("span", { textContent: T("c_" + f.id) }))), errorLine(f.id, T("e_" + f.id)));
   }
   return fs;
 }

@@ -24,6 +24,13 @@ input[aria-invalid="true"],textarea[aria-invalid="true"]{border-color:var(--dang
 /* a follow-up that opens under a choice (other pronouns, "not exactly") */
 .follow{margin-top:14px}
 .follow[hidden]{display:none}
+/* the group's rules before the consent tick: numbered rows under hairlines, the rule in 600
+   and its explanation after it, ink on white; numerals in the condensed face */
+.rules{list-style:none; counter-reset:rule; margin:0 0 16px; padding:0; border-top:1px solid var(--q-line)}
+.rules li{counter-increment:rule; display:grid; grid-template-columns:24px minmax(0,1fr); column-gap:8px;
+  padding:12px 0; border-bottom:1px solid var(--q-line); line-height:1.5; text-wrap:pretty}
+.rules li::before{content:counter(rule); font:600 16px/1.5 var(--font-head); font-variant-numeric:tabular-nums}
+.rules b{font-weight:600}
 /* the rules consent: one checkbox row, the whole row is the target */
 .opts.consent label{font-weight:400}
 .opts.consent label:has(input:checked){font-weight:400}
