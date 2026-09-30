@@ -169,11 +169,12 @@ Typeform (dbH75jNe), `feedback.qaravan.org/support/simon` — форму monday 
 - О каждой анкете команде уходит письмо от info@qaravan.org (`lib/support-mail.mjs`,
   тот же Gmail-токен, что у анкеты на письмо), свёрстанное по дизайн-системе 2026-09,
   как сами анкеты: разделы «Контакты», «Ответы», «Что нужнее всего» и кнопка
-  «Открыть в monday». Кому — `NOTIFY` в том же файле
-  (сейчас ezra@qaravan.org для обеих групп); переменные Vercel `SUPPORT_NOTIFY_GINA`
-  и `SUPPORT_NOTIFY_SIMON` (адреса через запятую) их переопределяют. Автоматизацию
-  доски Саймона «Email peer-support registrations to Ezra» выключили, чтобы письма
-  не приходили дважды, а старую форму monday на этой доске закрыли.
+  «Открыть в monday». Кому — `NOTIFY` в том же файле (сейчас у Джины —
+  info@qaravan.org, gina@rusalgbtq.org и ezra@qaravan.org, у Саймона — ezra@qaravan.org);
+  переменные Vercel `SUPPORT_NOTIFY_GINA` и `SUPPORT_NOTIFY_SIMON` (адреса через запятую)
+  их переопределяют. У доски Саймона ещё работает автоматизация monday «Email
+  peer-support registrations to Ezra» (выключить может только владелец доски), так что
+  анкета Саймона приходит Эзре дважды; старую форму monday на этой доске закрыли.
 - Локально: `node tools/support-groups-dev.mjs` — сервер на :3997 с поддельным
   monday, `/__db` показывает, что ушло бы на доски. Проверки:
   `node --test tools/support-groups.test.mjs`.
