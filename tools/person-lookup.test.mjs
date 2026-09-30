@@ -57,11 +57,11 @@ test("dossier: attended = confirmed + verified registrations on past, not cancel
   assert.equal(d.agreement, "2026-09-28"); // с доски Community Agreement, хотя на карточке пусто
   assert.deepEqual(d.earlier.map((e) => [e.id, e.date, e.status]), [["5", "2025-02-02", "Joined"]]);
   const text = L.dossierText(d, { group: "gina" });
-  assert.match(text, /^Что уже есть в monday:\nКарточка в Attendees: Есть, в базе с 18 мая 2024, https:\/\/qaravan\.monday\.com\/boards\/18425190164\/pulses\/500/);
+  assert.match(text, /^Контекст: что робот нашёл про этого человека на разных досках Monday\nКарточка на доске посетителей мероприятий: Есть, в базе с 18 мая 2024, https:\/\/qaravan\.monday\.com\/boards\/18425190164\/pulses\/500/);
   assert.match(text, /Мероприятия \(2\): 1 мая 2026 — Брайтон Бич Прайд\n  10 января 2025 — Группа поддержки <с Региной>/);
   assert.match(text, /Проводил\(а\) мероприятия \(1\): 3 марта 2025 — Вечер настолок/);
   assert.match(text, /Волонтёрство: На карточке: Volunteer\. Навыки: фото\n  Заявка 1 августа 2026: Event lead, Maker \(Новая\)/);
-  assert.match(text, /Community Agreement: Подписан 28 сентября 2026/);
+  assert.match(text, /Community Agreement: Подписано 28 сентября 2026/);
   assert.match(text, /Прежние анкеты в группу Джины: 1, последняя 2 февраля 2025, статус Joined/);
   assert.doesNotMatch(text, /·/);
 });
@@ -70,14 +70,14 @@ test("dossier: a card found by phone says so; no card at all still shows the agr
   const byPhone = { ...FIRST, byEmail: { items: [] }, byPhone: { items: [member("600")] } };
   const d = L.buildDossier(byPhone, { boards: [{}] }, { now: NOW, group: GINA });
   assert.equal(d.member.by, "phone");
-  assert.match(L.dossierText(d, { group: "gina" }), /Карточка в Attendees: Есть, в базе с 18 мая 2024 \(нашли по телефону\)/);
+  assert.match(L.dossierText(d, { group: "gina" }), /Карточка на доске посетителей мероприятий: Есть, в базе с 18 мая 2024 \(нашли по телефону\)/);
   const none = L.buildDossier({ ...FIRST, byEmail: { items: [] }, volunteers: { items: [] }, earlier: { items: [] } }, null, { now: NOW, group: GINA });
   assert.equal(none.member, null);
   const t = L.dossierText(none, { group: "gina" });
-  assert.match(t, /Карточка в Attendees: Нет: ни почта, ни телефон нам раньше не встречались/);
+  assert.match(t, /Карточка на доске посетителей мероприятий: Нет: ни почта, ни телефон нам раньше не встречались/);
   assert.match(t, /Мероприятия: Ни одного подтверждённого/);
-  assert.match(t, /Волонтёрство: Нет/);
-  assert.match(t, /Community Agreement: Подписан 28 сентября 2026/);
+  assert.match(t, /Волонтёрство: Статус неизвестен/);
+  assert.match(t, /Community Agreement: Подписано 28 сентября 2026/);
   assert.doesNotMatch(t, /Прежние анкеты/);
 });
 
@@ -92,19 +92,19 @@ test("lookup: events are asked only for a found card; errors and slowness give o
   assert.equal(d2.member, null); assert.equal(seen.length, 1);
   assert.deepEqual(await L.lookupPerson({ email: "x@example.com" }, { api: async () => { throw new Error("boom"); } }), { ok: false });
   assert.deepEqual(await L.lookupPerson({ email: "x@example.com" }, { api: () => new Promise(() => {}), timeoutMs: 30 }), { ok: false });
-  assert.equal(L.dossierText({ ok: false }), "Что уже есть в monday: проверить не получилось.");
+  assert.equal(L.dossierText({ ok: false }), `${L.TITLE}\nПроверить не получилось: monday не ответил.`);
 });
 
-test("team email: «Что уже есть в monday» comes first, escaped; a failed check says so", () => {
+test("team email: the context section comes first, escaped; a failed check says so", () => {
   const { p } = S.parseSignup({ group: "gina", lang: "ru", name: "Алекс", email: "alex@example.com", phone: "2125550123", pronouns: "they", in_us: "yes", regular: "yes", intro: "yes", rules: true, expect: "Поддержки.", needs: ["work"] });
   const d = L.withoutItem(L.buildDossier(FIRST, EVENTS, { now: NOW, group: GINA }), "888");
   const { html } = Mail.signupEmail(p, { itemUrl: "https://qaravan.monday.com/boards/1/pulses/2", now: NOW, known: d });
-  assert.ok(html.indexOf("Что уже есть в monday") > 0 && html.indexOf("Что уже есть в monday") < html.indexOf("Контакты"));
+  assert.ok(html.indexOf(L.TITLE) > 0 && html.indexOf(L.TITLE) < html.indexOf("Контакты"));
   assert.match(html, /href="https:\/\/qaravan\.monday\.com\/boards\/18425190164\/pulses\/500"[^>]*>Открыть карточку</);
   assert.match(html, /10 января 2025 — Группа поддержки &lt;с Региной&gt;/);
-  assert.match(html, /Подписан 28 сентября 2026/);
+  assert.match(html, /Подписано 28 сентября 2026/);
   const failed = Mail.signupEmail(p, { now: NOW, known: { ok: false } }).html;
   assert.match(failed, /Проверить не получилось: monday не ответил/);
-  assert.doesNotMatch(Mail.signupEmail(p, { now: NOW }).html, /Что уже есть в monday/);
-  assert.match(S.updateText(p, d), /\n\nЧто уже есть в monday:\nКарточка в Attendees: Есть/);
+  assert.doesNotMatch(Mail.signupEmail(p, { now: NOW }).html, /Контекст: что робот нашёл/);
+  assert.match(S.updateText(p, d), /\n\nКонтекст: что робот нашёл про этого человека на разных досках Monday\nКарточка на доске посетителей мероприятий: Есть/);
 });
