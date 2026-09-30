@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 process.env.MONDAY_TOKEN = "fake";
 const calls = [];
 let failFirstCreate = false;
+let lookupReply = null;
 const mails = [];
 globalThis.fetch = async (url, opts = {}) => {
   if (String(url).startsWith("https://oauth2.googleapis.com/")) return new Response(JSON.stringify({ access_token: "tok" }));
@@ -19,6 +20,9 @@ globalThis.fetch = async (url, opts = {}) => {
     return new Response(JSON.stringify({ data: { create_item: { id: "888" } } }));
   }
   if (query.includes("create_update")) return new Response(JSON.stringify({ data: { create_update: { id: "u1" } } }));
+  // поиск «что уже есть в monday» (lib/person-lookup.mjs): по умолчанию monday отвечает ошибкой
+  if (lookupReply && query.includes("byEmail")) return new Response(JSON.stringify({ data: lookupReply.first }));
+  if (lookupReply && query.includes("attendance_confirmed")) return new Response(JSON.stringify({ data: lookupReply.events }));
   return new Response(JSON.stringify({ errors: [{ message: "unexpected" }] }));
 };
 
@@ -236,4 +240,32 @@ test("a sign-up sends the team email with the row link; a failed email doesn't f
   const { res: res2 } = await send(simon());
   assert.equal(res2.body, '{"ok":true}');
   assert.equal(mails.length, 0);
+});
+
+test("before the team email: what monday knows goes into the update and the email; the new row is not an earlier sign-up", async () => {
+  process.env.GOOGLE_REFRESH_TOKEN = "fake";
+  mails.length = 0;
+  const cv = (o) => Object.entries(o).map(([id, text]) => ({ id, text }));
+  lookupReply = {
+    first: {
+      byEmail: { items: [{ id: "500", name: "Алекс", column_values: cv({ date_mm63nt8n: "2024-05-18" }), led: [{ linked_items: [] }] }] },
+      byOther: [{ items_page: { items: [] } }], byPhone: { items: [] },
+      agreement: [{ items_page: { items: [] } }], volunteers: { items: [] },
+      earlier: { items: [{ id: "888", created_at: "2026-09-30T15:00:00Z", column_values: cv({ sg_status: "New" }) }] },
+    },
+    events: { boards: [{ confirmed: { items: [] }, registered: { items: [{ id: "E1", name: "Пикник", column_values: cv({ date4: "2025-06-01 12:00", status: "Done" }) }] }, excluded: { items: [] } }] },
+  };
+  try {
+    const { res, upd } = await send(gina());
+    assert.equal(res.body, '{"ok":true}');
+    const t = upd.variables.t;
+    assert.match(t, /Что уже есть в monday:\nКарточка в Attendees: Есть, в базе с 18 мая 2024, https:\/\/qaravan\.monday\.com\/boards\/18425190164\/pulses\/500/);
+    assert.match(t, /Мероприятия \(1\): 1 июня 2025 — Пикник/);
+    assert.match(t, /Community Agreement: Не подписан/);
+    assert.doesNotMatch(t, /Прежние анкеты/); // 888 — это сама новая строка
+    assert.equal(mails.length, 1);
+    const html = Buffer.from(mails[0].split("\r\n\r\n").slice(1).join("\r\n\r\n"), "utf8").toString("utf8");
+    assert.match(html, /Что уже есть в monday/);
+    assert.match(html, /1 июня 2025 — Пикник/);
+  } finally { lookupReply = null; delete process.env.GOOGLE_REFRESH_TOKEN; }
 });
