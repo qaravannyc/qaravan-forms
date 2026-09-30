@@ -88,18 +88,18 @@ test("monday's challenge comes back as is", async () => {
 });
 
 test("a sign-up made seconds ago, unsigned, gets one invite with the personal link", async () => {
-  reset({ [VOLUNTEERS]: [signup(1, "Maria Milosh", "Maria@Example.com")] });
+  reset({ [VOLUNTEERS]: [signup(1, "Maria Orlova", "Maria@Example.com")] });
   const r = await call({ itemId: 1, boardId: VOLUNTEERS });
   assert.deepEqual([r.status, r.json], [200, { ok: true, result: "sent", why: "Volunteer sign-up form" }]);
   assert.equal(JSON.stringify(r.json).includes("maria"), false, "no names or addresses in the answer");
   const [row] = S.writes;
   assert.equal(row.kind, "create");
-  assert.deepEqual([row.name, row.v.email.email, row.v.invite_status, row.v.reminders], ["Maria Milosh", "maria@example.com", { label: "Invited" }, "0"]);
+  assert.deepEqual([row.name, row.v.email.email, row.v.invite_status, row.v.reminders], ["Maria Orlova", "maria@example.com", { label: "Invited" }, "0"]);
   assert.match(row.v.invite_code, /^[0-9a-f]{12}$/);
   assert.equal(S.mails.length, 1);
   assert.match(S.mails[0], /^From: QARAVAN <info@qaravan\.org>\r\nTo: maria@example\.com\r\n/);
   const html = htmlOf(S.mails[0]);
-  assert.ok(html.includes(`?r=use1&amp;name=Maria%20Milosh&amp;email=maria%40example.com&amp;invite=${row.v.invite_code}`));
+  assert.ok(html.includes(`?r=use1&amp;name=Maria%20Orlova&amp;email=maria%40example.com&amp;invite=${row.v.invite_code}`));
   assert.ok(html.includes("Hi Maria!"));
 });
 
@@ -140,6 +140,17 @@ test("signed on the agreement board, or on the old form: no invite", async () =>
   assert.deepEqual([S.writes, S.mails], [[], []]);
 });
 
+test("a first name only: the link carries the member card's full name, the greeting a capital", async () => {
+  reset({
+    [VOLUNTEERS]: [signup(1, "svetlana", "sveta@example.com", { member: [900] })],
+    [MEMBERS]: [{ id: "900", name: "Svetlana Petrova", created_at: "2026-01-01T00:00:00Z", group: { id: "topics" }, column_values: [emailCol("email_mm5ysnnh", "sveta@example.com"), cv("text_mm63j91w", ""), cv("date_mm63tz8c", "")] }],
+  });
+  assert.equal((await call({ itemId: 1 })).json.result, "sent");
+  const html = htmlOf(S.mails[0]);
+  assert.ok(html.includes("&amp;name=Svetlana%20Petrova&amp;email=sveta%40example.com"));
+  assert.ok(html.includes("Hi Svetlana!"));
+});
+
 test("signed under the member card's other email: no invite", async () => {
   reset({
     [VOLUNTEERS]: [signup(1, "Masha Ivanova", "masha@example.com", { member: [900] })],
@@ -163,9 +174,9 @@ test("rows from other boards, deleted rows and a wrong board are refused", async
 });
 
 test("a second call racing the first steps back and removes its own row", async () => {
-  reset({ [EVENT_VOLUNTEERS]: [signup(3, "Irina Knyazeva", "irina@example.com")] });
+  reset({ [EVENT_VOLUNTEERS]: [signup(3, "Irina Belova", "irina@example.com")] });
   // The other call's row lands between our create and our second look.
-  S.beforeRecheck = () => S.boards[INVITES].unshift(invite(999, "Irina Knyazeva", "irina@example.com"));
+  S.beforeRecheck = () => S.boards[INVITES].unshift(invite(999, "Irina Belova", "irina@example.com"));
   const r = await call({ itemId: 3 });
   assert.equal(r.json.why, "already invited (a parallel call)");
   assert.deepEqual(S.writes.map((w) => w.kind), ["create", "delete"]);
