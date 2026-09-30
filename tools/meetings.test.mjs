@@ -178,6 +178,16 @@ test("prompt: tomorrow's meetings only, once, not for cancelled ones; the button
   assert.equal(mails.length, 0);
   const forced = await M.promptTomorrow({ now: NOW, item: "900", dry: true });
   assert.equal(forced.length, 1); assert.match(forced[0].url, /\/support\/send\?t=/); assert.equal(mails.length, 0);
+  // тестовая копия: то же письмо с настоящей кнопкой, но на другой адрес; отметку не трогает
+  const s2 = fakeStore(); M.setStore(s2); mails.length = 0;
+  const test1 = await M.promptTomorrow({ now: NOW, item: "900", to: "me@example.org" });
+  assert.deepEqual(test1.map((d) => [d.item, d.to]), [["900", "me@example.org"]]);
+  assert.match(mails[0], /\r\nTo: me@example\.org\r\n/);
+  assert.doesNotMatch(mails[0], /gina@rusalgbtq\.org/);
+  assert.equal(s2.meetings["900"].mail.prompted, undefined);
+  // флажок у надзаголовка — ячейкой с bgcolor (пустой span Gmail не рисует)
+  assert.match(html, /<td width="8" height="8" bgcolor="#7668AA"/);
+  assert.doesNotMatch(html, /display:inline-block/);
 });
 
 function fakeReq(url, method = "GET", body = null, headers = {}) {
@@ -198,6 +208,9 @@ test("routes: /api/meetings answers through the survey function; prompts need th
   await survey(fakeReq("/api/meeting-prompts?dry=1", "GET", null, { authorization: "Bearer cron" }), r3);
   assert.equal(r3.statusCode, 200);
   assert.equal(JSON.parse(r3.body).ok, true);
+  const r7 = fakeRes();
+  await survey(fakeReq("/api/meeting-prompts?key=cron&to=me@example.org"), r7);
+  assert.equal(r7.statusCode, 400); // to — только вместе с item
   // без CRON_SECRET: обычный прогон можно, ручные режимы — нет
   delete process.env.CRON_SECRET;
   const r4 = fakeRes();
@@ -206,6 +219,9 @@ test("routes: /api/meetings answers through the survey function; prompts need th
   const r5 = fakeRes();
   await survey(fakeReq("/api/meeting-prompts?dry=1"), r5);
   assert.equal(r5.statusCode, 503);
+  const r6 = fakeRes();
+  await survey(fakeReq("/api/meeting-prompts?item=900&to=me@example.org"), r6);
+  assert.equal(r6.statusCode, 503); // без секрета тестовую копию не отправить
   process.env.CRON_SECRET = "cron";
   M.setStore(null);
 });
