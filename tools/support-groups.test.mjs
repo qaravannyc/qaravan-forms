@@ -195,6 +195,10 @@ test("team email: sections, links, needs in Russian, everything escaped, no midd
   assert.match(html, /Алекс &lt;b&gt;Иванов&lt;\/b&gt;/);
   assert.doesNotMatch(html, /<b>Иванов/);
   assert.match(html, /28 сентября в 18:20 по Нью-Йорку/);
+  // цветные флажки — ячейками с bgcolor: пустые цветные span Gmail не рисует
+  assert.match(html, /<td width="8" height="8" bgcolor="#7668AA"/);
+  assert.match(html, /<td width="10" height="10" bgcolor="#FF9933"/);
+  assert.doesNotMatch(html, /display:inline-block/);
   assert.match(html, /href="mailto:alex@example\.com"/);
   assert.match(html, /href="tel:\+12125550123"/);
   assert.match(html, /href="https:\/\/t\.me\/alex_q"/);
