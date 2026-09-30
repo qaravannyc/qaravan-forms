@@ -265,7 +265,7 @@ test("before the team email: what monday knows goes into the update and the emai
     assert.doesNotMatch(t, /Прежние анкеты/); // 888 — это сама новая строка
     assert.equal(mails.length, 1);
     const html = Buffer.from(mails[0].split("\r\n\r\n").slice(1).join("\r\n\r\n"), "utf8").toString("utf8");
-    assert.match(html, /Контекст: что робот нашёл/);
+    assert.match(html, /Что робот нашёл про этого человека на разных досках Monday/);
     assert.match(html, /1 июня 2025 — Пикник/);
   } finally { lookupReply = null; delete process.env.GOOGLE_REFRESH_TOKEN; }
 });
