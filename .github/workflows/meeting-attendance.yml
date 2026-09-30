@@ -1,0 +1,21 @@
+# После встречи группы поддержки ведущей приходит письмо «отметьте, кто пришёл».
+# Vercel на плане Hobby запускает кроны только раз в день, поэтому «сразу после встречи»
+# делает этот запуск: раз в 15 минут он зовёт /api/meeting-attendance, а тот пишет
+# ведущим только по встречам, которые уже закончились и ещё не спрашивались
+# (lib/meetings.mjs, askAttendance). Секретов не нужно.
+name: Ask support group leaders who came
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  ask:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call /api/meeting-attendance
+        run: curl -fsS --max-time 60 https://feedback.qaravan.org/api/meeting-attendance

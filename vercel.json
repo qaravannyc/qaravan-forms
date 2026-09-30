@@ -51,6 +51,18 @@
       "destination": "/api/survey?form=meeting-prompts"
     },
     {
+      "source": "/support/attendance",
+      "destination": "/support/attendance.html"
+    },
+    {
+      "source": "/api/attendance",
+      "destination": "/api/survey?form=attendance"
+    },
+    {
+      "source": "/api/meeting-attendance",
+      "destination": "/api/survey?form=meeting-attendance"
+    },
+    {
       "source": "/feedback/:id(\\d+)/lead",
       "destination": "/api/page?id=:id&lead=1"
     },
