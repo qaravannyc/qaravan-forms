@@ -236,7 +236,9 @@ Typeform (dbH75jNe), `feedback.qaravan.org/support/simon` — форму monday 
 
 - **Письмо сразу после встречи.** Раз в 15 минут GitHub Actions
   (`.github/workflows/meeting-attendance.yml`: Vercel Hobby запускает кроны только раз в
-  день) зовёт `/api/meeting-attendance`. Для встреч Джины и Саймона, которые закончились
+  день) зовёт `/api/meeting-attendance`. Чтобы GitHub не отключил этот запуск после 60 дней
+  без изменений в репозитории, `.github/workflows/keepalive.yml` 1-го числа каждого месяца
+  заново включает его через API (без коммитов). Для встреч Джины и Саймона, которые закончились
   за последние 12 часов (конец — начало плюс `minutes` из `GROUPS`, а если там 0 — 90
   минут), ведущей уходит письмо «Встреча 30 сентября: отметьте, кто пришёл» с кнопкой.
   Один раз на встречу (отметка `attendanceAsked` в «⚙️ Meeting email»), «Cancelled»
