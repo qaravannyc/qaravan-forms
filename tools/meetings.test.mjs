@@ -82,7 +82,12 @@ test("page data: last meeting's link and text by default, one row per email, tic
   const none = fakeStore(); none.meetings["800"].mail = {}; none.meetings["800"].link = ""; M.setStore(none);
   const d2 = await M.pageData(token(), NOW);
   assert.equal(d2.link, "https://meet.google.com/tyu-nksn-hpd"); // постоянная ссылка Джины
-  assert.match(d2.text, /^Всем привет, друзья! 💕/);
+  assert.match(d2.text, /^Всем привет, друзья! 💕\n\nПриходите завтра на нашу встречу!/);
+  // открыла в день встречи — «сегодня»; у Саймона с большой буквы
+  const d3 = await M.pageData(token(), at("2026-09-30T15:00:00Z"));
+  assert.match(d3.text, /Приходите сегодня на нашу встречу!/);
+  assert.equal(M.fillWhen(M.GROUPS.simon.text, at("2026-10-03T15:00:00Z"), NOW).split("\n")[2], "3 октября встречаемся в группе равной поддержки. Подключайтесь по ссылке ниже.");
+  assert.doesNotMatch(M.fillWhen(M.GROUPS.gina.text, at("2026-09-30T23:30:00Z"), NOW), /\{/);
   assert.equal(d2.dial, "(US) +1 216-839-9317, PIN: 382 371 488#");
   assert.deepEqual(await M.pageData("nope", NOW), { error: "bad" });
 });
