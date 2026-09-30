@@ -235,6 +235,13 @@ test("a sign-up sends the team email with the row link; a failed email doesn't f
   assert.equal(mails.length, 1);
   assert.match(mails[0], /^From: QARAVAN <info@qaravan\.org>\r\nTo: info@qaravan\.org, gina@rusalgbtq\.org, ezra@qaravan\.org\r\n/);
   assert.match(mails[0], /boards\/18433061986\/pulses\/888/);
+  // у Джины — «Изменить статус» в конце письма (после ответов, перед подписью), ключ — на эту строку
+  const html = Buffer.from(mails[0].split("\r\n\r\n").slice(1).join("\r\n\r\n"), "utf8").toString("utf8");
+  const btn = html.indexOf(">Изменить статус</a>");
+  assert.ok(btn > html.indexOf(">Чего ждёт от группы<") && btn < html.indexOf("Письмо отправила анкета"));
+  const t = new URL(/href="(https:\/\/feedback\.qaravan\.org\/support\/status\?t=[^"]+)"/.exec(html)[1].replace(/&amp;/g, "&")).searchParams.get("t");
+  const { verifyToken } = await import("../lib/meetings.mjs");
+  assert.deepEqual(verifyToken(t, Date.now(), process.env, "st"), { item: "888", group: "gina" });
   delete process.env.GOOGLE_REFRESH_TOKEN; // без токена письмо не уходит, а анкета принимается
   mails.length = 0;
   const { res: res2 } = await send(simon());

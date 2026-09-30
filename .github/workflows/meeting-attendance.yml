@@ -1,13 +1,17 @@
-# После встречи группы поддержки ведущей приходит письмо «отметьте, кто пришёл».
-# Vercel на плане Hobby запускает кроны только раз в день, поэтому «сразу после встречи»
-# делает этот запуск: раз в 15 минут он зовёт /api/meeting-attendance, а тот пишет
-# ведущим только по встречам, которые уже закончились и ещё не спрашивались
-# (lib/meetings.mjs, askAttendance). Секретов не нужно.
+# Подстраховка для писем ведущим групп поддержки (lib/meetings.mjs):
+#  • /api/meeting-attendance — «отметьте, кто пришёл» по встречам, которые уже закончились и ещё
+#    не спрашивались;
+#  • /api/meeting-prompts — «отправьте ссылку участникам» накануне встречи с 8 вечера по Нью-Йорку.
+# Основной запуск — крон воркера Cloudflare раз в 5 минут (events-robot/telegram/worker.mjs,
+# pokeForms); ещё — Vercel-кроны в 00:00 и 01:00 UTC для приглашений (vercel.json).
+# Оба эндпоинта сами решают, пора ли, и по каждой встрече пишут один раз, поэтому лишние запуски
+# ничего не дублируют. Расписание GitHub на деле срабатывает поздно и нерегулярно (у робота
+# событий — раз в час-несколько часов), поэтому это только подстраховка. Секретов не нужно.
 name: Ask support group leaders who came
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "3-59/5 * * * *"
   workflow_dispatch: {}
 
 permissions: {}
@@ -15,7 +19,10 @@ permissions: {}
 jobs:
   ask:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: Call /api/meeting-attendance
         run: curl -fsS --max-time 60 https://feedback.qaravan.org/api/meeting-attendance
+      - name: Call /api/meeting-prompts
+        if: always()
+        run: curl -fsS --max-time 60 https://feedback.qaravan.org/api/meeting-prompts
