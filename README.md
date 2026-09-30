@@ -137,7 +137,7 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
 Typeform (dbH75jNe), `feedback.qaravan.org/support/simon` — форму monday на
 доске Саймона. Вопросы те же, что были в старых формах; одна страница, RU/EN
 (`?lang=en` открывает английскую), черновик держится в localStorage до отправки.
-После отправки — «Спасибо» и кнопка в Telegram-сообщество RUSA Connects.
+После отправки — «Спасибо» и кнопка в Telegram-сообщество Qaravan Connects (https://t.me/+oKO-rkUI2oU2OTUy).
 
 - `support/gina.html`, `support/simon.html` — у каждой свой `<head>` (заголовок и
   превью ссылки в Telegram), всё остальное общее: вопросы и тексты обеих анкет —

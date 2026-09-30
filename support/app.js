@@ -60,8 +60,8 @@ ru: {
   e_net: "Не удалось отправить анкету. Ответы сохранились на этой странице: проверьте интернет и снова нажмите «Отправить анкету».",
   thanks_t: "Спасибо, {name}!",
   thanks_t0: "Спасибо!",
-  tg_p: "Пока ждёте, присоединяйтесь к RUSA Connects — нашему сообществу в Telegram.",
-  tg_btn: "Открыть RUSA Connects",
+  tg_p: "Пока ждёте, присоединяйтесь к Qaravan Connects — нашему сообществу в Telegram.",
+  tg_btn: "Открыть Qaravan Connects",
 },
 en: {
   language_label: "Form language",
@@ -81,8 +81,8 @@ en: {
   e_net: "We couldn’t send your form. Your answers are still on this page: check your connection and select “Send” again.",
   thanks_t: "Thank you, {name}!",
   thanks_t0: "Thank you!",
-  tg_p: "While you wait, join RUSA Connects, our community on Telegram.",
-  tg_btn: "Open RUSA Connects",
+  tg_p: "While you wait, join Qaravan Connects, our community on Telegram.",
+  tg_btn: "Open Qaravan Connects",
 }};
 
 const RULES_RU = "Правила простые: то, что сказано в группе, остаётся в группе; никто не обязан рассказывать больше, чем хочет, можно просто слушать.";
