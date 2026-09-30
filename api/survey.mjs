@@ -19,11 +19,14 @@
 // (/api/meetings, /api/meeting-prompts → /api/survey?form=…) — lib/meetings.mjs, и отметки
 // пришедших после встречи (/api/meeting-attendance — lib/meetings.mjs, /api/attendance — lib/attendance.mjs),
 // и статус анкеты по кнопке из письма команде (/api/status — lib/status.mjs).
+// И вебхук monday о новой записи в волонтёры — приглашение подписать Соглашение
+// сообщества (/api/agreement-invite → /api/survey?form=agreement-invite) — lib/agreement-invite.mjs.
 import { eventVolunteersHandler } from "../lib/event-volunteers.mjs";
 import { supportGroupsHandler } from "../lib/support-groups.mjs";
 import { meetingsHandler, meetingPromptsHandler, meetingAttendanceHandler } from "../lib/meetings.mjs";
 import { attendanceHandler } from "../lib/attendance.mjs";
 import { statusHandler } from "../lib/status.mjs";
+import { agreementInviteHandler } from "../lib/agreement-invite.mjs";
 
 const MONDAY = "https://api.monday.com/v2";
 const SURVEY_BOARD = "18426996689";
@@ -319,6 +322,7 @@ export default async function handler(req, res) {
   if (u.searchParams.get("form") === "meeting-attendance" || /\/api\/meeting-attendance\/?$/.test(u.pathname)) return meetingAttendanceHandler(req, res);
   if (u.searchParams.get("form") === "attendance" || /\/api\/attendance\/?$/.test(u.pathname)) return attendanceHandler(req, res);
   if (u.searchParams.get("form") === "status" || /\/api\/status\/?$/.test(u.pathname)) return statusHandler(req, res);
+  if (u.searchParams.get("form") === "agreement-invite" || /\/api\/agreement-invite\/?$/.test(u.pathname)) return agreementInviteHandler(req, res);
 
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "no-store");

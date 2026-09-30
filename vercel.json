@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/survey.mjs": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/aggregate",
@@ -73,6 +78,10 @@
     {
       "source": "/api/status",
       "destination": "/api/survey?form=status"
+    },
+    {
+      "source": "/api/agreement-invite",
+      "destination": "/api/survey?form=agreement-invite"
     },
     {
       "source": "/feedback/:id(\\d+)/lead",
