@@ -114,6 +114,8 @@ test("team email: Gina's has «Изменить статус» leading to the st
   const { html } = Mail.signupEmail(p, { itemUrl: "https://qaravan.monday.com/boards/18433061986/pulses/42", statusUrl, now: NOW });
   const btn = html.indexOf(">Изменить статус</a>"), mon = html.indexOf(">Открыть в monday</a>");
   assert.ok(btn > 0 && mon > btn);
+  // кнопка — в конце письма: после ответов и «Чего ждёт от группы», перед подписью
+  assert.ok(btn > html.indexOf(">Чего ждёт от группы<") && btn > html.indexOf(">Контакты<") && btn < html.indexOf("Письмо отправила анкета"));
   assert.ok(html.includes(`href="${statusUrl}"`));
   assert.match(html, /Статус на доске сейчас — New/);
   assert.match(Mail.signupEmail(p, { itemUrl: "https://x/1", statusUrl, status: "Joined", now: NOW }).html, /Статус на доске сейчас — Joined/); // пересылка старой анкеты
@@ -121,4 +123,5 @@ test("team email: Gina's has «Изменить статус» leading to the st
   const simon = Mail.signupEmail(ps, { itemUrl: "https://qaravan.monday.com/boards/5469799506/pulses/7", now: NOW }).html;
   assert.doesNotMatch(simon, /Изменить статус/);
   assert.match(simon, /background:#333333;"><a href="https:\/\/qaravan\.monday\.com\/boards\/5469799506\/pulses\/7"/);
+  assert.ok(simon.indexOf(">Открыть в monday</a>") < simon.indexOf(">Контакты<")); // у Саймона кнопка — наверху, как раньше
 });
