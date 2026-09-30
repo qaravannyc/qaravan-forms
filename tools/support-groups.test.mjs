@@ -222,7 +222,7 @@ test("team email: every option has a Russian name; recipients can be overridden"
   assert.deepEqual(Object.keys(M.NEEDS_RU).sort(), Object.keys(S.NEEDS).sort());
   assert.deepEqual(Object.keys(M.IDENTITIES_RU).sort(), Object.keys(S.IDENTITIES).sort());
   assert.deepEqual(M.recipients("gina", {}), ["info@qaravan.org", "gina@rusalgbtq.org", "ezra@qaravan.org"]);
-  assert.deepEqual(M.recipients("simon", {}), ["ezra@qaravan.org"]);
+  assert.deepEqual(M.recipients("simon", {}), ["simon@rusalgbtq.org", "ezra@qaravan.org"]);
   assert.deepEqual(M.recipients("gina", { SUPPORT_NOTIFY_GINA: " gina@rusalgbtq.org, nope ,ezra@qaravan.org" }), ["gina@rusalgbtq.org", "ezra@qaravan.org"]);
   assert.deepEqual(M.recipients("gina", { SUPPORT_NOTIFY_GINA: "" }), []);
 });

@@ -183,7 +183,7 @@ Typeform (dbH75jNe), `feedback.qaravan.org/support/simon` — форму monday 
   Джины кнопка — «Изменить статус» (страница `/support/status`, см. ниже), а «Открыть в
   monday» — ссылкой под ней; у Саймона на доске статуса нет, и кнопка — «Открыть в
   monday». Кому — `NOTIFY` в том же файле (сейчас у Джины —
-  info@qaravan.org, gina@rusalgbtq.org и ezra@qaravan.org, у Саймона — ezra@qaravan.org);
+  info@qaravan.org, gina@rusalgbtq.org и ezra@qaravan.org, у Саймона — simon@rusalgbtq.org и ezra@qaravan.org);
   переменные Vercel `SUPPORT_NOTIFY_GINA` и `SUPPORT_NOTIFY_SIMON` (адреса через запятую)
   их переопределяют. У доски Саймона ещё работает автоматизация monday «Email
   peer-support registrations to Ezra» (выключить может только владелец доски), так что
