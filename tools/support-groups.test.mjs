@@ -217,6 +217,7 @@ test("team email: sections, links, needs in Russian, everything escaped, no midd
 test("team email: every option has a Russian name; recipients can be overridden", () => {
   assert.deepEqual(Object.keys(M.NEEDS_RU).sort(), Object.keys(S.NEEDS).sort());
   assert.deepEqual(Object.keys(M.IDENTITIES_RU).sort(), Object.keys(S.IDENTITIES).sort());
+  assert.deepEqual(M.recipients("gina", {}), ["info@qaravan.org", "gina@rusalgbtq.org", "ezra@qaravan.org"]);
   assert.deepEqual(M.recipients("simon", {}), ["ezra@qaravan.org"]);
   assert.deepEqual(M.recipients("gina", { SUPPORT_NOTIFY_GINA: " gina@rusalgbtq.org, nope ,ezra@qaravan.org" }), ["gina@rusalgbtq.org", "ezra@qaravan.org"]);
   assert.deepEqual(M.recipients("gina", { SUPPORT_NOTIFY_GINA: "" }), []);
@@ -228,7 +229,7 @@ test("a sign-up sends the team email with the row link; a failed email doesn't f
   const { res } = await send(gina());
   assert.equal(res.body, '{"ok":true}');
   assert.equal(mails.length, 1);
-  assert.match(mails[0], /^From: QARAVAN <info@qaravan\.org>\r\nTo: ezra@qaravan\.org\r\n/);
+  assert.match(mails[0], /^From: QARAVAN <info@qaravan\.org>\r\nTo: info@qaravan\.org, gina@rusalgbtq\.org, ezra@qaravan\.org\r\n/);
   assert.match(mails[0], /boards\/18433061986\/pulses\/888/);
   delete process.env.GOOGLE_REFRESH_TOKEN; // без токена письмо не уходит, а анкета принимается
   mails.length = 0;
