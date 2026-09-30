@@ -81,6 +81,13 @@ test("dossier: a card found by phone says so; no card at all still shows the agr
   assert.doesNotMatch(t, /Прежние анкеты/);
 });
 
+test("dossier: an earlier row added by hand has no sign-up date, and the day it was created is not shown as one", () => {
+  const hand = { ...FIRST, earlier: { items: [{ id: "9", created_at: "2026-09-30T13:49:34Z", column_values: cv({ sg_status: "Joined", submitted: "" }) }] } };
+  const d = L.buildDossier(hand, EVENTS, { now: NOW, group: GINA });
+  assert.equal(d.earlier[0].date, "");
+  assert.match(L.dossierText(d, { group: "gina" }), /Прежние анкеты в группу Джины: 1, без даты анкеты, статус Joined/);
+});
+
 test("lookup: events are asked only for a found card; errors and slowness give ok:false", async () => {
   const seen = [];
   const api = async (q, v) => { seen.push(q); return q.includes("attendance_confirmed") ? EVENTS : FIRST; };

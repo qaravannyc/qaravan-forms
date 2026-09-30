@@ -8,6 +8,7 @@ const T = new URLSearchParams(location.search).get("t") || "";
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DRAFT_KEY = "qaravan.meeting-send." + T.slice(0, 24);
 let data = null, people = [], sending = false, tried = false;
+const COLL = new Intl.Collator("ru", { sensitivity: "base" });
 
 const fmtWhen = (iso) => new Intl.DateTimeFormat("ru-RU", { timeZone: "America/New_York", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 const plural = (n) => { const d = n % 10, h = n % 100; return d === 1 && h !== 11 ? "участнику" : "участникам"; };
@@ -30,7 +31,7 @@ function loadDraft() {
     const byEmail = new Map(people.map((p) => [p.email, p]));
     for (const [email, name, checked, added] of d.people) {
       if (byEmail.has(email)) byEmail.get(email).checked = !!checked;
-      else if (added && EMAIL_RX.test(email)) people.unshift({ email, name, checked: !!checked, added: true });
+      else if (added && EMAIL_RX.test(email)) people.push({ email, name, checked: !!checked, added: true, sec: "added" });
     }
   }
 }
@@ -48,23 +49,38 @@ function meta(p) {
   if (p.date) bits.push("анкета от " + new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(p.date.slice(0, 10) + "T12:00:00Z")));
   return bits.join(", ");
 }
+// Список не двигается, пока ведущая ставит галочки: разделы и порядок (по имени) задаются один
+// раз при загрузке, галочка человека никуда не переносит. Добавленные вручную — в конце.
+function arrange() {
+  for (const p of people) if (!p.sec) p.sec = data.member ? (p.checked || p.status === data.member.on ? "on" : "new") : (p.checked ? "on" : "off");
+  const rank = { on: 0, new: 1, off: 1, added: 2 };
+  people.sort((a, b) => rank[a.sec] - rank[b.sec] || (a.sec === "added" ? 0 : COLL.compare(a.name || a.email, b.name || b.email)));
+}
+const SECTIONS = () => data.member
+  ? [["on", "Участники группы (Joined)"], ["new", "Новые анкеты (New)"], ["added", "Добавлены вручную"]]
+  : [["on", "Получают письма"], ["off", "Остальные анкеты"], ["added", "Добавлены вручную"]];
+function counts() {
+  const on = people.filter((p) => p.checked).length;
+  $("count").textContent = `Выбрано ${on} из ${people.length}`;
+  $("send").textContent = on ? `Отправить ${on} ${plural(on)}` : "Отправить";
+}
 function renderPeople() {
   const wrap = $("people"); wrap.innerHTML = "";
   const q = $("q").value.trim().toLowerCase();
-  const on = people.filter((p) => p.checked), off = people.filter((p) => !p.checked);
   let shown = 0;
   const row = (p) => {
     const i = el("input", { type: "checkbox", checked: p.checked });
-    i.onchange = () => { p.checked = i.checked; renderPeople(); onChange(); };
+    i.onchange = () => { p.checked = i.checked; counts(); onChange(); }; // без перерисовки: строка остаётся на месте
     const hide = q && !(p.name.toLowerCase().includes(q) || p.email.includes(q));
     if (!hide) shown++;
     return el("label", { className: "person", hidden: hide }, i, el("span", {}, el("div", { className: "nm", textContent: p.name || p.email }), el("div", { className: "em", textContent: p.email }), meta(p) ? el("div", { className: "meta", textContent: meta(p) }) : null));
   };
-  if (on.length) { wrap.append(el("h3", { textContent: `Получат письмо (${on.length})` })); on.forEach((p) => wrap.append(row(p))); }
-  if (off.length) { wrap.append(el("h3", { textContent: `${data.member ? "Не получат письмо" : "Остальные анкеты"} (${off.length})` })); off.forEach((p) => wrap.append(row(p))); }
+  for (const [sec, title] of SECTIONS()) {
+    const list = people.filter((p) => p.sec === sec);
+    if (list.length) { wrap.append(el("h3", { textContent: `${title} (${list.length})` })); list.forEach((p) => wrap.append(row(p))); }
+  }
   if (!shown) wrap.append(el("p", { className: "empty", textContent: q ? "Никого не нашли. Проверьте написание или добавьте человека ниже." : "На доске группы пока нет анкет." }));
-  $("count").textContent = `Выбрано ${on.length} из ${people.length}`;
-  $("send").textContent = on.length ? `Отправить ${on.length} ${plural(on.length)}` : "Отправить";
+  counts();
 }
 $("q").addEventListener("input", renderPeople);
 $("all").onclick = () => { const q = $("q").value.trim().toLowerCase(); people.forEach((p) => { if (!q || p.name.toLowerCase().includes(q) || p.email.includes(q)) p.checked = true; }); renderPeople(); onChange(); };
@@ -76,7 +92,7 @@ $("addBtn").onclick = () => {
   bad ? $("addEmail").setAttribute("aria-invalid", "true") : $("addEmail").removeAttribute("aria-invalid");
   if (bad) { $("addEmail").focus(); return; }
   const have = people.find((p) => p.email === email);
-  if (have) have.checked = true; else people.unshift({ email, name: name || email, checked: true, added: true });
+  if (have) have.checked = true; else people.push({ email, name: name || email, checked: true, added: true, sec: "added" });
   $("addName").value = ""; $("addEmail").value = ""; $("q").value = "";
   renderPeople(); onChange(); $("addName").focus();
 };
@@ -192,7 +208,7 @@ function renderSent() {
       : "Галочки запоминаются до следующей встречи.");
   $("cancelNote").hidden = !j.meeting.cancelled;
   $("link").value = j.link || ""; $("dial").value = j.dial || ""; $("subject").value = j.subject || ""; $("text").value = j.text || "";
-  loadDraft();
+  arrange(); loadDraft();
   renderSent(); renderPeople(); renderPreview();
   $("loading").hidden = true; $("view").hidden = false;
 })();

@@ -1,7 +1,7 @@
 // Страница «Кто пришёл на встречу»: /support/attendance?t=<ключ>.
 // Ключ приходит ведущей в письме сразу после встречи (lib/meetings.mjs, askEmail); сервер — lib/attendance.mjs.
-// GET /api/attendance?t= — встреча и люди: участники группы, пришедшие на прошлые встречи,
-// остальные анкеты; галочки — те, кто уже отмечен в «Confirmed attendees» этой встречи.
+// GET /api/attendance?t= — встреча и люди: участники группы (Joined) и уже отмеченные в
+// «Confirmed attendees» этой встречи (с галочкой).
 // POST /api/attendance — сохранить: отмеченные становятся «Confirmed attendees» встречи,
 // снятые галочки (unselected) оттуда убираются.
 const $ = (id) => document.getElementById(id);
@@ -10,6 +10,7 @@ const T = new URLSearchParams(location.search).get("t") || "";
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DRAFT_KEY = "qaravan.meeting-attendance." + T.slice(0, 24);
 let data = null, people = [], saving = false;
+const COLL = new Intl.Collator("ru", { sensitivity: "base" });
 
 const fmtWhen = (iso) => new Intl.DateTimeFormat("ru-RU", { timeZone: "America/New_York", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 // 1 человек, 2 человека, 5 человек
@@ -31,7 +32,7 @@ function loadDraft() {
   const byKey = new Map(people.map((p) => [p.key, p]));
   for (const [key, name, email, checked, added] of d) {
     if (byKey.has(key)) byKey.get(key).checked = !!checked;
-    else if (added && EMAIL_RX.test(email)) people.unshift({ key, name, email, checked: !!checked, added: true });
+    else if (added && EMAIL_RX.test(email)) people.push({ key, name, email, checked: !!checked, added: true, sec: "added" });
   }
 }
 const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} };
@@ -45,29 +46,38 @@ function meta(p) {
   if (p.past) bits.push(`был(а) на прошлых встречах: ${p.past}`);
   return bits.join(", ");
 }
+// Список не двигается, пока ведущая ставит галочки: разделы и порядок (по имени) задаются один
+// раз при загрузке, галочка никуда не переносит. Добавленные вручную — в конце, над формой.
+function arrange() {
+  for (const p of people) if (!p.sec) p.sec = p.member ? "member" : "marked";
+  const rank = { member: 0, marked: 1, added: 2 };
+  people.sort((a, b) => rank[a.sec] - rank[b.sec] || (a.sec === "added" ? 0 : COLL.compare(a.name || a.email, b.name || b.email)));
+}
+const SECTIONS = [["member", "Участники группы"], ["marked", "Уже отмечены на этой встрече"], ["added", "Добавлены вручную"]];
+function counts() {
+  const on = people.filter((p) => p.checked).length;
+  $("count").textContent = on ? `Отмечено: ${ppl(on)}` : "Пока никто не отмечен";
+  $("save").textContent = on ? `Сохранить: ${ppl(on)}` : "Сохранить";
+}
 function renderPeople() {
   const wrap = $("people"); wrap.innerHTML = "";
   const q = $("q").value.trim().toLowerCase();
-  const on = people.filter((p) => p.checked);
-  const regular = people.filter((p) => !p.checked && (p.member || p.past || p.added));
-  const rest = people.filter((p) => !p.checked && !(p.member || p.past || p.added));
   let shown = 0;
   const row = (p) => {
     const i = el("input", { type: "checkbox", checked: p.checked });
-    i.onchange = () => { p.checked = i.checked; saveDraft(); renderPeople(); };
+    i.onchange = () => { p.checked = i.checked; saveDraft(); counts(); }; // без перерисовки: строка остаётся на месте
     const hide = q && !((p.name || "").toLowerCase().includes(q) || (p.email || "").includes(q));
     if (!hide) shown++;
     return el("label", { className: "person", hidden: hide }, i, el("span", {},
       el("div", { className: "nm", textContent: p.name || p.email }), p.email ? el("div", { className: "em", textContent: p.email }) : null,
       meta(p) ? el("div", { className: "meta", textContent: meta(p) }) : null));
   };
-  const block = (title, list) => { if (list.length) { wrap.append(el("h3", { textContent: `${title} (${list.length})` })); list.forEach((p) => wrap.append(row(p))); } };
-  block("Были на встрече", on);
-  block("Участники группы", regular);
-  block("Остальные анкеты", rest);
+  for (const [sec, title] of SECTIONS) {
+    const list = people.filter((p) => p.sec === sec);
+    if (list.length) { wrap.append(el("h3", { textContent: `${title} (${list.length})` })); list.forEach((p) => wrap.append(row(p))); }
+  }
   if (!shown) wrap.append(el("p", { className: "empty", textContent: q ? "Никого не нашли. Проверьте написание или добавьте человека ниже." : "Пока никого нет. Добавьте человека ниже." }));
-  $("count").textContent = on.length ? `Отмечено: ${ppl(on.length)}` : "Пока никто не отмечен";
-  $("save").textContent = on.length ? `Сохранить: ${ppl(on.length)}` : "Сохранить";
+  counts();
 }
 $("q").addEventListener("input", renderPeople);
 $("addBtn").onclick = () => {
@@ -77,7 +87,7 @@ $("addBtn").onclick = () => {
   bad ? $("addEmail").setAttribute("aria-invalid", "true") : $("addEmail").removeAttribute("aria-invalid");
   if (bad) { $("addEmail").focus(); return; }
   const have = people.find((p) => p.email === email);
-  if (have) have.checked = true; else people.unshift({ key: email, email, name: name || email, checked: true, added: true });
+  if (have) have.checked = true; else people.push({ key: email, email, name: name || email, checked: true, added: true, sec: "added" });
   $("addName").value = ""; $("addEmail").value = ""; $("q").value = "";
   saveDraft(); renderPeople(); $("addName").focus();
 };
@@ -127,7 +137,7 @@ async function refresh() {
     const r = await fetch("/api/attendance?t=" + encodeURIComponent(T));
     if (!r.ok) return;
     const j = await r.json();
-    data = j; people = (j.people || []).map((p) => ({ ...p }));
+    data = j; people = (j.people || []).map((p) => ({ ...p })); arrange();
     if (!$("view").hidden) { renderSaved(); renderPeople(); }
   } catch (e) {}
 }
@@ -151,7 +161,7 @@ async function refresh() {
   $("groupTitle").textContent = j.title;
   $("when").textContent = j.meeting.line;
   $("cancelNote").hidden = !j.meeting.cancelled;
-  loadDraft();
+  arrange(); loadDraft();
   renderSaved(); renderPeople();
   $("loading").hidden = true; $("view").hidden = false;
 })();
