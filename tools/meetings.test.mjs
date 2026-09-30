@@ -71,7 +71,7 @@ test("dates are New York time; the subject says tomorrow", () => {
   assert.equal(M.people(1), "1 человек"); assert.equal(M.people(3), "3 человека"); assert.equal(M.people(14), "14 человек");
 });
 
-test("page data: last meeting's link and text by default, one row per email, ticked first; Gina: only Joined and New", async () => {
+test("page data: last meeting's link and text by default, one row per email, ticked first; everyone comes with a status for the page to fold", async () => {
   const st = fakeStore();
   st.rows.gina.push({ id: "5", name: "Нина", email: "nina@example.com", checked: false, status: "New", source: "feedback.qaravan.org", date: "2026-09-29 10:00" },
     { id: "6", name: "Олег", email: "oleg@example.com", checked: false, status: "Not now", source: "Typeform", date: "2025-01-01 10:00" },
@@ -83,8 +83,9 @@ test("page data: last meeting's link and text by default, one row per email, tic
   assert.equal(d.link, "https://meet.google.com/old-link");
   assert.equal(d.text, "Прошлый текст Джины");
   assert.equal(d.subject, "Еженедельная группа поддержки🏳️‍🌈");
-  // Мария (без статуса), Олег (Not now) и Таня (Contacted) не показываются; Нина (New) — со статусом
-  assert.deepEqual(d.people.map((p) => [p.email, p.name, p.checked, p.status]), [["alex@example.com", "Алекс И.", true, "Joined"], ["nina@example.com", "Нина", false, "New"]]);
+  // страница показывает Joined, под ними New (d.show), остальных — Мария без статуса, Олег (Not now), Таня (Contacted) — сворачивает
+  assert.deepEqual(d.show, ["New"]);
+  assert.deepEqual(d.people.map((p) => [p.email, p.checked, p.status]), [["alex@example.com", true, "Joined"], ["nina@example.com", false, "New"], ["maria@example.com", false, ""], ["tanya@example.com", false, "Contacted"], ["oleg@example.com", false, "Not now"]]);
   const none = fakeStore(); none.meetings["800"].mail = {}; none.meetings["800"].link = ""; M.setStore(none);
   const d2 = await M.pageData(token(), NOW);
   assert.equal(d2.link, "https://meet.google.com/tyu-nksn-hpd"); // постоянная ссылка Джины

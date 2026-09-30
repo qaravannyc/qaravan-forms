@@ -38,53 +38,45 @@ function loadDraft() {
 const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} };
 
 // ===== люди =====
-function meta(p) {
-  if (p.added) return "добавлен(а) вручную";
-  const bits = [];
-  // статус с доски Джины — как на доске, с пояснением по-русски
-  const ST = { New: "новая анкета", Contacted: "связались", "Intro call done": "знакомство прошло", Joined: "в группе", "Not now": "не сейчас" };
-  if (p.status) bits.push(ST[p.status] ? `${p.status} — ${ST[p.status]}` : p.status);
-  if (p.source === "Typeform") bits.push("Typeform");
-  if (p.city) bits.push(p.city);
-  if (p.date) bits.push("анкета от " + new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(p.date.slice(0, 10) + "T12:00:00Z")));
-  return bits.join(", ");
+// статус с доски Джины — как на доске, с пояснением по-русски
+const ST = { New: "новая анкета", Contacted: "связались", "Intro call done": "знакомство прошло", Joined: "в группе", "Not now": "не сейчас" };
+const fmtDay = (d) => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(d.slice(0, 10) + "T12:00:00Z")).replace(/ г\.$/, "");
+// в сетке — коротко: у новых анкет дата, у свёрнутых остальных — статус и дата
+function meta(p, s) {
+  if (s.key === "new") return p.date ? fmtDay(p.date) : "";
+  if (s.key !== "old") return "";
+  return [p.status ? `${p.status} — ${ST[p.status] || p.status}` : "без статуса", p.date ? fmtDay(p.date) : ""].filter(Boolean).join(", ");
 }
 // Список не двигается, пока ведущая ставит галочки: разделы и порядок (по имени) задаются один
-// раз при загрузке, галочка человека никуда не переносит. Добавленные вручную — в конце.
+// раз при загрузке (support/roster.js). Сверху — участники группы, под ними новые анкеты с
+// меткой, остальные анкеты свёрнуты; добавленные вручную — в конце.
+let SECTIONS = [];
 function arrange() {
-  for (const p of people) if (!p.sec) p.sec = data.member ? (p.checked || p.status === data.member.on ? "on" : "new") : (p.checked ? "on" : "off");
-  const rank = { on: 0, new: 1, off: 1, added: 2 };
+  const show = data.show || [];
+  for (const p of people) if (!p.sec) p.sec = data.member ? (p.checked || p.status === data.member.on ? "on" : show.includes(p.status) ? "new" : "old") : (p.checked ? "on" : "old");
+  const rank = { on: 0, new: 1, old: 2, added: 3 };
   people.sort((a, b) => rank[a.sec] - rank[b.sec] || (a.sec === "added" ? 0 : COLL.compare(a.name || a.email, b.name || b.email)));
+  SECTIONS = data.member
+    ? [{ key: "on", title: "Участники группы (Joined)" }, { key: "new", title: "Новые анкеты (New)", mark: "new" }, { key: "old", title: "Остальные анкеты", fold: true }, { key: "added", title: "Добавлены вручную" }]
+    : [{ key: "on", title: "Получают письма" }, { key: "old", title: "Остальные анкеты", fold: true }, { key: "added", title: "Добавлены вручную" }];
+  if (!people.some((p) => p.sec === "on")) SECTIONS.find((x) => x.key === "old").open = true; // пока никто не получает — показать всех
 }
-const SECTIONS = () => data.member
-  ? [["on", "Участники группы (Joined)"], ["new", "Новые анкеты (New)"], ["added", "Добавлены вручную"]]
-  : [["on", "Получают письма"], ["off", "Остальные анкеты"], ["added", "Добавлены вручную"]];
 function counts() {
   const on = people.filter((p) => p.checked).length;
   $("count").textContent = `Выбрано ${on} из ${people.length}`;
   $("send").textContent = on ? `Отправить ${on} ${plural(on)}` : "Отправить";
 }
 function renderPeople() {
-  const wrap = $("people"); wrap.innerHTML = "";
   const q = $("q").value.trim().toLowerCase();
-  let shown = 0;
-  const row = (p) => {
-    const i = el("input", { type: "checkbox", checked: p.checked });
-    i.onchange = () => { p.checked = i.checked; counts(); onChange(); }; // без перерисовки: строка остаётся на месте
-    const hide = q && !(p.name.toLowerCase().includes(q) || p.email.includes(q));
-    if (!hide) shown++;
-    return el("label", { className: "person", hidden: hide }, i, el("span", {}, el("div", { className: "nm", textContent: p.name || p.email }), el("div", { className: "em", textContent: p.email }), meta(p) ? el("div", { className: "meta", textContent: meta(p) }) : null));
-  };
-  for (const [sec, title] of SECTIONS()) {
-    const list = people.filter((p) => p.sec === sec);
-    if (list.length) { wrap.append(el("h3", { textContent: `${title} (${list.length})` })); list.forEach((p) => wrap.append(row(p))); }
-  }
-  if (!shown) wrap.append(el("p", { className: "empty", textContent: q ? "Никого не нашли. Проверьте написание или добавьте человека ниже." : "На доске группы пока нет анкет." }));
+  const shown = Roster.render($("people"), { people, sections: SECTIONS, q, meta, onToggle: () => { counts(); onChange(); } });
+  if (!shown) $("people").append(el("p", { className: "empty", textContent: q ? "Никого не нашли. Проверьте написание или добавьте человека ниже." : "На доске группы пока нет анкет." }));
   counts();
 }
 $("q").addEventListener("input", renderPeople);
-$("all").onclick = () => { const q = $("q").value.trim().toLowerCase(); people.forEach((p) => { if (!q || p.name.toLowerCase().includes(q) || p.email.includes(q)) p.checked = true; }); renderPeople(); onChange(); };
-$("none").onclick = () => { const q = $("q").value.trim().toLowerCase(); people.forEach((p) => { if (!q || p.name.toLowerCase().includes(q) || p.email.includes(q)) p.checked = false; }); renderPeople(); onChange(); };
+// «Выбрать всех» / «Снять всех» — только тех, кого сейчас видно (свёрнутые остальные не трогаем)
+const pick = (on) => { Roster.visible(people, SECTIONS, $("q").value.trim().toLowerCase()).forEach((p) => { p.checked = on; }); renderPeople(); onChange(); };
+$("all").onclick = () => pick(true);
+$("none").onclick = () => pick(false);
 $("addBtn").onclick = () => {
   const email = $("addEmail").value.trim().toLowerCase(), name = $("addName").value.trim();
   const bad = !EMAIL_RX.test(email);
@@ -204,7 +196,7 @@ function renderSent() {
   $("groupTitle").textContent = j.title;
   $("when").textContent = j.meeting.line;
   $("bccHint").textContent = `Все получат одно письмо в скрытой копии и не увидят адреса друг друга. Копия придёт вам на ${j.leaderEmail}, ответы участников — тоже вам. ` +
-    (j.member ? "Здесь участники группы (статус Joined) и новые анкеты (New). Галочка — это статус на доске: отметите человека — он станет Joined и будет получать письма и дальше; снимете — Not now. Остальных (Contacted, Intro call done, Not now) здесь нет: если нужно, добавьте человека по почте внизу."
+    (j.member ? "Сверху участники группы (статус Joined), под ними новые анкеты (New), остальные анкеты свёрнуты. Галочка — это статус на доске: отметите человека — он станет Joined и будет получать письма и дальше; снимете — Not now."
       : "Галочки запоминаются до следующей встречи.");
   $("cancelNote").hidden = !j.meeting.cancelled;
   $("link").value = j.link || ""; $("dial").value = j.dial || ""; $("subject").value = j.subject || ""; $("text").value = j.text || "";

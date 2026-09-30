@@ -1,7 +1,7 @@
 // Страница «Кто пришёл на встречу»: /support/attendance?t=<ключ>.
 // Ключ приходит ведущей в письме сразу после встречи (lib/meetings.mjs, askEmail); сервер — lib/attendance.mjs.
-// GET /api/attendance?t= — встреча и люди: участники группы (Joined) и уже отмеченные в
-// «Confirmed attendees» этой встречи (с галочкой).
+// GET /api/attendance?t= — встреча и люди: участники группы (Joined), новые анкеты, уже
+// отмеченные в «Confirmed attendees» этой встречи (с галочкой) и остальные (свёрнуты).
 // POST /api/attendance — сохранить: отмеченные становятся «Confirmed attendees» встречи,
 // снятые галочки (unselected) оттуда убираются.
 const $ = (id) => document.getElementById(id);
@@ -39,44 +39,34 @@ const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch (e)
 
 // ===== люди =====
 const ST = { New: "новая анкета", Contacted: "связались", "Intro call done": "знакомство прошло", Joined: "в группе", "Not now": "не сейчас" };
-function meta(p) {
-  if (p.added) return "добавлен(а) вручную";
-  const bits = [];
-  if (p.status) bits.push(ST[p.status] || p.status);
-  if (p.past) bits.push(`был(а) на прошлых встречах: ${p.past}`);
-  return bits.join(", ");
+// в сетке — коротко: у свёрнутых остальных — статус и сколько раз были
+function meta(p, s) {
+  if (s.key !== "old") return "";
+  return [p.status ? `${p.status} — ${ST[p.status] || p.status}` : "", p.past ? `был(а) на встречах: ${p.past}` : ""].filter(Boolean).join(", ");
 }
 // Список не двигается, пока ведущая ставит галочки: разделы и порядок (по имени) задаются один
-// раз при загрузке, галочка никуда не переносит. Добавленные вручную — в конце, над формой.
+// раз при загрузке (support/roster.js). Сверху — участники группы, под ними новые анкеты с
+// меткой и уже отмеченные на этой встрече; остальные свёрнуты; добавленные вручную — в конце.
+const SECTIONS = [
+  { key: "member", title: "Участники группы" }, { key: "new", title: "Новые анкеты (New)", mark: "new" },
+  { key: "marked", title: "Уже отмечены на этой встрече" }, { key: "old", title: "Остальные анкеты", fold: true },
+  { key: "added", title: "Добавлены вручную" },
+];
 function arrange() {
-  for (const p of people) if (!p.sec) p.sec = p.member ? "member" : "marked";
-  const rank = { member: 0, marked: 1, added: 2 };
+  const show = data.show || [];
+  for (const p of people) if (!p.sec) p.sec = p.member ? "member" : show.includes(p.status) ? "new" : p.checked ? "marked" : "old";
+  const rank = { member: 0, new: 1, marked: 2, old: 3, added: 4 };
   people.sort((a, b) => rank[a.sec] - rank[b.sec] || (a.sec === "added" ? 0 : COLL.compare(a.name || a.email, b.name || b.email)));
 }
-const SECTIONS = [["member", "Участники группы"], ["marked", "Уже отмечены на этой встрече"], ["added", "Добавлены вручную"]];
 function counts() {
   const on = people.filter((p) => p.checked).length;
   $("count").textContent = on ? `Отмечено: ${ppl(on)}` : "Пока никто не отмечен";
   $("save").textContent = on ? `Сохранить: ${ppl(on)}` : "Сохранить";
 }
 function renderPeople() {
-  const wrap = $("people"); wrap.innerHTML = "";
   const q = $("q").value.trim().toLowerCase();
-  let shown = 0;
-  const row = (p) => {
-    const i = el("input", { type: "checkbox", checked: p.checked });
-    i.onchange = () => { p.checked = i.checked; saveDraft(); counts(); }; // без перерисовки: строка остаётся на месте
-    const hide = q && !((p.name || "").toLowerCase().includes(q) || (p.email || "").includes(q));
-    if (!hide) shown++;
-    return el("label", { className: "person", hidden: hide }, i, el("span", {},
-      el("div", { className: "nm", textContent: p.name || p.email }), p.email ? el("div", { className: "em", textContent: p.email }) : null,
-      meta(p) ? el("div", { className: "meta", textContent: meta(p) }) : null));
-  };
-  for (const [sec, title] of SECTIONS) {
-    const list = people.filter((p) => p.sec === sec);
-    if (list.length) { wrap.append(el("h3", { textContent: `${title} (${list.length})` })); list.forEach((p) => wrap.append(row(p))); }
-  }
-  if (!shown) wrap.append(el("p", { className: "empty", textContent: q ? "Никого не нашли. Проверьте написание или добавьте человека ниже." : "Пока никого нет. Добавьте человека ниже." }));
+  const shown = Roster.render($("people"), { people, sections: SECTIONS, q, meta, onToggle: () => { saveDraft(); counts(); } });
+  if (!shown) $("people").append(el("p", { className: "empty", textContent: q ? "Никого не нашли. Проверьте написание или добавьте человека ниже." : "Пока никого нет. Добавьте человека ниже." }));
   counts();
 }
 $("q").addEventListener("input", renderPeople);
