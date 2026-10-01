@@ -84,6 +84,10 @@
       "destination": "/api/survey?form=agreement-invite"
     },
     {
+      "source": "/api/website-inquiry",
+      "destination": "/api/survey?form=website-inquiry"
+    },
+    {
       "source": "/feedback/:id(\\d+)/lead",
       "destination": "/api/page?id=:id&lead=1"
     },
