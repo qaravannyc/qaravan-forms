@@ -68,6 +68,14 @@ without still serving the old one.
 - `ls api | wc -l` prints 12 or less.
 - Grep all three repos for any monday id, URL shape or text format you change. With the other two checked out next to this one: `grep -rn "<id or text>" . ../events-robot ../qaravan-events`
 
+## Publishing
+
+The owner wants work finished, not parked: open a pull request from your
+branch, merge it yourself as soon as the checks above pass, then confirm
+Vercel's production deploy (its status on the merge commit, and the changed
+page on feedback.qaravan.org). Don't leave a pull request waiting for a person
+to merge.
+
 ## Incidents and the rule each one taught
 
 - 2026-09-03 (fixed in 8b409d7): a 13th file in `api/` went over Vercel's limit; the deploy failed silently and new routes answered 404. Rule: at most 12 files in `api/`.
