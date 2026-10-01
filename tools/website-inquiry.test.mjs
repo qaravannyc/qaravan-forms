@@ -12,6 +12,7 @@ delete process.env.WEBSITE_NOTIFY;
 
 const W = await import("../lib/website-inquiry.mjs");
 const L = await import("../lib/person-lookup.mjs");
+const Mail = await import("../lib/support-mail.mjs");
 
 const NOW = new Date("2026-10-01T16:30:00Z");
 const cv = (id, text) => ({ id, text });
@@ -44,22 +45,27 @@ globalThis.fetch = async (url, opts = {}) => {
 };
 const noLookup = async () => ({ ok: true, member: null, attended: [], led: [], volunteer: { card: "", skills: "", applications: [] }, agreement: "", earlier: [] });
 
-test("the email: name, category, request with its line breaks, everything escaped, a reply button", () => {
+test("the email, in English: name, category, request with its line breaks, everything escaped, a reply button", () => {
   const q = W.inquiryFrom(row(7));
   assert.equal(q.name, "Алекс Петров");
   assert.equal(q.email, "alex@example.com");
-  assert.deepEqual(q.category, { ru: "Юридическая помощь", color: "#0099CC" });
+  assert.deepEqual(q.category, { name: "Legal help", color: "#0099CC" });
   const { subject, html } = W.inquiryEmail(q, { known: { ...L.buildDossier({}, null, { now: NOW }), earlier: [{ id: "5", date: "2026-09-24", status: "Done" }] } });
-  assert.equal(subject, "Обращение с сайта: Алекс Петров, юридическая помощь");
+  assert.equal(subject, "Website inquiry: Алекс Петров, legal help");
+  assert.match(html, /^<!doctype html><html lang="en">/);
   assert.match(html, /Здравствуйте!<br>Нужен юрист &lt;срочно&gt; &amp; быстро\./);
   assert.doesNotMatch(html, /<срочно>/);
-  assert.match(html, /href="mailto:alex@example\.com\?subject=%D0%92%D0%B0%D1%88%D0%B5[^"]*"[^>]*>Ответить</);
+  assert.match(html, /href="mailto:alex@example\.com\?subject=%D0%92%D0%B0%D1%88%D0%B5[^"]*"[^>]*>Reply</);
+  assert.match(html, /Opens a new email to alex@example\.com\./);
   assert.match(html, /href="https:\/\/qaravan\.monday\.com\/boards\/4939299706\/pulses\/7"/);
   assert.match(html, /href="tel:\+13475550123"[^>]*>\+13475550123</);
-  assert.match(html, /1 октября(,| в) 12:07 по Нью-Йорку/);
-  assert.match(html, /Прежние обращения через сайт/);
-  assert.match(html, /1, последнее 24 сентября 2026, статус Done/);
-  assert.ok(html.indexOf(">Обращение</div>") < html.indexOf(">Контакты</div>"));
+  assert.match(html, /October 1(,| at) 12:07\s?PM, New York time/);
+  assert.match(html, />Context<\/div>/);
+  assert.match(html, /No: we haven't seen this email or phone before/);
+  assert.match(html, />Earlier website inquiries</);
+  assert.match(html, /1, latest Sep 24, 2026, status Done/);
+  assert.ok(html.indexOf(">Request</div>") < html.indexOf(">Contact</div>"));
+  assert.doesNotMatch(html, /Контакты|Обращение|Ответить|Контекст|по Нью-Йорку/);
   assert.doesNotMatch(html, /[·•]|RUSA/);
   // English request with a Latin name: the reply subject is in English
   const en = W.inquiryEmail(W.inquiryFrom({ ...row(8), name: "Harry", column_values: [cv("long_text", "Hello"), cv("status", "Media - СМИ"), cv("email", "harry@example.org")] })).html;
@@ -67,12 +73,12 @@ test("the email: name, category, request with its line breaks, everything escape
   assert.match(en, /#FF3333/, "media: the red flag");
   // no email: no reply button, a line that says so; no lookup → no context section
   const none = W.inquiryEmail(W.inquiryFrom({ ...row(9), column_values: [cv("long_text", "Hi"), cv("email", "not an email")] })).html;
-  assert.doesNotMatch(none, />Ответить</);
-  assert.match(none, /Почты в обращении нет\./);
+  assert.doesNotMatch(none, />Reply</);
+  assert.match(none, /No email in the inquiry\./);
   assert.match(none, /not an email/);
-  assert.doesNotMatch(none, />Контекст</);
-  assert.deepEqual(W.category("Something new"), { ru: "Something new", color: "#0099CC" });
-  assert.equal(W.category("").ru, "Без категории");
+  assert.doesNotMatch(none, />Context</);
+  assert.deepEqual(W.category("Something new - что-то новое"), { name: "Something new", color: "#0099CC" });
+  assert.equal(W.category("").name, "No category");
 });
 
 test("a new row: one email to the team, then a note on the row stops a second one", async () => {
@@ -83,9 +89,34 @@ test("a new row: one email to the team, then a note on the row stops a second on
   assert.match(S.mails[0], /^To: ezra@qaravan\.org$/m);
   assert.match(S.mails[0], /^From: QARAVAN <info@qaravan\.org>$/m);
   assert.equal(S.notes.length, 1);
-  assert.match(S.notes[0].t, /^Письмо команде отправлено: ezra@qaravan\.org, 1 октября(,| в) 12:30 по Нью-Йорку\.\n\nКонтекст:/);
+  assert.match(S.notes[0].t, /^Team email sent: ezra@qaravan\.org, October 1(,| at) 12:30\s?PM, New York time\.\n\nContext: what the robot found/);
   const again = await W.inquiryForItem({ itemId: "7" }, { now: NOW, lookup: noLookup });
   assert.deepEqual([again.result, again.why, S.mails.length], ["skipped", "already sent", 1]);
+});
+
+test("a row already noted in Russian (before the email was in English) is not sent again", async () => {
+  reset([row(4, { updates: [{ text_body: "Письмо команде отправлено: ezra@qaravan.org, 1 октября в 13:03 по Нью-Йорку." }] })]);
+  assert.equal((await W.inquiryForItem({ itemId: "4" }, { now: NOW, lookup: noLookup })).why, "already sent");
+  assert.equal(S.mails.length, 0);
+});
+
+test("the English context: a known member with events, volunteering and a signed agreement; a failed check", () => {
+  const d = { ok: true, member: { id: "500", name: "Alex", url: "https://qaravan.monday.com/boards/18425190164/pulses/500", firstSeen: "2025-01-10", by: "phone" },
+    attended: Array.from({ length: 10 }, (_, i) => ({ id: String(i), name: `Event <${i}>`, date: `2026-0${(i % 9) + 1}-15` })), led: [],
+    volunteer: { card: "Active", skills: "Photo", applications: [{ roles: "Greeter", status: "New", date: "2026-09-03" }] }, agreement: "2026-09-28", earlier: [] };
+  const rows = W.contextRows(d);
+  assert.deepEqual(rows[0], ["Card on the event attendees board", { text: "Yes, with us since Jan 10, 2025 (found by phone)", url: d.member.url }]);
+  assert.equal(rows[1][0], "Events (10)");
+  assert.equal(rows[1][1].more, "and 2 more");
+  assert.deepEqual(rows[2], ["Volunteering", ["On the card: Active. Skills: Photo", "Application Sep 3, 2026: Greeter (New)"]]);
+  assert.deepEqual(rows[3], ["Community Agreement", "Signed Sep 28, 2026"]);
+  const html = W.inquiryEmail(W.inquiryFrom(row(5)), { known: d }).html;
+  assert.match(html, />Open card</);
+  assert.match(html, /Event &lt;0&gt;/);
+  assert.match(W.inquiryEmail(W.inquiryFrom(row(5)), { known: { ok: false } }).html, /Couldn't check: monday didn't answer/);
+  assert.match(W.contextText({ ok: false }), /^Context\nCouldn't check/);
+  // the support-group email keeps its Russian section
+  assert.match(Mail.known({ ok: false }), /Проверить не получилось/);
 });
 
 test("old rows, other boards, unknown rows and a failed send write nothing", async () => {
@@ -119,7 +150,7 @@ test("the handler: monday's challenge, a webhook call, and nothing personal in t
   assert.equal((await call("POST", "/api/website-inquiry", {})).statusCode, 400);
   const r = await call("POST", "/api/website-inquiry", { event: { pulseId: 7, boardId: 4939299706 } });
   assert.equal(r.statusCode, 200);
-  assert.deepEqual(r.body, { ok: true, result: "sent", why: "Юридическая помощь" });
+  assert.deepEqual(r.body, { ok: true, result: "sent", why: "Legal help" });
   assert.equal(S.mails.length, 1);
   assert.doesNotMatch(JSON.stringify(r.body), /alex|Алекс/i);
 });
