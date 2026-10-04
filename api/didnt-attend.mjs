@@ -40,7 +40,7 @@ export default async function handler(req, res) {
   }
   if (!ok) {
     res.statusCode = 400;
-    return res.end(page("Ссылка не сработала", "Похоже, ссылка повреждена. Напиши нам на info@qaravan.org.<br><br>This link didn't work. Email info@qaravan.org."));
+    return res.end(page("Ссылка не сработала", "Похоже, ссылка повреждена. Напишите нам на info@qaravan.org.<br><br>This link didn't work. Email info@qaravan.org."));
   }
 
   try {
@@ -72,8 +72,8 @@ export default async function handler(req, res) {
   } catch (e) {
     console.error("didnt-attend failed:", e.message);
     res.statusCode = 500;
-    return res.end(page("Что-то пошло не так", "Не получилось сохранить. Напиши нам на info@qaravan.org.<br><br>Something broke. Email info@qaravan.org."));
+    return res.end(page("Что-то пошло не так", "Не получилось сохранить. Напишите нам на info@qaravan.org.<br><br>Something broke. Email info@qaravan.org."));
   }
 
-  res.end(page("Принято!", "Мы отметили, что тебя не было на этом событии, и учтём это. Если это ошибка — просто открой форму из письма и оставь отзыв.<br><br>Got it — we've noted you didn't attend. If that's a mistake, just open the form from the email and leave your feedback."));
+  res.end(page("Принято!", "Мы отметили, что вас не было на этом событии, и учтём это. Если это ошибка — просто откройте форму из письма и оставьте отзыв.<br><br>Got it — we've noted you didn't attend. If that's a mistake, just open the form from the email and leave your feedback."));
 }
