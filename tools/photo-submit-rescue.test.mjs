@@ -7,6 +7,7 @@ import vm from "node:vm";
 // external requests are used, and the response is what the browser receives.
 const source = readFileSync(new URL("../api/submit.mjs", import.meta.url), "utf8")
   .replace('import { createHmac } from "node:crypto";', "")
+  .replace('import { albumTitle } from "../lib/album.mjs";', "")
   .replace("export default async function handler", "async function handler");
 
 async function submitLead(photos, result) {

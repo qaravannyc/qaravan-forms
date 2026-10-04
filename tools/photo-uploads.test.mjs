@@ -521,6 +521,7 @@ test('multi: the 50-file allowance applies independently to each event', async (
 async function submitToServer(body) {
   const source = readFileSync(new URL('../api/submit.mjs', import.meta.url), 'utf8')
     .replace(/^import \{ createHmac \} from "node:crypto";$/m, '')
+    .replace(/^import \{ albumTitle \} from "\.\.\/lib\/album\.mjs";$/m, '')
     .replace('export default async function handler', 'async function handler');
   const batches = [];
   const context = vm.createContext({

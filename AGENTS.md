@@ -45,7 +45,7 @@ without still serving the old one.
 
 **Code shared with events-robot.**
 - `lib/agreement.mjs`, `lib/agreement-email.mjs`, `lib/wordmark-email.mjs` are byte-identical copies of events-robot `robot/lib/`. Change both together; check with `cmp lib/agreement.mjs ../events-robot/robot/lib/agreement.mjs` (same for the other two).
-- The album title `<name> — QARAVAN` and `composeAlbumInfo` (`lib/album.mjs`) must match events-robot `robot/albums.mjs`; both write the fingerprint to `text_mm6417vh`.
+- The album title (`albumTitle` in `lib/album.mjs`: `<name> — QARAVAN`, or `<name> — RUSA LGBTQ` for events before 2025-04-23, when the organization took its new name) must match events-robot `robot/lib/album-title.mjs`, since both sides also look albums up by title; `composeAlbumInfo` there must match events-robot `robot/albums.mjs` (both write the fingerprint to `text_mm6417vh`).
 - `digestBlocks` in `api/slack-approve.mjs` mirrors the digest card in events-robot `robot/send.mjs`.
 
 ## What this repository depends on
