@@ -31,6 +31,7 @@ const RESPONDENT_COL = "text_mm63r903"; // eventId:attendeeId, on the feedback b
 // тред — канал видит одну строку на событие, а не карточку на каждый отклик.
 const THREAD_COL = "text_mm681056";
 import { createHmac } from "node:crypto";
+import { albumTitle } from "../lib/album.mjs";
 
 // Отзывы с событий — column map
 const F = {
@@ -109,6 +110,7 @@ async function getEvent(id) {
     albumId: (cols[ALBUM_COL] || "").trim() || (albumLink.match(/photos\.google\.com\/(?:u\/\d+\/)?lr\/album\/([\w-]+)/) || [])[1] || "",
     albumShareUrl: isShareUrl(albumLink) ? albumLink : "",
     date: ruDate(cols.date4),
+    dateRaw: cols.date4 || "", // «YYYY-MM-DD HH:MM» — для названия альбома
     location: (cols.location || "").trim(),
     ruName: (cols.text_mm5qsspp || "").trim(),
     lead: (cols.text_mm5b1czz || "").trim(),
@@ -201,7 +203,10 @@ async function filePhotos(ev, photos, credit) {
   if (!albumId) {
     // Прежде чем заводить новый альбом — поискать существующий по названию:
     // id мог не записаться или потеряться, а альбом уже есть.
-    albumId = await findAppAlbumByTitle(`${ev.name} — QARAVAN`).catch(() => "");
+    // Альбомы, заведённые до правила про RUSA LGBTQ, могут называться «— QARAVAN».
+    const title = albumTitle(ev.name, ev.dateRaw), legacy = `${ev.name} — QARAVAN`;
+    albumId = await findAppAlbumByTitle(title).catch(() => "")
+      || (title !== legacy && await findAppAlbumByTitle(legacy).catch(() => "")) || "";
     if (albumId) {
       ev.albumId = albumId;
       await monday(
@@ -218,7 +223,7 @@ async function filePhotos(ev, photos, credit) {
     const a = await fetch("https://photoslibrary.googleapis.com/v1/albums", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ album: { title: `${ev.name} — QARAVAN` } }),
+      body: JSON.stringify({ album: { title: albumTitle(ev.name, ev.dateRaw) } }),
     }).then((r) => r.json());
     if (!a.id) throw new Error("album create: " + JSON.stringify(a).slice(0, 200));
     albumId = a.id;
@@ -333,7 +338,7 @@ async function filePhotos(ev, photos, credit) {
       const a = await fetch("https://photoslibrary.googleapis.com/v1/albums", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ album: { title: `${ev.name} — QARAVAN (спасённые файлы)` } }),
+        body: JSON.stringify({ album: { title: `${albumTitle(ev.name, ev.dateRaw)} (спасённые файлы)` } }),
       }).then((r) => r.json());
       if (a.id) {
         const c = await tryCreate(left, a.id);
