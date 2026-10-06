@@ -15,8 +15,12 @@
 // invents the id (UUID); it is unguessable, so the resume link is private.
 // Free text is stored verbatim in whatever language the person wrote;
 // board labels are English (repository rule). Column ids: lib/letter-board.mjs.
-import { C, L, LANGS, RID_RX, GROUP_ANSWERS, monday, findByRid, createRow } from "../lib/letter-board.mjs";
-import { sendResumeEmail, sendSubmitEmail } from "../lib/letter-mail.mjs";
+import { BOARD, C, L, LANGS, RID_RX, GROUP_ANSWERS, monday, findByRid, createRow } from "../lib/letter-board.mjs";
+import { sendResumeEmail, sendSubmitEmail, sendEmail } from "../lib/letter-mail.mjs";
+import { recipients as teamRecipients, teamLetter } from "../lib/team-email.mjs";
+import { lookupPerson, withoutItem } from "../lib/person-lookup.mjs";
+import { section, pairs, para, text, link, knownSection } from "../lib/support-mail.mjs";
+import { contextRows, enDate, nyWhen, CONTEXT } from "../lib/website-inquiry.mjs";
 
 const FORM_BASE = process.env.FORM_BASE || "https://feedback.qaravan.org";
 const RAW_MAX = 9000; // long_text columns keep about 10k characters; the raw JSON is trimmed to fit
@@ -183,6 +187,48 @@ export function involvementSummary(a) {
   ].filter(Boolean).join("\n");
 }
 
+// The team's email about a new request — sent once, on the first submission, to the same
+// recipients as the other team emails (lib/team-email.mjs, TEAM_NOTIFY), in their layout.
+// It carries what triage needs; identities and key events at home stay on the board.
+export function teamEmail(a, meta, { itemId, known = null, now = new Date() } = {}) {
+  const rows = (title, list) => {
+    const r = list.filter(([, v]) => v);
+    return r.length ? section(title, pairs(r.map(([k, v]) => [k, typeof v === "object" ? link(v.href, v.label) : text(v)]))) : "";
+  };
+  const proceeding = a.proceeding ? L.proceeding[a.proceeding] + (a.proceeding === "other" && a.proceedingText ? `: ${a.proceedingText}` : "") : "";
+  const consents = [["Answers true", a.consent.truth], ["Share with attorney", a.consent.share], ["May contact", a.consent.contact]];
+  const n = eventsCount(a);
+  const email = EMAIL_RX.test(a.email) ? a.email : "";
+  const pv = phoneVal(a.phone);
+  const body = rows("Case", [
+    ["Country", countryName(a.country1)], ["Attorney", attorneyText(a)], ["Other support letters", lettersText(a)],
+    ["Consents", consents.every(([, ok]) => ok) ? "All three given" : consents.map(([k, ok]) => `${k}: ${ok ? "yes" : "NO"}`).join("\n")],
+  ])
+    + rows("With QARAVAN", [
+      ["First came", firstContact(a)], ["Takes part", L.freq[a.frequency]],
+      ["Roles", Object.keys(a.role).map((k) => L.roles[k]).join(", ")],
+      ["Events and programs", n ? `${n} marked in the form` : a.eventsNone.all ? "None of the listed" : ""],
+      ["Who knows them", refsText(a)],
+    ])
+    + (a.anythingElse ? section("Anything else", para(a.anythingElse)) : "")
+    + rows("Contact", [
+      ["Known as", a.knownAs.filter(Boolean).join(", ")], ["Pronouns", pronounsText(a)], ["Age", a.age],
+      ["Email", email ? { href: `mailto:${email}`, label: email } : a.email],
+      ["Phone", pv ? { href: `tel:${pv.phone}`, label: pv.phone } : ""],
+      ["Messengers", [a.telegram && `Telegram ${a.telegram}`, a.whatsapp && `WhatsApp ${a.whatsapp}`, a.instagram && `Instagram ${a.instagram}`].filter(Boolean).join("\n")],
+      ["Follow-up language", L.followLang[a.followLang]],
+    ])
+    + (known ? knownSection(contextRows(known, { earlier: "Earlier letter requests" }), CONTEXT) : "");
+  return teamLetter({
+    title: "Support-letter request", color: "#0099CC", name: fullName(a) || "No name",
+    lines: [proceeding, a.deadline && !a.deadlineUnknown ? `Letter needed by ${enDate(a.deadline)}` : "Deadline not known yet", `${nyWhen(now)}, New York time · form in ${L.lang[meta.lang]}`].filter(Boolean),
+    email, reply: a.followLang === "ru" ? "Ваше письмо поддержки от QARAVAN" : "Your QARAVAN support letter",
+    extra: a.followLang ? `They asked for follow-up in ${L.followLang[a.followLang]}.` : "",
+    itemUrl: `https://qaravan.monday.com/boards/${BOARD}/pulses/${itemId}`, body,
+    foot: "Sent by the support-letter form at feedback.qaravan.org/letter. Every request is on the Letters of Support — Immigration Cases board in monday.",
+  });
+}
+
 // The raw JSON is what the resume link reads back; trimmed only at the very end.
 function rawJson(a, meta) {
   const body = { rid: meta.rid, feedback: meta.feedback, savedAt: new Date().toISOString(), lang: meta.lang, step: Math.max(0, meta.lastQ - 1), progress: meta.progress, startedAt: meta.startedAt, submitted: !!meta.submitted || meta.mode === "submit", submittedAt: meta.submittedAt || null, minutes: meta.minutes ?? null, emailSent: meta.emailSent || null, a };
@@ -286,6 +332,11 @@ export default async function handler(req, res) {
       submittedAt: mode === "submit" ? new Date().toISOString() : prev.submittedAt || null,
     };
     const answers = a;
+    // What our boards already know about the person — for the team's email; runs while the row is written.
+    const firstSubmit = mode === "submit" && !wasSubmitted;
+    const pv = phoneVal(answers.phone);
+    const lookup = firstSubmit && EMAIL_RX.test(answers.email)
+      ? lookupPerson({ email: answers.email, phone: pv ? { e164: pv.phone } : null }, { group: { board: BOARD, email: C.email, status: C.letterStatus } }) : null;
 
     // Personal resume link — emailed once, as soon as we have a valid email.
     let emailed = null;
@@ -308,6 +359,11 @@ export default async function handler(req, res) {
       if (!existing || existing.group !== GROUP_ANSWERS) await monday(`mutation ($i: ID!) { move_item_to_group(item_id:$i, group_id:"${GROUP_ANSWERS}") { id } }`, { i: String(itemId) }).catch((e) => console.error("move failed:", e.message));
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t) { id } }`, { i: String(itemId), t: updateText(answers, { ...meta, repeat: wasSubmitted }) }).catch((e) => console.error("update failed:", e.message));
       if (EMAIL_RX.test(answers.email)) await sendSubmitEmail({ to: answers.email, name: answers.firstName, lang: meta.lang }).catch((e) => console.error("submit email failed:", e.message));
+      const team = teamRecipients();
+      if (firstSubmit && team.length) {
+        const m = teamEmail(answers, meta, { itemId, known: lookup ? withoutItem(await lookup, itemId) : null });
+        await sendEmail(team.join(", "), m.subject, m.html).catch((e) => console.error("team email failed:", e.message));
+      }
     }
     return res.end(JSON.stringify({ ok: true, emailed }));
   } catch (e) {

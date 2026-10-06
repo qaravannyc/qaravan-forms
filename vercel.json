@@ -88,6 +88,10 @@
       "destination": "/api/survey?form=website-inquiry"
     },
     {
+      "source": "/api/team-email",
+      "destination": "/api/survey?form=team-email"
+    },
+    {
       "source": "/feedback/:id(\\d+)/lead",
       "destination": "/api/page?id=:id&lead=1"
     },
