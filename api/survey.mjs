@@ -22,7 +22,9 @@
 // И вебхук monday о новой записи в волонтёры — приглашение подписать Соглашение
 // сообщества (/api/agreement-invite → /api/survey?form=agreement-invite) — lib/agreement-invite.mjs.
 // И вебхук monday о новом обращении с сайта — письмо команде (/api/website-inquiry →
-// /api/survey?form=website-inquiry) — lib/website-inquiry.mjs.
+// /api/survey?form=website-inquiry) — lib/website-inquiry.mjs. И вебхук monday о новой записи
+// в волонтёры, заявке на роль или в Rainbow Connections — письмо команде (/api/team-email →
+// /api/survey?form=team-email) — lib/team-email.mjs.
 import { eventVolunteersHandler } from "../lib/event-volunteers.mjs";
 import { supportGroupsHandler } from "../lib/support-groups.mjs";
 import { meetingsHandler, meetingPromptsHandler, meetingAttendanceHandler } from "../lib/meetings.mjs";
@@ -30,6 +32,7 @@ import { attendanceHandler } from "../lib/attendance.mjs";
 import { statusHandler } from "../lib/status.mjs";
 import { agreementInviteHandler } from "../lib/agreement-invite.mjs";
 import { websiteInquiryHandler } from "../lib/website-inquiry.mjs";
+import { teamEmailHandler } from "../lib/team-email.mjs";
 
 const MONDAY = "https://api.monday.com/v2";
 const SURVEY_BOARD = "18426996689";
@@ -327,6 +330,7 @@ export default async function handler(req, res) {
   if (u.searchParams.get("form") === "status" || /\/api\/status\/?$/.test(u.pathname)) return statusHandler(req, res);
   if (u.searchParams.get("form") === "agreement-invite" || /\/api\/agreement-invite\/?$/.test(u.pathname)) return agreementInviteHandler(req, res);
   if (u.searchParams.get("form") === "website-inquiry" || /\/api\/website-inquiry\/?$/.test(u.pathname)) return websiteInquiryHandler(req, res);
+  if (u.searchParams.get("form") === "team-email" || /\/api\/team-email\/?$/.test(u.pathname)) return teamEmailHandler(req, res);
 
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "no-store");
