@@ -225,28 +225,35 @@ async function clearOwnedGroups() {
     `query ($b: [ID!]) { boards(ids: $b) { groups(ids: ${JSON.stringify(Object.values(AGG_GROUPS))}) { id items_page(limit: 500) { items { id } } } } }`,
     { b: [AGG_BOARD] });
   const ids = d.boards[0].groups.flatMap((g) => g.items_page.items.map((i) => i.id));
-  for (let i = 0; i < ids.length; i += 25) {
-    const batch = ids.slice(i, i + 25);
-    await monday("mutation {" + batch.map((id, k) => `d${k}: delete_item(item_id: ${id}) { id }`).join(" ") + "}");
-  }
+  const batches = [];
+  for (let i = 0; i < ids.length; i += 25) batches.push(ids.slice(i, i + 25));
+  await Promise.all(batches.map((batch) =>
+    monday("mutation {" + batch.map((id, k) => `d${k}: delete_item(item_id: ${id}) { id }`).join(" ") + "}")));
   return ids.length;
 }
 
 async function writeItems(all) {
-  // Пакетами по 10 алиасами — иначе ~80 последовательных create_item не
-  // укладываются в лимит времени серверлес-функции.
   // Порядок массива = порядок строк на доске: create_item дописывает В КОНЕЦ
-  // группы, а compute() отдаёт варианты от популярных к редким — поэтому
-  // партии нельзя пускать параллельно или в другом порядке.
-  for (let i = 0; i < all.length; i += 10) {
-    const batch = all.slice(i, i + 10);
-    const defs = batch.map((_, k) => `$n${k}: String!, $v${k}: JSON!`).join(", ");
-    const muts = batch.map((it, k) =>
-      `i${k}: create_item(board_id: ${AGG_BOARD}, group_id: "${it.group}", item_name: $n${k}, column_values: $v${k}, create_labels_if_missing: false) { id }`).join(" ");
-    const vars = {};
-    batch.forEach((it, k) => { vars[`n${k}`] = it.name.slice(0, 255); vars[`v${k}`] = JSON.stringify(it.cv); });
-    await monday(`mutation (${defs}) { ${muts} }`, vars);
+  // группы, а compute() отдаёт варианты от популярных к редким. Поэтому
+  // внутри группы — строго по очереди, а разные группы пишутся параллельно:
+  // при ~180 строках последовательная запись не укладывается в 60 секунд
+  // серверлес-функции.
+  const byGroup = new Map();
+  for (const it of all) {
+    if (!byGroup.has(it.group)) byGroup.set(it.group, []);
+    byGroup.get(it.group).push(it);
   }
+  await Promise.all([...byGroup.values()].map(async (items) => {
+    for (let i = 0; i < items.length; i += 10) {
+      const batch = items.slice(i, i + 10);
+      const defs = batch.map((_, k) => `$n${k}: String!, $v${k}: JSON!`).join(", ");
+      const muts = batch.map((it, k) =>
+        `i${k}: create_item(board_id: ${AGG_BOARD}, group_id: "${it.group}", item_name: $n${k}, column_values: $v${k}, create_labels_if_missing: false) { id }`).join(" ");
+      const vars = {};
+      batch.forEach((it, k) => { vars[`n${k}`] = it.name.slice(0, 255); vars[`v${k}`] = JSON.stringify(it.cv); });
+      await monday(`mutation (${defs}) { ${muts} }`, vars);
+    }
+  }));
 }
 
 export async function run({ dry = false, fixture = null } = {}) {
