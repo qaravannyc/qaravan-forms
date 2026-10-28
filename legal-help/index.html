@@ -29,10 +29,20 @@
 .know li::before{content:""; position:absolute; left:0; top:.55em; width:8px; height:8px; background:var(--q-ink)}
 .start{margin-top:32px}
 
-/* a step: its name in condensed caps above the questions */
-.hero.in-steps h1{display:none}
-.hero.in-steps{margin-bottom:12px}
-.step-title{margin:0 0 4px; font:700 26px/1.15 var(--font-head); letter-spacing:var(--tracking-display)}
+/* more room at the sides than the other forms: the column sits in the middle with air around it */
+.wrap{max-width:540px; padding:20px 28px 64px}
+@media (min-width:600px){ .wrap{padding:32px 32px 72px} }
+
+/* one question per screen: progress bar, the section name as eyebrow, the question, then Back / Next */
+.hero.in-steps{display:none}
+.progress{height:4px; background:var(--q-line); margin:4px 0 0}
+.progress i{display:block; height:100%; width:0; background:var(--q-ink); transition:width .25s ease-out}
+@media (prefers-reduced-motion:reduce){ .progress i{transition:none} }
+.q-screen{min-height:calc(100svh - 260px); padding-top:5vh}
+.q-screen:focus{outline:none}
+.q-screen .eyebrow{margin-bottom:14px}
+.q-screen fieldset{padding-top:0}
+.q-screen legend{font:600 21px/1.35 var(--font-brand)}
 
 /* answer rows: the chosen row is marked by an ink edge and bold words, no side bar */
 .opts label:has(input:checked){box-shadow:none; border-color:var(--q-ink)}
@@ -84,6 +94,7 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 
     <form id="f" novalidate hidden>
       <input class="hp" type="text" name="website" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="progress" aria-hidden="true"><i id="bar"></i></div>
       <div id="steps"></div>
       <div class="submit" id="submitBox" hidden>
         <p class="err" id="err" role="alert"></p>
@@ -124,8 +135,8 @@ const STEPS = [
 ];
 const Q = {
   help: { type: "many", opts: ["asylum", "interview", "court", "ead", "greencard", "appeal", "detention", "temp", "other"], other: "help_other" },
-  stage: { type: "one", opts: ["not_filed", "filed", "interviewed", "ref_after", "ref_noint", "court", "decided", "not_asylum", "unsure"] },
-  arrived: { type: "one", opts: ["y2026", "y2025", "y2024", "y2023", "y2022", "before"], cols: 3 },
+  stage: { type: "one", opts: ["not_filed", "thin", "filed", "interviewed", "ref_after", "ref_noint", "court", "dismissed", "order_appeal", "order_absentia", "order_no_appeal", "granted", "not_asylum", "unsure", "other"], other: "stage_other" },
+  arrived: { type: "one", opts: ["y2026", "y2025", "y2024", "y2023", "y2022", "before"], cols: 2 },
   deadline: { type: "one", opts: ["month", "m1_3", "later", "none", "unsure"] },
   detained: { type: "one", opts: ["yes", "no", "pnts"] },
   lawyer: { type: "one", opts: ["free", "paid", "had", "never"] },
@@ -169,7 +180,7 @@ ru: {
   ],
   start: "Начать",
   steps: ["Ваше дело", "Адвокат", "Сборы и последствия", "Где и на каком языке", "О вас и согласие"],
-  step_of: (i, n) => `Шаг ${i} из ${n}`,
+  step_of: (i, n) => `Вопрос ${i} из ${n}`,
   back: "Назад", next: "Дальше",
   many: "Можно выбрать несколько.",
   other_ph: "Напишите, что именно",
@@ -208,7 +219,7 @@ ru: {
   },
   o: {
     help: { asylum: "Подать документы на убежище", interview: "Подготовиться к интервью в USCIS", court: "Дело в иммиграционном суде", ead: "Разрешение на работу (EAD): первое или продление", greencard: "Грин-карта после получения убежища", appeal: "Апелляция или повторное открытие дела", detention: "Помощь, связанная с задержанием в ICE", temp: "Пароль, TPS или другой временный статус", other: "Другое" },
-    stage: { not_filed: "Документы на убежище ещё не поданы", filed: "Документы поданы в USCIS, интервью ещё не было", interviewed: "Интервью в USCIS было, решения пока нет", ref_after: "USCIS передал дело в иммиграционный суд после интервью", ref_noint: "USCIS передал дело в иммиграционный суд без интервью", court: "Дело с самого начала рассматривается в иммиграционном суде", decided: "Решение по делу уже есть", not_asylum: "Я не подаю на убежище", unsure: "Не знаю" },
+    stage: { not_filed: "Документы на убежище ещё не поданы", thin: "Заявление подано без подробной истории, например чтобы успеть в годичный срок или получить разрешение на работу", filed: "Документы поданы в USCIS, интервью ещё не было", interviewed: "Интервью в USCIS было, решения пока нет", ref_after: "USCIS передал дело в иммиграционный суд после интервью", ref_noint: "USCIS передал дело в иммиграционный суд без интервью", court: "Дело с самого начала рассматривается в иммиграционном суде, решения пока нет", dismissed: "Дело в иммиграционном суде закрыли по просьбе ICE", order_appeal: "Судья вынес решение о депортации (в том числе на массовом слушании), апелляция подана или готовится", order_absentia: "Решение о депортации вынесено заочно, потому что слушание было пропущено или о нём не сообщили", order_no_appeal: "Есть решение о депортации, апелляцию не подавали", granted: "Убежище одобрено", not_asylum: "Я не подаю на убежище", unsure: "Не знаю", other: "Другое" },
     arrived: { y2026: "2026", y2025: "2025", y2024: "2024", y2023: "2023", y2022: "2022", before: "Раньше 2022" },
     deadline: { month: "Да, в течение месяца", m1_3: "Да, через 1–3 месяца", later: "Да, больше чем через 3 месяца", none: "Нет", unsure: "Не знаю" },
     detained: YN,
@@ -252,7 +263,7 @@ en: {
   ],
   start: "Start",
   steps: ["Your case", "Your lawyer", "Fees and consequences", "Where and in which language", "About you and consent"],
-  step_of: (i, n) => `Step ${i} of ${n}`,
+  step_of: (i, n) => `Question ${i} of ${n}`,
   back: "Back", next: "Next",
   many: "You can pick more than one.",
   other_ph: "Tell us what",
@@ -291,7 +302,7 @@ en: {
   },
   o: {
     help: { asylum: "File for asylum", interview: "Prepare for a USCIS interview", court: "A case in immigration court", ead: "Work permit (EAD): first one or renewal", greencard: "Green card after asylum", appeal: "Appeal or reopening a case", detention: "Help related to ICE detention", temp: "Parole, TPS or other temporary status", other: "Other" },
-    stage: { not_filed: "Not filed yet", filed: "Filed with USCIS, no interview yet", interviewed: "Interviewed by USCIS, no decision yet", ref_after: "USCIS sent the case to immigration court after the interview", ref_noint: "USCIS sent the case to immigration court without an interview", court: "The case has been in immigration court from the start", decided: "There is already a decision", not_asylum: "I’m not applying for asylum", unsure: "I don’t know" },
+    stage: { not_filed: "Not filed yet", thin: "Filed without a detailed story, for example to meet the one-year deadline or to get a work permit", filed: "Filed with USCIS, no interview yet", interviewed: "Interviewed by USCIS, no decision yet", ref_after: "USCIS sent the case to immigration court after the interview", ref_noint: "USCIS sent the case to immigration court without an interview", court: "The case has been in immigration court from the start, no decision yet", dismissed: "The immigration court case was dismissed at ICE’s request", order_appeal: "A judge ordered removal (including at a mass hearing), and an appeal is filed or being prepared", order_absentia: "A removal order was made in absentia, because the hearing was missed or no notice came", order_no_appeal: "There is a removal order, and no appeal was filed", granted: "Asylum granted", not_asylum: "I’m not applying for asylum", unsure: "I don’t know", other: "Other" },
     arrived: { y2026: "2026", y2025: "2025", y2024: "2024", y2023: "2023", y2022: "2022", before: "Before 2022" },
     deadline: { month: "Yes, within a month", m1_3: "Yes, in 1–3 months", later: "Yes, in more than 3 months", none: "No", unsure: "I don’t know" },
     detained: YN_EN,
@@ -326,7 +337,8 @@ en: {
 // ===== состояние =====
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
-let lang = "ru", step = -1, sending = false, tried = false;
+let lang = "ru", cur = null, sending = false, tried = false; // cur: ключ вопроса на экране, null — вступление
+const ORDER = STEPS.flat();
 const S = { story: "", price: "", contactName: "", contact: "" };
 for (const [k, q] of Object.entries(Q)) if (q.type === "one") S[k] = ""; else if (q.type === "many") S[k] = [];
 const OTHERS = {}; for (const q of Object.values(Q)) if (q.other) OTHERS[q.other] = "";
@@ -334,10 +346,11 @@ const rid = (() => { const a = new Uint8Array(12); crypto.getRandomValues(a); re
 let RID = rid;
 const T = () => STRINGS[lang];
 const visible = (k) => !Q[k].show || Q[k].show(S);
+const seq = () => ORDER.filter(visible); // вопросы, которые человек увидит при нынешних ответах
 
 // ===== черновик =====
 function saveDraft() {
-  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ lang, step, S, OTHERS, RID })); } catch (e) {}
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ lang, cur, S, OTHERS, RID })); } catch (e) {}
 }
 function loadDraft() {
   let d = null;
@@ -352,7 +365,7 @@ function loadDraft() {
   }
   if (d.OTHERS) for (const k of Object.keys(OTHERS)) if (typeof d.OTHERS[k] === "string") OTHERS[k] = d.OTHERS[k];
   if (typeof d.RID === "string" && /^[a-z0-9]{8,40}$/.test(d.RID)) RID = d.RID;
-  if (Number.isInteger(d.step) && d.step >= 0 && d.step < STEPS.length) step = d.step;
+  if (ORDER.includes(d.cur)) cur = d.cur;
 }
 function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} }
 
@@ -369,6 +382,8 @@ function optionRow(k, code, multi) {
       else S[k] = S[k].filter((c) => c !== code);
     } else S[k] = code;
     onChange(true);
+    // один ответ без поля «Другое» — сразу к следующему вопросу
+    if (!multi && code !== "other" && k !== "followup" && k === cur) setTimeout(() => { if (cur === k) next(); }, 350);
   };
   const s = document.createElement("span"); s.textContent = T().o[k][code];
   l.append(i, s);
@@ -432,19 +447,18 @@ function renderQuestion(k) {
   }
   return fs;
 }
-function renderSteps() {
+function renderScreen() {
   const wrap = $("steps"); wrap.innerHTML = "";
-  STEPS.forEach((keys, i) => {
-    const sec = document.createElement("section"); sec.className = "step" + (i === step ? " on" : ""); sec.id = "step" + i;
-    const h = document.createElement("h2"); h.className = "step-title"; h.tabIndex = -1; h.textContent = T().steps[i];
-    sec.appendChild(h);
-    for (const k of keys) sec.appendChild(renderQuestion(k));
-    wrap.appendChild(sec);
-  });
+  const sec = document.createElement("section"); sec.className = "q-screen step on"; sec.id = "screen"; sec.tabIndex = -1;
+  const e = document.createElement("div"); e.className = "eyebrow"; e.style.setProperty("--flag", "var(--q-purple)");
+  e.textContent = T().steps[STEPS.findIndex((st) => st.includes(cur))];
+  sec.append(e, renderQuestion(cur));
+  wrap.appendChild(sec);
 }
 function renderNav() {
-  const last = step === STEPS.length - 1;
-  $("stepcount").textContent = T().step_of(step + 1, STEPS.length);
+  const s = seq(), i = s.indexOf(cur), last = i === s.length - 1;
+  $("stepcount").textContent = T().step_of(i + 1, s.length);
+  $("bar").style.width = ((i + 1) / s.length) * 100 + "%";
   $("nextBtn").hidden = last;
   $("submitBox").hidden = !last;
 }
@@ -457,10 +471,10 @@ function render() {
   $("know").innerHTML = ""; for (const p of T().know) { const li = document.createElement("li"); li.textContent = p; $("know").appendChild(li); }
   $("btnRu").setAttribute("aria-pressed", lang === "ru" ? "true" : "false");
   $("btnEn").setAttribute("aria-pressed", lang === "en" ? "true" : "false");
-  $("introView").hidden = step >= 0;
-  $("f").hidden = step < 0;
-  $("hero").classList.toggle("in-steps", step >= 0);
-  if (step >= 0) { renderSteps(); renderNav(); }
+  $("introView").hidden = cur !== null;
+  $("f").hidden = cur === null;
+  $("hero").classList.toggle("in-steps", cur !== null);
+  if (cur !== null) { renderScreen(); renderNav(); }
   if (tried) validate(false);
   if (sending) $("send").textContent = T().sending;
 }
@@ -483,21 +497,31 @@ function refreshVisibility() {
   const cb = $("contactBox"); if (cb) cb.hidden = S.followup !== "yes";
 }
 function onChange(structural) {
-  if (structural) refreshVisibility();
+  if (structural) { refreshVisibility(); if (cur !== null) renderNav(); }
   saveDraft();
   if (tried && validate(false)) $("err").classList.remove("show");
 }
 
 // ===== шаги =====
 function go(to) {
-  step = to; saveDraft();
+  cur = to; saveDraft();
   render();
   window.scrollTo(0, 0);
-  const h = document.querySelector(".step.on h2"); if (h) h.focus({ preventScroll: true });
+  const sc = $("screen"); if (sc) sc.focus({ preventScroll: true });
 }
-$("startBtn").onclick = () => go(0);
-$("nextBtn").onclick = () => go(Math.min(step + 1, STEPS.length - 1));
-$("backBtn").onclick = () => go(step - 1);
+function next() {
+  // без ответа на вопрос о согласии дальше не пускаем
+  if (cur === "consent" && !S.consent) { tried = true; validate(true); return; }
+  const s = seq(), i = s.indexOf(cur);
+  if (i < s.length - 1) go(s[i + 1]);
+}
+function back() {
+  const s = seq(), i = s.indexOf(cur);
+  go(i > 0 ? s[i - 1] : null);
+}
+$("startBtn").onclick = () => go(seq()[0]);
+$("nextBtn").onclick = next;
+$("backBtn").onclick = back;
 
 // ===== проверка (только последний шаг: согласие и контакт) =====
 function validate(focus) {
@@ -505,12 +529,12 @@ function validate(focus) {
   if (!S.consent) bad.push("consent");
   if (S.followup === "yes" && !S.contact.trim()) bad.push("contact");
   const cfs = $("fs_consent"); if (cfs) { cfs.classList.toggle("bad-group", bad.includes("consent")); $("consentErr").classList.toggle("show", bad.includes("consent")); }
+  if (bad[0] === "consent" && focus && cur !== "consent") { go("consent"); return false; }
   const c = $("contact");
   if (c) { $("contactErr").classList.toggle("show", bad.includes("contact")); bad.includes("contact") ? c.setAttribute("aria-invalid", "true") : c.removeAttribute("aria-invalid"); }
   if (focus && bad.length) {
     const el = bad[0] === "consent" ? $("fs_consent").querySelector("input") : $("contact");
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    el.focus({ preventScroll: true });
+    if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.focus({ preventScroll: true }); }
   }
   return bad.length === 0;
 }
@@ -531,7 +555,7 @@ function payload() {
 }
 $("f").addEventListener("submit", async (ev) => {
   ev.preventDefault();
-  if (sending || step !== STEPS.length - 1) return;
+  if (sending || cur !== seq()[seq().length - 1]) return;
   tried = true;
   const err = $("err");
   if (!validate(true)) { err.textContent = T().err_summary; err.classList.add("show"); return; }
