@@ -32,6 +32,7 @@ const RESPONDENT_COL = "text_mm63r903"; // eventId:attendeeId, on the feedback b
 const THREAD_COL = "text_mm681056";
 import { createHmac } from "node:crypto";
 import { albumTitle } from "../lib/album.mjs";
+import { sendAnswersCopy, isEmail } from "../lib/answers-copy.mjs";
 
 // Отзывы с событий — column map
 const F = {
@@ -138,6 +139,24 @@ function multiAttendee(p) {
   if (!m) return null;
   const want = createHmac("sha256", secret).update(`multi:${m[1]}`).digest("hex").slice(0, 16);
   return want === m[2] ? m[1] : null;
+}
+
+// ---------- копия ответов человеку (lib/answers-copy.mjs) ----------
+// Почта: та, что вписана в форму, иначе — с карточки на доске Community Members по личной
+// ссылке (?p=). Тем, кто отписался (колонка «Рассылка» = Unsubscribed), по ссылке не пишем.
+const MEMBERS_BOARD_EMAIL = "email_mm5ysnnh", MEMBERS_MAILING = "color_mm63k40g";
+async function attendeeEmail(attendeeId) {
+  const d = await monday(`query ($i: [ID!]) { items(ids: $i) { column_values(ids: ["${MEMBERS_BOARD_EMAIL}", "${MEMBERS_MAILING}"]) { id text } } }`, { i: [String(attendeeId)] });
+  const cv = d.items?.[0]?.column_values || [];
+  if (/unsubscribed/i.test(cv.find((c) => c.id === MEMBERS_MAILING)?.text || "")) return null;
+  const e = (cv.find((c) => c.id === MEMBERS_BOARD_EMAIL)?.text || "").trim();
+  return isEmail(e) ? e : null;
+}
+async function sendCopy(b, attendeeId, form) {
+  const to = isEmail(b.email) ? String(b.email).trim() : attendeeId ? await attendeeEmail(attendeeId) : null;
+  if (!to) return;
+  const lang = b.lang === "en" ? "en" : "ru";
+  await sendAnswersCopy({ to, lang, form: (lang === "en" ? "Feedback: " : "Отзыв: ") + form, copy: b.copy });
 }
 
 async function findByRespondentKey(key) {
@@ -599,6 +618,8 @@ export default async function handler(req, res) {
         { type: "section", text: { type: "mrkdwn", text: summary.join("\n\n").slice(0, 2900) } },
       ]);
     }
+    await sendCopy(b, attendeeId, b.lang === "en" ? "events of the week" : "события недели")
+      .catch((e) => console.error("multi answers copy failed:", e.message));
     return res.end(JSON.stringify({ ok: true, processed, rescue }));
   }
 
@@ -722,5 +743,7 @@ export default async function handler(req, res) {
     slackBlocks(`${header}`, ev, `*${stars}*\n${slackSafe.join("\n")}`, itemId),
     await eventThread(ev));
 
+  await sendCopy(b, rKey ? rKey.split(":")[1] : null, ev?.name || (b.lang === "en" ? "event" : "событие"))
+    .catch((e) => console.error("attendee answers copy failed:", e.message));
   res.end(JSON.stringify({ ok: true, updated, rescue }));
 }

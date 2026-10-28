@@ -640,6 +640,23 @@ async function rescueFiles(list, eventIdFallback = ""){
   warning.classList.add("show");
 }
 
+// вопросы и ответы так, как их видел человек, — для копии на почту (уходит, если почта известна)
+function copyPairs(){
+  const t = T(), out = [];
+  const add = (q, a) => { a = String(a || "").trim(); if (q && a) out.push({ q, a }); };
+  const list = (set, key, other) => [...set].map(i => t[key][i]).filter(Boolean).concat(other.trim() ? [other.trim()] : []).join(", ");
+  add(eventName, lang === "en" ? (eventDateEn || eventDate) : eventDate);
+  add(t.q_rating, rating ? "★".repeat(rating) + "☆".repeat(5 - rating) : "");
+  add(t.q_high, list(high, "high", $("highOther").value));
+  add(t.q_low, list(low, "low", $("lowOther").value));
+  add(momentQuestion(), $("moment").value);
+  add(t.q_whycome, list(why, "whycome", $("whyOther").value));
+  if (customQ) add(customByLang(customQ, lang), $("customA").value);
+  add(t.q_consent, consent === "" ? "" : t.consent[consent] + (consent === 0 && $("respName").value.trim() ? ": " + $("respName").value.trim() : ""));
+  add(t.q_contact, contactOk === "" ? "" : t.contact_opts[contactOk]);
+  return out;
+}
+
 $("f").addEventListener("submit", async ev => {
   ev.preventDefault();
   const err = $("err");
@@ -690,7 +707,8 @@ $("f").addEventListener("submit", async ev => {
     photos: photos.filter(p => p.status === "done").map(p => ({ token: p.token, mime: p.file.type || "", name: p.file.name || "" })),
     photo_credit: $("phCredit").value.trim(),
     p: pTok,
-    website: document.querySelector(".hp").value
+    website: document.querySelector(".hp").value,
+    copy: (() => { try { return copyPairs(); } catch (e) { return []; } })() // копия на почту; ошибка в ней не мешает отправке
   };
   try{
     const r = await fetch("/api/submit", {

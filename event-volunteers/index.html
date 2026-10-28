@@ -62,6 +62,7 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 .roles+.field-hint,.chips+.field-hint{margin-top:12px}
 .submit .err{margin-bottom:16px}
 #thanks h1:focus{outline:none}
+#restart{margin-top:12px}
 </style>
 </head>
 <body>
@@ -150,6 +151,7 @@ input[aria-invalid="true"]{border-color:var(--danger)}
       <div class="submit">
         <p class="err" id="err" role="alert"></p>
         <button type="submit" id="send" data-i18n="send"></button>
+        <button type="button" class="na-link" id="restart" data-i18n="restart"></button>
         <footer>qaravan.org</footer>
       </div>
     </form>
@@ -220,7 +222,9 @@ ru: {
   err_summary: "Проверьте отмеченные поля и снова нажмите «Отправить заявку».",
   err_net: "Не удалось отправить заявку. Ответы сохранились на этой странице: проверьте интернет и снова нажмите «Отправить заявку».",
   thanks_t: "Спасибо!",
-  thanks_p: "Мы напишем в течение недели.",
+  thanks_p: "Мы напишем в течение недели. Копия ваших ответов придёт вам на почту.",
+  restart: "Начать заново",
+  restart_confirm: "Стереть все ответы и начать анкету заново?",
 },
 en: {
   language_label: "Form language",
@@ -267,7 +271,9 @@ en: {
   err_summary: "Check the highlighted fields and select “Send” again.",
   err_net: "We couldn’t send your application. Your answers are still on this page: check your connection and select “Send” again.",
   thanks_t: "Thank you!",
-  thanks_p: "We’ll get in touch within a week.",
+  thanks_p: "We’ll get in touch within a week. A copy of your answers is on its way to your email.",
+  restart: "Start over",
+  restart_confirm: "Clear all your answers and start the form again?",
 }};
 
 // ===== состояние =====
@@ -415,6 +421,7 @@ $("f").addEventListener("submit", async (ev) => {
     phone: $("phone").value, email: $("email").value,
     roles: ROLE_CODES.filter((r) => roles.has(r)), months: MONTHS.filter((m) => months.has(m)),
     frequency: freq, attended, notes: $("notes").value, lang,
+    copy: copyPairs(),
   };
   try {
     const r = await fetch("/api/event-volunteers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -437,6 +444,27 @@ $("f").addEventListener("submit", async (ev) => {
     sending = false; btn.disabled = false; btn.textContent = T().send;
   }
 });
+
+// вопросы и ответы так, как их видел человек, — для копии на почту
+function copyPairs() {
+  const t = T(), v = (id) => $(id).value.trim();
+  return [
+    [t.q_name, v("name")], [t.pronouns, v("pronouns")], ["Telegram", v("telegram")], ["Instagram", v("instagram")],
+    [t.phone, v("phone")], ["Email", v("email")],
+    [t.q_roles, ROLE_CODES.filter((r) => roles.has(r)).map((r) => ROLE_NAMES[r]).join(", ")],
+    [t.q_months, MONTHS.filter((m) => months.has(m)).map(monthName).join(", ")],
+    [t.q_freq, freq ? t.freq[freq] : ""], [t.q_attended, attended ? t.attended[attended] : ""], [t.q_notes, v("notes")],
+  ].filter(([, a]) => a).map(([q, a]) => ({ q, a }));
+}
+
+// «Начать заново»: стираем ответы и черновик
+$("restart").onclick = () => {
+  if (!confirm(T().restart_confirm)) return;
+  for (const id of TEXT_IDS) $(id).value = "";
+  roles.clear(); months.clear(); freq = ""; attended = ""; tried = false;
+  $("err").classList.remove("show");
+  clearDraft(); render(); window.scrollTo(0, 0);
+};
 
 // ===== старт =====
 loadDraft();

@@ -51,6 +51,7 @@ ru: {
   sending: "Отправляем…",
   e_name: "Напишите, как вас зовут.",
   e_email: "Проверьте почту: нужен адрес в формате name@example.com.",
+  restart: "Начать заново", restart_confirm: "Стереть все ответы и начать анкету заново?",
   e_phone: "В номере должно быть от 10 до 15 цифр. Проверьте, все ли цифры на месте.",
   e_choice: "Выберите ответ.",
   e_text: "Напишите хотя бы пару слов.",
@@ -72,6 +73,7 @@ en: {
   sending: "Sending…",
   e_name: "Tell us your name.",
   e_email: "Check the email address: use a format such as name@example.com.",
+  restart: "Start over", restart_confirm: "Clear all your answers and start the form again?",
   e_phone: "The phone number needs 10 to 15 digits. Check for missing or extra digits.",
   e_choice: "Pick an answer.",
   e_text: "Write at least a few words.",
@@ -136,7 +138,7 @@ gina: {
     },
     t_needs: "Напишите, что вам нужно", e_needs: "Выберите хотя бы один вариант.", e_needs_text: "Напишите, что вам нужно, или снимите «Другое».",
     q_notes: "Что ещё нам важно знать?",
-    thanks_p: "Анкета у нас, мы скоро с вами свяжемся.",
+    thanks_p: "Анкета у нас, мы скоро с вами свяжемся. Копия ваших ответов придёт вам на почту.",
   },
   en: {
     title: "Support Group with Gina",
@@ -168,7 +170,7 @@ gina: {
     },
     t_needs: "Tell us what you need", e_needs: "Pick at least one option.", e_needs_text: "Tell us what you need, or unselect “Something else”.",
     q_notes: "Anything else we should know?",
-    thanks_p: "We’ve got your form and will be in touch soon.",
+    thanks_p: "We’ve got your form and will be in touch soon. A copy of your answers is on its way to your email.",
   },
 },
 simon: {
@@ -195,7 +197,7 @@ simon: {
     o_format: { remote: "Только онлайн", in_person: "Только вживую", both: "Подходит и так, и так" },
     q_question: "Какой вопрос вы хотели бы задать на группе?",
     q_notes: "Чем ещё хотите поделиться?",
-    thanks_p: "Анкета у нас. Скоро пришлём информацию о ближайших встречах.",
+    thanks_p: "Анкета у нас. Скоро пришлём информацию о ближайших встречах, а копия ваших ответов уже идёт вам на почту.",
   },
   en: {
     title: "Peer Support Group with Simon",
@@ -219,7 +221,7 @@ simon: {
     o_format: { remote: "Online only", in_person: "In person only", both: "Either works" },
     q_question: "What question would you like to raise in the group?",
     q_notes: "Anything else you’d like to share?",
-    thanks_p: "We’ve got your form and will send you details of upcoming meetings soon.",
+    thanks_p: "We’ve got your form and will send you details of upcoming meetings soon. A copy of your answers is on its way to your email.",
   },
 }};
 
@@ -441,6 +443,7 @@ function render() {
   $("send").textContent = sending ? T("sending") : T("send");
   $("tgP").textContent = T("tg_p");
   $("tgBtn").textContent = T("tg_btn");
+  $("restart").textContent = T("restart");
   if (tried) validate(false);
 }
 function setLang(l) { lang = l; render(); saveDraft(); }
@@ -521,8 +524,40 @@ function body() {
     if (f.text) b[f.text.id] = (A[f.id] || []).includes(f.other) ? A[f.text.id] || "" : "";
     if (f.follow) b[f.follow.id] = A[f.follow.id] || "";
   }
+  b.copy = copyPairs();
   return b;
 }
+// вопросы и ответы так, как их видел человек, — для копии на почту
+function copyPairs() {
+  const out = [];
+  const add = (q, a) => { a = String(a ?? "").trim(); if (q && a) out.push({ q, a }); };
+  for (const f of FIELDS) {
+    const q = T("q_" + f.id) || "";
+    if (f.type === "contact") { add(T("email"), A.email); add(T("phone"), A.phone); add("Telegram", A.telegram); add("Instagram", A.instagram); continue; }
+    const v = A[f.id];
+    if (f.type === "consent") { if (v === true) add(q, T("c_" + f.id)); continue; }
+    const o = optsOf(f) || {};
+    if (Array.isArray(v)) {
+      let s = v.map((c) => o[c] ?? c).join(", ");
+      if (f.text && v.includes(f.other) && A[f.text.id]) s += ": " + A[f.text.id];
+      add(q, s); continue;
+    }
+    if (f.type === "radio") {
+      let s = v ? o[v] ?? v : "";
+      if (f.follow && v === f.follow.when && A[f.follow.id]) s += ": " + A[f.follow.id];
+      add(q, s); continue;
+    }
+    add(q, v);
+  }
+  return out;
+}
+// «Начать заново»: стираем ответы и черновик
+$("restart").onclick = () => {
+  if (!confirm(T("restart_confirm"))) return;
+  for (const k of Object.keys(A)) delete A[k];
+  tried = false; $("err").classList.remove("show");
+  clearDraft(); render(); window.scrollTo(0, 0);
+};
 $("f").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   if (sending) return;
