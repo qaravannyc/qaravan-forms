@@ -522,6 +522,7 @@ async function submitToServer(body) {
   const source = readFileSync(new URL('../api/submit.mjs', import.meta.url), 'utf8')
     .replace(/^import \{ createHmac \} from "node:crypto";$/m, '')
     .replace(/^import \{ albumTitle \} from "\.\.\/lib\/album\.mjs";$/m, '')
+    .replace(/^import \{ sendAnswersCopy, isEmail \} from "\.\.\/lib\/answers-copy\.mjs";$/m, '')
     .replace('export default async function handler', 'async function handler');
   const batches = [];
   const context = vm.createContext({
@@ -539,6 +540,8 @@ async function submitToServer(body) {
   context.getEvent = async id => id ? ({ id: String(id), name: `Event ${id}`, albumId: `album-${id}`, custom: '' }) : null;
   context.monday = async () => ({ create_item: { id: 'feedback-id' } });
   context.slackNotify = async () => {};
+  context.isEmail = () => false; // копия ответов на почту здесь не проверяется
+  context.sendAnswersCopy = async () => false;
   context.eventThread = async () => 'test-thread';
   const req = {
     method: 'POST',

@@ -29,10 +29,20 @@
 .know li::before{content:""; position:absolute; left:0; top:.55em; width:8px; height:8px; background:var(--q-ink)}
 .start{margin-top:32px}
 
-/* a step: its name in condensed caps above the questions */
-.hero.in-steps h1{display:none}
-.hero.in-steps{margin-bottom:12px}
-.step-title{margin:0 0 4px; font:700 26px/1.15 var(--font-head); letter-spacing:var(--tracking-display)}
+/* more room at the sides than the other forms: the column sits in the middle with air around it */
+.wrap{max-width:540px; padding:20px 28px 64px}
+@media (min-width:600px){ .wrap{padding:32px 32px 72px} }
+
+/* one question per screen: progress bar, the section name as eyebrow, the question, then Back / Next */
+.hero.in-steps{display:none}
+.progress{height:4px; background:var(--q-line); margin:4px 0 0}
+.progress i{display:block; height:100%; width:0; background:var(--q-ink); transition:width .25s ease-out}
+@media (prefers-reduced-motion:reduce){ .progress i{transition:none} }
+.q-screen{min-height:calc(100svh - 260px); padding-top:5vh}
+.q-screen:focus{outline:none}
+.q-screen .eyebrow{margin-bottom:14px}
+.q-screen fieldset{padding-top:0}
+.q-screen legend{font:600 21px/1.35 var(--font-brand)}
 
 /* answer rows: the chosen row is marked by an ink edge and bold words, no side bar */
 .opts label:has(input:checked){box-shadow:none; border-color:var(--q-ink)}
@@ -57,6 +67,7 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 [hidden]{display:none !important}
 .money input{margin-top:0}
 #thanks h1:focus{outline:none}
+#restart{margin-top:28px}
 </style>
 </head>
 <body>
@@ -84,6 +95,7 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 
     <form id="f" novalidate hidden>
       <input class="hp" type="text" name="website" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="progress" aria-hidden="true"><i id="bar"></i></div>
       <div id="steps"></div>
       <div class="submit" id="submitBox" hidden>
         <p class="err" id="err" role="alert"></p>
@@ -95,6 +107,7 @@ input[aria-invalid="true"]{border-color:var(--danger)}
         <button type="button" class="next" id="nextBtn" data-i18n="next"></button>
       </nav>
     </form>
+    <button type="button" class="na-link" id="restart" data-i18n="restart" hidden></button>
     <footer>qaravan.org</footer>
   </div>
 
@@ -116,6 +129,7 @@ const noLawyer = (s) => s.lawyer !== "free" && s.lawyer !== "paid";
 
 // type: one (один ответ), many (несколько), money, text. cols — сетка коротких ответов.
 const STEPS = [
+  ["you"],
   ["help", "stage", "arrived", "deadline", "detained"],
   ["lawyer", "search", "tried", "result", "price", "scam", "lgbtqexp", "badexp"],
   ["impact", "fees", "story"],
@@ -123,13 +137,14 @@ const STEPS = [
   ["country", "lgbtq", "trans", "consent", "quote", "speak", "followup"],
 ];
 const Q = {
+  you: { type: "contact" }, // имя и почта: обязательны, на почту уходит копия ответов
   help: { type: "many", opts: ["asylum", "interview", "court", "ead", "greencard", "appeal", "detention", "temp", "other"], other: "help_other" },
-  stage: { type: "one", opts: ["not_filed", "filed", "interviewed", "ref_after", "ref_noint", "court", "decided", "not_asylum", "unsure"] },
-  arrived: { type: "one", opts: ["y2026", "y2025", "y2024", "y2023", "y2022", "before"], cols: 3 },
+  stage: { type: "one", opts: ["not_filed", "thin", "filed", "interviewed", "ref_after", "ref_noint", "court", "dismissed", "order_appeal", "order_absentia", "order_no_appeal", "granted", "not_asylum", "unsure", "other"], other: "stage_other" },
+  arrived: { type: "one", opts: ["y2026", "y2025", "y2024", "y2023", "y2022", "before"], cols: 2 },
   deadline: { type: "one", opts: ["month", "m1_3", "later", "none", "unsure"] },
   detained: { type: "one", opts: ["yes", "no", "pnts"] },
   lawyer: { type: "one", opts: ["free", "paid", "had", "never"] },
-  search: { type: "one", opts: ["lt1", "m1_3", "m3_6", "gt6", "alone"], show: noLawyer },
+  search: { type: "one", opts: ["lt1", "m1_3", "m3_6", "m6_12", "y1_2", "gt2", "alone"], show: noLawyer },
   tried: { type: "many", opts: ["ark", "lsnyc", "ie", "las", "otherfree", "private", "none", "other"], other: "tried_other", exclusive: "none", show: noLawyer },
   result: { type: "many", opts: ["noreply", "full", "notcase", "waitlist", "consult", "nolang", "cost", "other"], other: "result_other",
     show: (s) => noLawyer(s) && s.tried.some((c) => c !== "none") },
@@ -143,7 +158,7 @@ const Q = {
   borough: { type: "one", opts: ["bk", "qn", "mn", "bx", "si", "outside"], cols: 2 },
   meet: { type: "many", opts: ["south_bk", "bk", "mn", "qn", "online", "any"], exclusive: "any" },
   langs: { type: "many", opts: ["ru", "uk", "en", "uz", "tg", "other"], other: "langs_other", cols: 2 },
-  country: { type: "one", opts: ["ru", "ua", "by", "kz", "uz", "tj", "kg", "am", "az", "ge", "md", "other"], other: "country_other", cols: 2 },
+  country: { type: "one", opts: ["ru", "ua", "by", "kz", "uz", "tj", "kg", "am", "az", "ge", "md", "other"], other: "country_other", cols: 2, alpha: true },
   lgbtq: { type: "one", opts: ["yes", "no", "pnts"] },
   trans: { type: "one", opts: ["yes", "no", "pnts"] },
   consent: { type: "one", opts: ["yes", "no"], cols: 2, required: true },
@@ -163,17 +178,18 @@ ru: {
   intro: "QARAVAN вместе с коалицией ЛГБТК+ организаций Нью-Йорка добивается, чтобы город выделил деньги на бесплатных иммиграционных адвокатов для ЛГБТК+ иммигрантов. Ваши ответы помогут показать городу, сколько людей в нашем сообществе нуждаются в адвокате и что происходит, когда его нет.",
   know: [
     "QARAVAN не оказывает юридических услуг, и эта анкета не означает, что вам предоставят адвоката. Если помощь нужна срочно, напишите нам на info@qaravan.org, и мы подскажем, куда обратиться.",
-    "Имя, A-номер и номер дела указывать не нужно.",
-    "Ответы мы используем в обобщённом виде, без имён.",
-    "На любой вопрос, кроме вопроса о согласии, можно не отвечать. Анкета займёт около 10 минут.",
+    "A-номер и номер дела указывать не нужно.",
+    "Мы попросим ваше имя и почту и пришлём на эту почту копию ваших ответов.",
+    "На остальные вопросы, кроме вопроса о согласии, можно не отвечать. Анкета займёт около 10 минут.",
   ],
   start: "Начать",
-  steps: ["Ваше дело", "Адвокат", "Сборы и последствия", "Где и на каком языке", "О вас и согласие"],
-  step_of: (i, n) => `Шаг ${i} из ${n}`,
+  steps: ["Ваши контакты", "Ваше дело", "Адвокат", "Сборы и последствия", "Где и на каком языке", "О вас и согласие"],
+  step_of: (i, n) => `Вопрос ${i} из ${n}`,
   back: "Назад", next: "Дальше",
   many: "Можно выбрать несколько.",
   other_ph: "Напишите, что именно",
   q: {
+    you: "Как вас зовут и как с вами связаться?",
     help: "Какая юридическая помощь вам нужна сейчас?",
     stage: "На каком этапе сейчас ваше дело об убежище?",
     arrived: "В каком году вы приехали в США?",
@@ -185,14 +201,14 @@ ru: {
     result: "Чем закончились эти обращения?",
     price: "Если частный адвокат называл вам цену, сколько он просил?",
     scam: "Бывало ли, что юрист или посредник взял у вас деньги и не помог или ошибся в ваших документах?",
-    lgbtqexp: "Важно ли вам, чтобы у адвоката был опыт дел ЛГБТК+ людей?",
+    lgbtqexp: "Важно ли вам, чтобы у адвоката был опыт ведения дел ЛГБТК+ людей?",
     badexp: "Сталкивались ли вы с тем, что юрист, адвокат или переводчик не понимал вашу историю как ЛГБТК+ человека или осуждал вас?",
     impact: "Что уже произошло или может произойти из-за того, что у вас нет адвоката?",
     fees: "Можете ли вы сейчас оплатить сборы USCIS?",
     story: "Если хотите, расскажите в нескольких предложениях, что изменил бы для вас адвокат.",
-    borough: "В каком районе вы живёте?",
-    meet: "Где вам удобнее всего встречаться с адвокатом?",
-    langs: "На каком языке вам удобнее говорить с адвокатом?",
+    borough: "В какой части Нью-Йорка вы живёте?",
+    meet: "Где вам было бы удобнее всего встречаться с адвокатом?",
+    langs: "На каком языке вам было бы удобнее говорить с адвокатом?",
     country: "Из какой страны вы приехали?",
     lgbtq: "Относите ли вы себя к ЛГБТК+ сообществу?",
     trans: "Являетесь ли вы трансгендерной или небинарной персоной?",
@@ -202,18 +218,19 @@ ru: {
     followup: "Хотите ли вы, чтобы мы связались с вами, если появятся новости о бесплатных адвокатах или встречах с адвокатами?",
   },
   hint: {
+    you: "На эту почту мы пришлём копию ваших ответов.",
     price: "Сумма в долларах.",
     fees: "С 16 октября 2026 года заявление на убежище стоит $100, ещё $105 нужно платить каждый год, пока дело рассматривается, а первое разрешение на работу стоит $570.",
     story: "Без имён и подробностей дела.",
   },
   o: {
     help: { asylum: "Подать документы на убежище", interview: "Подготовиться к интервью в USCIS", court: "Дело в иммиграционном суде", ead: "Разрешение на работу (EAD): первое или продление", greencard: "Грин-карта после получения убежища", appeal: "Апелляция или повторное открытие дела", detention: "Помощь, связанная с задержанием в ICE", temp: "Пароль, TPS или другой временный статус", other: "Другое" },
-    stage: { not_filed: "Документы на убежище ещё не поданы", filed: "Документы поданы в USCIS, интервью ещё не было", interviewed: "Интервью в USCIS было, решения пока нет", ref_after: "USCIS передал дело в иммиграционный суд после интервью", ref_noint: "USCIS передал дело в иммиграционный суд без интервью", court: "Дело с самого начала рассматривается в иммиграционном суде", decided: "Решение по делу уже есть", not_asylum: "Я не подаю на убежище", unsure: "Не знаю" },
+    stage: { not_filed: "Документы на убежище ещё не поданы", thin: "Заявление подано без подробной истории, например чтобы успеть в годичный срок или получить разрешение на работу", filed: "Документы поданы в USCIS, интервью ещё не было", interviewed: "Интервью в USCIS было, решения пока нет", ref_after: "USCIS передал дело в иммиграционный суд после интервью", ref_noint: "USCIS передал дело в иммиграционный суд без интервью", court: "Дело с самого начала рассматривается в иммиграционном суде, решения пока нет", dismissed: "Дело в иммиграционном суде закрыли по просьбе ICE", order_appeal: "Судья вынес решение о депортации (в том числе на массовом слушании), апелляция подана или готовится", order_absentia: "Решение о депортации вынесено заочно, потому что слушание было пропущено или о нём не сообщили", order_no_appeal: "Есть решение о депортации, апелляцию не подавали", granted: "Убежище одобрено", not_asylum: "Я не подаю на убежище", unsure: "Не знаю", other: "Другое" },
     arrived: { y2026: "2026", y2025: "2025", y2024: "2024", y2023: "2023", y2022: "2022", before: "Раньше 2022" },
     deadline: { month: "Да, в течение месяца", m1_3: "Да, через 1–3 месяца", later: "Да, больше чем через 3 месяца", none: "Нет", unsure: "Не знаю" },
     detained: YN,
     lawyer: { free: "Да, бесплатный, через организацию", paid: "Да, платный", had: "Был, но сейчас нет", never: "Нет и не было" },
-    search: { lt1: "Меньше месяца", m1_3: "1–3 месяца", m3_6: "3–6 месяцев", gt6: "Больше полугода", alone: "Не ищу, занимаюсь документами без адвоката" },
+    search: { lt1: "Меньше месяца", m1_3: "1–3 месяца", m3_6: "3–6 месяцев", m6_12: "6–12 месяцев", y1_2: "1–2 года", gt2: "Больше двух лет", alone: "Не ищу, занимаюсь документами без адвоката" },
     tried: { ark: "Ark Immigration Clinic при CBST", lsnyc: "Legal Services NYC", ie: "Immigration Equality", las: "The Legal Aid Society", otherfree: "Другие бесплатные организации", private: "Частные адвокаты", none: "Пока никуда не обращались", other: "Другое" },
     result: { noreply: "Мне не ответили", full: "Отказали, потому что нет мест", notcase: "Отказали, потому что не берут такие дела", waitlist: "Поставили в лист ожидания", consult: "Дали только консультацию", nolang: "Не нашлось никого, кто говорит по-русски, и не дали переводчика", cost: "Частный адвокат оказался не по карману", other: "Другое" },
     scam: YN, badexp: YN, lgbtq: YN, trans: YN,
@@ -227,17 +244,20 @@ ru: {
     consent: { yes: "Да", no: "Нет" }, quote: { yes: "Да", no: "Нет" }, followup: { yes: "Да", no: "Нет" },
     speak: { yes: "Да", maybe: "Возможно", no: "Нет" },
   },
-  contact_name: "Как к вам обращаться",
-  contact: "Telegram, телефон или email",
+  name: "Имя",
+  email: "Email",
+  err_name: "Напишите, как вас зовут.",
+  err_email: "Проверьте почту: нужен адрес в формате name@example.com.",
+  restart: "Начать заново",
+  restart_confirm: "Стереть все ответы и начать анкету заново?",
   optional: "по желанию",
   send: "Отправить ответы",
   sending: "Отправляем…",
   err_consent: "Ответьте на этот вопрос, чтобы отправить анкету.",
-  err_contact: "Напишите, как с вами связаться, или выберите «Нет».",
   err_summary: "Проверьте отмеченные вопросы и снова нажмите «Отправить ответы».",
   err_net: "Не удалось отправить ответы. Они сохранились на этой странице: проверьте интернет и снова нажмите «Отправить ответы».",
   thanks_t: "Спасибо!",
-  thanks_p: "Ваши ответы помогут нам добиваться, чтобы у ЛГБТК+ иммигрантов в Нью-Йорке были бесплатные адвокаты. Если юридическая помощь нужна срочно, напишите нам на info@qaravan.org, и мы подскажем, куда обратиться.",
+  thanks_p: "Копия ваших ответов придёт вам на почту. Ваши ответы помогут нам добиваться, чтобы у ЛГБТК+ иммигрантов в Нью-Йорке были бесплатные адвокаты. Если юридическая помощь нужна срочно, напишите нам на info@qaravan.org, и мы подскажем, куда обратиться.",
 },
 en: {
   language_label: "Form language",
@@ -246,17 +266,18 @@ en: {
   intro: "Together with a coalition of New York LGBTQ+ organizations, QARAVAN is pressing the City to fund free immigration lawyers for LGBTQ+ immigrants. Your answers help show the City how many people in our community need a lawyer and what happens when they don’t have one.",
   know: [
     "QARAVAN does not provide legal services, and filling in this form does not mean you will be given a lawyer. If you need help urgently, write to us at info@qaravan.org and we’ll tell you where to turn.",
-    "You don’t need to give your name, A-number or case number.",
-    "We use the answers only as combined figures, without names.",
-    "You can skip any question except the consent question. The form takes about 10 minutes.",
+    "You don’t need to give your A-number or case number.",
+    "We’ll ask for your name and email, and send a copy of your answers to that email.",
+    "Apart from those and the consent question, you can skip any question. The form takes about 10 minutes.",
   ],
   start: "Start",
-  steps: ["Your case", "Your lawyer", "Fees and consequences", "Where and in which language", "About you and consent"],
-  step_of: (i, n) => `Step ${i} of ${n}`,
+  steps: ["Your contact details", "Your case", "Your lawyer", "Fees and consequences", "Where and in which language", "About you and consent"],
+  step_of: (i, n) => `Question ${i} of ${n}`,
   back: "Back", next: "Next",
   many: "You can pick more than one.",
   other_ph: "Tell us what",
   q: {
+    you: "What’s your name, and how can we reach you?",
     help: "What legal help do you need right now?",
     stage: "Where is your asylum case now?",
     arrived: "What year did you come to the US?",
@@ -273,7 +294,7 @@ en: {
     impact: "What has happened, or may happen, because you don’t have a lawyer?",
     fees: "Can you pay the USCIS fees right now?",
     story: "If you like, tell us in a few sentences what a lawyer would change for you.",
-    borough: "Where do you live?",
+    borough: "Which part of New York City do you live in?",
     meet: "Where would it be easiest for you to meet a lawyer?",
     langs: "In which language would you rather talk to a lawyer?",
     country: "Which country did you come from?",
@@ -285,18 +306,19 @@ en: {
     followup: "Would you like us to contact you when there is news about free lawyers or meetings with lawyers?",
   },
   hint: {
+    you: "We’ll send a copy of your answers to this email.",
     price: "Amount in dollars.",
     fees: "Since October 16, 2026, an asylum application costs $100, there is a $105 fee every year while the case is pending, and a first work permit costs $570.",
     story: "No names or case details, please.",
   },
   o: {
     help: { asylum: "File for asylum", interview: "Prepare for a USCIS interview", court: "A case in immigration court", ead: "Work permit (EAD): first one or renewal", greencard: "Green card after asylum", appeal: "Appeal or reopening a case", detention: "Help related to ICE detention", temp: "Parole, TPS or other temporary status", other: "Other" },
-    stage: { not_filed: "Not filed yet", filed: "Filed with USCIS, no interview yet", interviewed: "Interviewed by USCIS, no decision yet", ref_after: "USCIS sent the case to immigration court after the interview", ref_noint: "USCIS sent the case to immigration court without an interview", court: "The case has been in immigration court from the start", decided: "There is already a decision", not_asylum: "I’m not applying for asylum", unsure: "I don’t know" },
+    stage: { not_filed: "Not filed yet", thin: "Filed without a detailed story, for example to meet the one-year deadline or to get a work permit", filed: "Filed with USCIS, no interview yet", interviewed: "Interviewed by USCIS, no decision yet", ref_after: "USCIS sent the case to immigration court after the interview", ref_noint: "USCIS sent the case to immigration court without an interview", court: "The case has been in immigration court from the start, no decision yet", dismissed: "The immigration court case was dismissed at ICE’s request", order_appeal: "A judge ordered removal (including at a mass hearing), and an appeal is filed or being prepared", order_absentia: "A removal order was made in absentia, because the hearing was missed or no notice came", order_no_appeal: "There is a removal order, and no appeal was filed", granted: "Asylum granted", not_asylum: "I’m not applying for asylum", unsure: "I don’t know", other: "Other" },
     arrived: { y2026: "2026", y2025: "2025", y2024: "2024", y2023: "2023", y2022: "2022", before: "Before 2022" },
     deadline: { month: "Yes, within a month", m1_3: "Yes, in 1–3 months", later: "Yes, in more than 3 months", none: "No", unsure: "I don’t know" },
     detained: YN_EN,
     lawyer: { free: "Yes, a free one through an organization", paid: "Yes, a paid one", had: "I had one, but not now", never: "No, never" },
-    search: { lt1: "Less than a month", m1_3: "1–3 months", m3_6: "3–6 months", gt6: "More than six months", alone: "I’m not looking, I’m handling the papers myself" },
+    search: { lt1: "Less than a month", m1_3: "1–3 months", m3_6: "3–6 months", m6_12: "6–12 months", y1_2: "1–2 years", gt2: "More than two years", alone: "I’m not looking, I’m handling the papers myself" },
     tried: { ark: "Ark Immigration Clinic at CBST", lsnyc: "Legal Services NYC", ie: "Immigration Equality", las: "The Legal Aid Society", otherfree: "Other free organizations", private: "Private lawyers", none: "Nowhere yet", other: "Other" },
     result: { noreply: "No one answered", full: "Turned away: no capacity", notcase: "Turned away: they don’t take cases like mine", waitlist: "Put on a waitlist", consult: "Only a consultation", nolang: "No one spoke Russian and no interpreter was offered", cost: "A private lawyer was too expensive", other: "Other" },
     scam: YN_EN, badexp: YN_EN, lgbtq: YN_EN, trans: YN_EN,
@@ -310,34 +332,40 @@ en: {
     consent: { yes: "Yes", no: "No" }, quote: { yes: "Yes", no: "No" }, followup: { yes: "Yes", no: "No" },
     speak: { yes: "Yes", maybe: "Maybe", no: "No" },
   },
-  contact_name: "What should we call you",
-  contact: "Telegram, phone or email",
+  name: "Name",
+  email: "Email",
+  err_name: "Tell us your name.",
+  err_email: "Check the email address: use a format such as name@example.com.",
+  restart: "Start over",
+  restart_confirm: "Clear all your answers and start the form again?",
   optional: "optional",
   send: "Send answers",
   sending: "Sending…",
   err_consent: "Answer this question to send the form.",
-  err_contact: "Tell us how to reach you, or choose “No”.",
   err_summary: "Check the highlighted questions and select “Send answers” again.",
   err_net: "We couldn’t send your answers. They are still on this page: check your connection and select “Send answers” again.",
   thanks_t: "Thank you!",
-  thanks_p: "Your answers help us press for free lawyers for LGBTQ+ immigrants in New York. If you need legal help urgently, write to us at info@qaravan.org and we’ll tell you where to turn.",
+  thanks_p: "A copy of your answers is on its way to your email. Your answers help us press for free lawyers for LGBTQ+ immigrants in New York. If you need legal help urgently, write to us at info@qaravan.org and we’ll tell you where to turn.",
 }};
 
 // ===== состояние =====
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
-let lang = "ru", step = -1, sending = false, tried = false;
-const S = { story: "", price: "", contactName: "", contact: "" };
+let lang = "ru", cur = null, sending = false, tried = false; // cur: ключ вопроса на экране, null — вступление
+const ORDER = STEPS.flat();
+const S = { story: "", price: "", name: "", email: "" };
+const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 for (const [k, q] of Object.entries(Q)) if (q.type === "one") S[k] = ""; else if (q.type === "many") S[k] = [];
 const OTHERS = {}; for (const q of Object.values(Q)) if (q.other) OTHERS[q.other] = "";
 const rid = (() => { const a = new Uint8Array(12); crypto.getRandomValues(a); return [...a].map((b) => b.toString(36).padStart(2, "0")).join("").slice(0, 20); })();
 let RID = rid;
 const T = () => STRINGS[lang];
 const visible = (k) => !Q[k].show || Q[k].show(S);
+const seq = () => ORDER.filter(visible); // вопросы, которые человек увидит при нынешних ответах
 
 // ===== черновик =====
 function saveDraft() {
-  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ lang, step, S, OTHERS, RID })); } catch (e) {}
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ lang, cur, S, OTHERS, RID })); } catch (e) {}
 }
 function loadDraft() {
   let d = null;
@@ -352,7 +380,7 @@ function loadDraft() {
   }
   if (d.OTHERS) for (const k of Object.keys(OTHERS)) if (typeof d.OTHERS[k] === "string") OTHERS[k] = d.OTHERS[k];
   if (typeof d.RID === "string" && /^[a-z0-9]{8,40}$/.test(d.RID)) RID = d.RID;
-  if (Number.isInteger(d.step) && d.step >= 0 && d.step < STEPS.length) step = d.step;
+  if (ORDER.includes(d.cur)) cur = d.cur;
 }
 function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} }
 
@@ -369,6 +397,8 @@ function optionRow(k, code, multi) {
       else S[k] = S[k].filter((c) => c !== code);
     } else S[k] = code;
     onChange(true);
+    // один ответ без поля «Другое» — сразу к следующему вопросу
+    if (!multi && code !== "other" && k !== "followup" && k === cur) setTimeout(() => { if (cur === k) next(); }, 350);
   };
   const s = document.createElement("span"); s.textContent = T().o[k][code];
   l.append(i, s);
@@ -389,7 +419,9 @@ function renderQuestion(k) {
     box.className = "opts" + (q.cols ? " cols" + q.cols : "");
     box.setAttribute("role", q.type === "one" ? "radiogroup" : "group");
     box.setAttribute("aria-labelledby", "q_" + k);
-    for (const code of q.opts) box.appendChild(optionRow(k, code, q.type === "many"));
+    // alpha: варианты по алфавиту на языке анкеты, «Другое» — последним
+    const codes = q.alpha ? [...q.opts].sort((x, y) => (x === "other") - (y === "other") || t.o[k][x].localeCompare(t.o[k][y], lang)) : q.opts;
+    for (const code of codes) box.appendChild(optionRow(k, code, q.type === "many"));
     fs.appendChild(box);
     if (q.other) {
       const wrap = document.createElement("div");
@@ -406,6 +438,19 @@ function renderQuestion(k) {
     inp.setAttribute("aria-labelledby", "q_" + k);
     inp.oninput = () => { inp.value = inp.value.replace(/[^\d]/g, ""); S.price = inp.value; saveDraft(); };
     w.appendChild(inp); fs.appendChild(w);
+  } else if (q.type === "contact") {
+    for (const [f, ac, type] of [["name", "name", "text"], ["email", "email", "email"]]) {
+      const d = document.createElement("div"); d.className = "field";
+      const l = document.createElement("label"); l.className = "lbl"; l.htmlFor = f;
+      l.innerHTML = `${t[f]} <span class="req" aria-hidden="true">*</span>`;
+      const i = document.createElement("input"); i.type = type; i.id = f; i.maxLength = f === "name" ? 120 : 200; i.autocomplete = ac;
+      i.setAttribute("aria-required", "true"); i.setAttribute("aria-describedby", f + "Err");
+      if (f === "email") { i.inputMode = "email"; i.autocapitalize = "off"; i.spellcheck = false; i.placeholder = "name@example.com"; }
+      i.value = S[f];
+      i.oninput = () => { S[f] = i.value; onChange(false); };
+      const e = document.createElement("p"); e.className = "field-hint"; e.id = f + "Err"; e.textContent = t["err_" + f];
+      d.append(l, i, e); fs.appendChild(d);
+    }
   } else if (q.type === "text") {
     const ta = document.createElement("textarea"); ta.maxLength = 4000; ta.value = S.story;
     ta.setAttribute("aria-labelledby", "q_" + k);
@@ -413,38 +458,24 @@ function renderQuestion(k) {
     fs.appendChild(ta);
   }
 
-  if (k === "followup") {
-    const box = document.createElement("div"); box.id = "contactBox"; box.hidden = S.followup !== "yes"; box.style.marginTop = "20px";
-    box.innerHTML = `<div class="field"><label class="lbl" for="contactName"></label><input type="text" id="contactName" maxlength="120" autocomplete="name"></div>
-      <div class="field"><label class="lbl" for="contact"></label><input type="text" id="contact" maxlength="200" autocomplete="off" aria-describedby="contactErr" aria-required="true"><p class="field-hint" id="contactErr"></p></div>`;
-    box.querySelector('label[for="contactName"]').innerHTML = `${t.contact_name} <span class="opt">${t.optional}</span>`;
-    box.querySelector('label[for="contact"]').innerHTML = `${t.contact} <span class="req" aria-hidden="true">*</span>`;
-    box.querySelector("#contactErr").textContent = t.err_contact;
-    const n = box.querySelector("#contactName"), c = box.querySelector("#contact");
-    n.value = S.contactName; c.value = S.contact;
-    n.oninput = () => { S.contactName = n.value; saveDraft(); };
-    c.oninput = () => { S.contact = c.value; onChange(false); };
-    fs.appendChild(box);
-  }
   if (k === "consent") {
     const e = document.createElement("p"); e.className = "field-hint"; e.id = "consentErr"; e.textContent = t.err_consent;
     fs.appendChild(e);
   }
   return fs;
 }
-function renderSteps() {
+function renderScreen() {
   const wrap = $("steps"); wrap.innerHTML = "";
-  STEPS.forEach((keys, i) => {
-    const sec = document.createElement("section"); sec.className = "step" + (i === step ? " on" : ""); sec.id = "step" + i;
-    const h = document.createElement("h2"); h.className = "step-title"; h.tabIndex = -1; h.textContent = T().steps[i];
-    sec.appendChild(h);
-    for (const k of keys) sec.appendChild(renderQuestion(k));
-    wrap.appendChild(sec);
-  });
+  const sec = document.createElement("section"); sec.className = "q-screen step on"; sec.id = "screen"; sec.tabIndex = -1;
+  const e = document.createElement("div"); e.className = "eyebrow"; e.style.setProperty("--flag", "var(--q-purple)");
+  e.textContent = T().steps[STEPS.findIndex((st) => st.includes(cur))];
+  sec.append(e, renderQuestion(cur));
+  wrap.appendChild(sec);
 }
 function renderNav() {
-  const last = step === STEPS.length - 1;
-  $("stepcount").textContent = T().step_of(step + 1, STEPS.length);
+  const s = seq(), i = s.indexOf(cur), last = i === s.length - 1;
+  $("stepcount").textContent = T().step_of(i + 1, s.length);
+  $("bar").style.width = ((i + 1) / s.length) * 100 + "%";
   $("nextBtn").hidden = last;
   $("submitBox").hidden = !last;
 }
@@ -457,11 +488,12 @@ function render() {
   $("know").innerHTML = ""; for (const p of T().know) { const li = document.createElement("li"); li.textContent = p; $("know").appendChild(li); }
   $("btnRu").setAttribute("aria-pressed", lang === "ru" ? "true" : "false");
   $("btnEn").setAttribute("aria-pressed", lang === "en" ? "true" : "false");
-  $("introView").hidden = step >= 0;
-  $("f").hidden = step < 0;
-  $("hero").classList.toggle("in-steps", step >= 0);
-  if (step >= 0) { renderSteps(); renderNav(); }
-  if (tried) validate(false);
+  $("introView").hidden = cur !== null;
+  $("f").hidden = cur === null;
+  $("hero").classList.toggle("in-steps", cur !== null);
+  if (cur !== null) { renderScreen(); renderNav(); }
+  if (tried && cur) validate(false, cur === "you" || cur === "consent" ? cur : "none");
+  $("restart").hidden = cur === null;
   if (sending) $("send").textContent = T().sending;
 }
 function setLang(l) { lang = l; render(); saveDraft(); }
@@ -480,37 +512,61 @@ function refreshVisibility() {
     const fs = $("fs_" + k); if (!fs) continue;
     fs.querySelectorAll("input").forEach((i) => { i.checked = S[k].includes(i.value); });
   }
-  const cb = $("contactBox"); if (cb) cb.hidden = S.followup !== "yes";
 }
 function onChange(structural) {
-  if (structural) refreshVisibility();
+  if (structural) { refreshVisibility(); if (cur !== null) renderNav(); }
   saveDraft();
-  if (tried && validate(false)) $("err").classList.remove("show");
+  if (tried && validate(false, cur === "you" || cur === "consent" ? cur : "none")) $("err").classList.remove("show");
 }
 
 // ===== шаги =====
 function go(to) {
-  step = to; saveDraft();
+  cur = to; saveDraft();
   render();
   window.scrollTo(0, 0);
-  const h = document.querySelector(".step.on h2"); if (h) h.focus({ preventScroll: true });
+  const sc = $("screen"); if (sc) sc.focus({ preventScroll: true });
 }
-$("startBtn").onclick = () => go(0);
-$("nextBtn").onclick = () => go(Math.min(step + 1, STEPS.length - 1));
-$("backBtn").onclick = () => go(step - 1);
+function next() {
+  // без имени, почты и ответа о согласии дальше не пускаем
+  if ((cur === "you" || cur === "consent") && !validate(true, cur)) { tried = true; return; }
+  const s = seq(), i = s.indexOf(cur);
+  if (i < s.length - 1) go(s[i + 1]);
+}
+function back() {
+  const s = seq(), i = s.indexOf(cur);
+  go(i > 0 ? s[i - 1] : null);
+}
+$("startBtn").onclick = () => go(seq()[0]);
+// «Начать заново»: стираем ответы и черновик, возвращаемся к вступлению
+$("restart").onclick = () => {
+  if (!confirm(T().restart_confirm)) return;
+  for (const k of Object.keys(S)) S[k] = Array.isArray(S[k]) ? [] : "";
+  for (const k of Object.keys(OTHERS)) OTHERS[k] = "";
+  RID = [...crypto.getRandomValues(new Uint8Array(12))].map((x) => x.toString(36).padStart(2, "0")).join("").slice(0, 20);
+  tried = false; $("err").classList.remove("show");
+  clearDraft(); go(null);
+};
+$("nextBtn").onclick = next;
+$("backBtn").onclick = back;
 
-// ===== проверка (только последний шаг: согласие и контакт) =====
-function validate(focus) {
+// ===== проверка: имя, почта, согласие =====
+// only — проверить один экран ("you" или "consent"); без него — всю анкету перед отправкой
+function validate(focus, only) {
   const bad = [];
-  if (!S.consent) bad.push("consent");
-  if (S.followup === "yes" && !S.contact.trim()) bad.push("contact");
+  if (only !== "consent" && !S.name.trim()) bad.push("name");
+  if (only !== "consent" && !EMAIL_RX.test(S.email.trim())) bad.push("email");
+  if (only !== "you" && !S.consent) bad.push("consent");
+  for (const f of ["name", "email"]) {
+    const i = $(f); if (!i) continue;
+    $(f + "Err").classList.toggle("show", bad.includes(f));
+    bad.includes(f) ? i.setAttribute("aria-invalid", "true") : i.removeAttribute("aria-invalid");
+  }
   const cfs = $("fs_consent"); if (cfs) { cfs.classList.toggle("bad-group", bad.includes("consent")); $("consentErr").classList.toggle("show", bad.includes("consent")); }
-  const c = $("contact");
-  if (c) { $("contactErr").classList.toggle("show", bad.includes("contact")); bad.includes("contact") ? c.setAttribute("aria-invalid", "true") : c.removeAttribute("aria-invalid"); }
   if (focus && bad.length) {
-    const el = bad[0] === "consent" ? $("fs_consent").querySelector("input") : $("contact");
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    el.focus({ preventScroll: true });
+    const screen = bad[0] === "consent" ? "consent" : "you";
+    if (cur !== screen) { go(screen); validate(false, screen); return false; }
+    const el = screen === "consent" ? $("fs_consent").querySelector("input") : $(bad[0]);
+    if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.focus({ preventScroll: true }); }
   }
   return bad.length === 0;
 }
@@ -526,12 +582,28 @@ function payload() {
     else b[k] = S[k];
     if (q.other) b[q.other] = OTHERS[q.other];
   }
-  if (S.followup === "yes") { b.contactName = S.contactName; b.contact = S.contact; }
+  b.name = S.name; b.email = S.email;
+  b.copy = copyPairs();
   return b;
+}
+// вопросы и ответы так, как их видел человек, — для копии на почту
+function copyPairs() {
+  const t = T(), out = [{ q: t.name, a: S.name }, { q: t.email, a: S.email }];
+  for (const k of seq()) {
+    const q = Q[k]; let a = "";
+    if (q.type === "one") a = S[k] ? t.o[k][S[k]] : "";
+    else if (q.type === "many") a = S[k].map((c) => t.o[k][c]).join(", ");
+    else if (q.type === "money") a = S.price ? "$" + S.price : "";
+    else if (q.type === "text") a = S.story.trim();
+    else continue;
+    if (q.other && OTHERS[q.other].trim() && (q.type === "many" ? S[k].includes("other") : S[k] === "other")) a += ": " + OTHERS[q.other].trim();
+    if (a) out.push({ q: t.q[k], a });
+  }
+  return out;
 }
 $("f").addEventListener("submit", async (ev) => {
   ev.preventDefault();
-  if (sending || step !== STEPS.length - 1) return;
+  if (sending || cur !== seq()[seq().length - 1]) return;
   tried = true;
   const err = $("err");
   if (!validate(true)) { err.textContent = T().err_summary; err.classList.add("show"); return; }

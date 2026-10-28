@@ -99,7 +99,9 @@ function stampText() {
 }
 function progressPct() { const done = STEPS.slice(0, S.step).reduce((n, x) => n + WEIGHT[x[0]], 0); return Math.round(done / TOTAL_WEIGHT * 100); }
 function payload(mode) {
-  return { rid: S.rid, mode, lang, a: S.a, log: S.log.slice(-300), step: S.step, startedAt: S.startedAt || Date.now(), progress: mode === "submit" ? 100 : progressPct(), website: (document.getElementById("hp") || {}).value || "" };
+  const p = { rid: S.rid, mode, lang, a: S.a, log: S.log.slice(-300), step: S.step, startedAt: S.startedAt || Date.now(), progress: mode === "submit" ? 100 : progressPct(), website: (document.getElementById("hp") || {}).value || "" };
+  if (mode === "submit") p.copy = copyPairs(); // копия ответов на почту человеку
+  return p;
 }
 function hasAnswers() { const a = S.a; return !!(a.firstName || a.lastName || a.phone || a.email || a.proceeding || a.country1 || Object.keys(a.claim).length || Object.keys(a.events).length || a.incidents); }
 function schedule() {
@@ -487,6 +489,37 @@ function eventIndex() {
   if (EVIDX) return EVIDX; EVIDX = {};
   (window.QARAVAN_EVENTS || []).forEach((yr) => { yr.programs.forEach((p, i) => { EVIDX[yr.y + "-p" + i] = { year: yr.y, name: p[0], program: true }; }); yr.months.forEach((m, mi) => m[1].forEach((n, ei) => { EVIDX[yr.y + "-m" + mi + "-" + ei] = { year: yr.y, name: n, month: m[0] }; })); });
   return EVIDX;
+}
+// Вопросы и ответы так, как их видел человек, — для копии на почту (lib/answers-copy.mjs).
+function copyPairs() {
+  const a = S.a, out = [];
+  const plain = (s) => String(s || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  const add = (q, v) => { v = String(v == null ? "" : v).trim(); if (plain(q) && v) out.push({ q: plain(q), a: v }); };
+  const join = (list) => list.filter(Boolean).join(", ");
+  const PRON = { he: "he/him", she: "she/her", they: "they/them", hethey: "he/they", shethey: "she/they", any: t("pr_any"), none: t("pr_none") };
+  add(t("q1_first"), a.firstName); add(t("q1_last"), a.lastName); add(t("q1_known"), join(a.knownAs));
+  add(t("q2_age"), a.age); add(t("q2_pronouns"), a.pronouns === "other" ? a.pronounsText : PRON[a.pronouns]);
+  add(t("q3_phone"), a.phone); add(t("q3_email"), a.email); add("Telegram", a.telegram); add("WhatsApp", a.whatsapp); add("Instagram", a.instagram);
+  add(t("q3_followlang"), a.followLang ? t("lang_" + a.followLang) : "");
+  add(t("q4_title"), a.proceeding === "other" ? join([t("other"), a.proceedingText]) : a.proceeding ? t("pc_" + a.proceeding) : "");
+  add(t("q5_country"), a.country1 ? countryName(a.country1) : "");
+  add(t("q8_title"), Object.keys(a.claim).filter((k) => a.claim[k]).map((k) => (k === "other" ? t("other") : t("id_" + k)) + (a.claimWhich[k] ? ": " + a.claimWhich[k] : "")).join("; "));
+  add(t("q9_title"), a.noAttorney ? t("q9_none") : join([[a.attFirst, a.attLast].filter(Boolean).join(" "), a.attEmail, a.attPhone, a.attFirm]));
+  add(t("q10_title"), a.deadlineUnknown ? t("q10_unknown") : a.deadline ? fmtDate(a.deadline) : "");
+  add(t("q11_title"), a.incidents);
+  add(t("q12_title"), a.otherLetters === "yes" ? join([t("yes")].concat(a.otherLettersList.map((o) => join([o.name, o.status])))) : a.otherLetters ? t(a.otherLetters) : "");
+  add(t("q13_title"), join([a.cameM ? cap(months()[+a.cameM - 1] || "") : "", a.cameY, a.found === "other" ? a.foundText : a.found === "telegram" ? "Telegram" : a.found ? t("f_" + a.found) : ""]));
+  add(t("q14_title"), a.knowsPeople.filter((k) => k.name || k.phone || k.email || k.handle).map((k) => join([k.name, k.phone, k.email, k.handle])).join("\n"));
+  add(t("q14_activities"), Object.keys(a.knowsVia).filter((k) => a.knowsVia[k]).map((k) => (k === "other" ? join([t("other"), a.knowsViaText]) : t("ac_" + k))).join(", "));
+  add(t("q15_title"), a.frequency ? t("fr_" + a.frequency) : "");
+  const idx = eventIndex();
+  add(t("q16_title"), a.eventsNone.all ? t("q16_none") : Object.keys(a.events).filter((k) => a.events[k] && idx[k]).map((k) => idx[k].year + ", " + eventName(k, idx[k].name)).concat(Object.keys(a.eventsOther).filter((y) => a.eventsOther[y]).map((y) => y + ", " + a.eventsOther[y])).join("\n"));
+  add(t("q17_title"), a.beyond.filter((x) => x.what).map((x) => join([x.what, x.since, x.howOften])).join("\n"));
+  add(t("q18_title"), Object.keys(a.role).filter((k) => a.role[k]).map((k) => t("r_" + k)).join(", "));
+  add(t("q19_title"), a.partner ? join([t(a.partner === "pnts" ? "pnts" : a.partner), a.partnerName, a.partnerContact]) : "");
+  add(t("q20_title"), [["truth", "c_truth"], ["share", "c_share"], ["contact", "c_contact"]].filter(([k]) => a.consent[k]).map(([, k]) => plain(t(k))).join("\n"));
+  add(t("q21_title"), a.anythingElse);
+  return out;
 }
 function fmtDate(iso) { const d = new Date(iso + "T00:00:00"); try { return d.toLocaleDateString(lang, { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return iso; } }
 

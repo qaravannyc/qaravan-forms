@@ -43,6 +43,8 @@ without still serving the old one.
 - Respondent key in `text_mm63r903`: `<eventId>:<attendeeId>`.
 - Update labels `Оценка:`, `Момент:` or `Комментарий:`, `Ответ:`, `Понравилось:` or `Запомнилось:`, `Некомфортно:`, and the no-show line `Отметил(а) (в форме|по ссылке из письма): не был(а) на событии`.
 
+**Copies of answers.** After a form is sent, the person gets "a copy of your answers" from info@qaravan.org (`lib/answers-copy.mjs`) when we have their email: typed into the form, or, for event feedback opened with `?p=`, the Community Members email (not to people marked Unsubscribed). The page sends the questions and answers as they saw them in the body field `copy: [{q, a}]`; the server caps them and hides links. Wired into `/legal-help`, `/event-volunteers`, `/support/gina` and `/support/simon`, `/letter` (on submit) and the event feedback forms (`/<id>`, `/multi`); not the lead, photo, survey or staff forms. `/legal-help` also mails each answer to `LEGAL_HELP_NOTIFY` (default ezra@qaravan.org). A copy that fails is logged and never fails the submission.
+
 **Code shared with events-robot.**
 - `lib/agreement.mjs`, `lib/agreement-email.mjs`, `lib/wordmark-email.mjs` are byte-identical copies of events-robot `robot/lib/`. Change both together; check with `cmp lib/agreement.mjs ../events-robot/robot/lib/agreement.mjs` (same for the other two).
 - The album title (`albumTitle` in `lib/album.mjs`: `<name> — QARAVAN`, or `<name> — RUSA LGBTQ` for events before 2025-04-23, when the organization took its new name) must match events-robot `robot/lib/album-title.mjs`, since both sides also look albums up by title; `composeAlbumInfo` there must match events-robot `robot/albums.mjs` (both write the fingerprint to `text_mm6417vh`).

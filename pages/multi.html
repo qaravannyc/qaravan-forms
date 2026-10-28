@@ -762,6 +762,21 @@ async function rescueFiles(list, eventIdFallback = ""){
   warning.classList.add("show");
 }
 
+// вопросы и ответы так, как их видел человек, — для копии на почту (уходит, если почта известна)
+function copyPairs(){
+  const t = T(), out = [];
+  const add = (q, a) => { a = String(a || "").trim(); if (q && a) out.push({ q, a }); };
+  for (const e of ev){
+    const head = [e.name || "—", e.date].filter(Boolean).join(", ");
+    if (e.na){ add(head, t.na); continue; }
+    add(head, [e.rating ? "★".repeat(e.rating) + "☆".repeat(5 - e.rating) : "", (e.tags || []).join(", "), (e.comment || "").trim()].filter(Boolean).join("\n"));
+    if (e.custom) add(customByLang(e.custom, lang), (e.customA || "").trim());
+  }
+  add(t.q_consent, consent === "" ? "" : t.consent[consent] + (consent === 0 && $("respName").value.trim() ? ": " + $("respName").value.trim() : ""));
+  add(t.q_contact, contactOk === "" ? "" : t.contact_opts[contactOk]);
+  return out;
+}
+
 $("f").addEventListener("submit", async x => {
   x.preventDefault();
   const err = $("err");
@@ -809,7 +824,8 @@ $("f").addEventListener("submit", async x => {
     contact_name: contactOk === 0 ? $("respContactName").value.trim() : "",
     email: contactOk === 0 ? em.value.trim() : "",
     phone: contactOk === 0 ? ph.value.trim() : "",
-    website: document.querySelector(".hp").value
+    website: document.querySelector(".hp").value,
+    copy: (() => { try { return copyPairs(); } catch (e) { return []; } })() // копия на почту; ошибка в ней не мешает отправке
   };
   try{
     const r = await fetch("/api/submit", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) });

@@ -8,6 +8,7 @@ import vm from "node:vm";
 const source = readFileSync(new URL("../api/submit.mjs", import.meta.url), "utf8")
   .replace('import { createHmac } from "node:crypto";', "")
   .replace('import { albumTitle } from "../lib/album.mjs";', "")
+  .replace('import { sendAnswersCopy, isEmail } from "../lib/answers-copy.mjs";', "")
   .replace("export default async function handler", "async function handler");
 
 async function submitLead(photos, result) {
