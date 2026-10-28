@@ -32,6 +32,14 @@
       "destination": "/event-volunteers/index.html"
     },
     {
+      "source": "/legal-help",
+      "destination": "/legal-help/index.html"
+    },
+    {
+      "source": "/api/legal-help",
+      "destination": "/api/survey?form=legal-help"
+    },
+    {
       "source": "/api/event-volunteers",
       "destination": "/api/survey?form=event-volunteers"
     },
