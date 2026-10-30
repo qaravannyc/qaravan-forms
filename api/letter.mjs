@@ -35,6 +35,20 @@ const EMAIL_RX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const pick = (map, v) => (typeof v === "string" && map[v] ? v : "");
 const keys = (map, obj) => (obj && typeof obj === "object" ? Object.keys(obj).filter((k) => obj[k] && map[k]) : []);
 const list = (v, n, fn) => (Array.isArray(v) ? v.slice(0, n).map(fn).filter(Boolean) : []);
+// Up to three countries the person could be deported to, each with how they are connected to it.
+// Pages loaded before 2026-10-30 send one country as `country1`.
+const CODE_RX = /^[A-Z]{2}$/;
+function countriesOf(s) {
+  const out = [];
+  for (const c of (Array.isArray(s.countries) ? s.countries : [{ code: s.country1 }]).slice(0, 6)) {
+    if (out.length === 3) break;
+    if (!c || typeof c !== "object") continue;
+    const code = str(c.code, 8).toUpperCase(), why = str(c.why, 200);
+    if (CODE_RX.test(code) && out.some((o) => o.code === code)) continue;
+    if (CODE_RX.test(code) || why) out.push({ code: CODE_RX.test(code) ? code : "", why });
+  }
+  return out;
+}
 
 // Whitelist + trim everything the browser sent. Unknown codes are dropped.
 export function cleanAnswers(src) {
@@ -47,7 +61,7 @@ export function cleanAnswers(src) {
     phone: str(s.phone, 30), email: str(s.email, 120).toLowerCase(), telegram: str(s.telegram, 60), whatsapp: str(s.whatsapp, 30), instagram: str(s.instagram, 60),
     followLang: pick(L.followLang, s.followLang),
     proceeding: pick(L.proceeding, s.proceeding), proceedingText: str(s.proceedingText, 200),
-    country1: str(s.country1, 2).toUpperCase(),
+    countries: countriesOf(s),
     claim: Object.fromEntries(keys(L.identities, s.claim).map((k) => [k, true])),
     claimWhich: {},
     noAttorney: bool(s.noAttorney), attFirst: str(s.attFirst, 80), attLast: str(s.attLast, 80), attEmail: str(s.attEmail, 120).toLowerCase(), attPhone: str(s.attPhone, 30), attFirm: str(s.attFirm, 120),
@@ -131,6 +145,12 @@ function othersText(a) {
 }
 const pronounsText = (a) => (a.pronouns === "other" ? a.pronounsText : L.pronouns[a.pronouns] || "");
 const countryName = (code) => { try { return code && code !== "XK" ? new Intl.DisplayNames(["en"], { type: "region" }).of(code) : code === "XK" ? "Kosovo" : ""; } catch { return code; } };
+// Countries of removal for staff: names in English, the person's note verbatim.
+// The board's Country column gets one line ("Russia (grew up there); Kazakhstan"), the update and the team email one country per line.
+export function countriesText(a, sep = "\n") {
+  return a.countries.filter((c) => c.code).map((c) => countryName(c.code) + (c.why ? (sep === "\n" ? ` — ${c.why}` : ` (${c.why})`) : "")).join(sep);
+}
+const countriesLabel = (a) => (a.countries.filter((c) => c.code).length > 1 ? "Countries of removal" : "Country of removal");
 const attorneyText = (a) => (a.noAttorney ? "No attorney yet" : [[a.attFirst, a.attLast].filter(Boolean).join(" "), a.attFirm, a.attEmail, a.attPhone].filter(Boolean).join(" · "));
 const firstContact = (a) => [a.cameM && a.cameY ? `${MONTHS[+a.cameM - 1]} ${a.cameY}` : a.cameY || "", a.found ? `via ${L.found[a.found]}${a.found === "other" && a.foundText ? ` (${a.foundText})` : ""}` : ""].filter(Boolean).join(" · ");
 
@@ -156,7 +176,7 @@ export function columnValues(a, meta) {
     [C.followLang]: a.followLang ? { label: L.followLang[a.followLang] } : "",
     [C.proceeding]: a.proceeding ? { label: L.proceeding[a.proceeding] } : "",
     [C.caseType]: a.proceeding ? { label: L.caseType[a.proceeding] } : "", [C.venue]: a.proceeding ? { label: L.venue[a.proceeding] } : "",
-    [C.country]: countryName(a.country1),
+    [C.country]: countriesText(a, "; "),
     [C.identities]: Object.keys(a.claim).length ? { labels: Object.keys(a.claim).map((k) => L.identities[k]) } : "",
     [C.attorney]: attorneyText(a), [C.attEmail]: a.noAttorney ? "" : emailVal(a.attEmail),
     [C.deadline]: dateVal(a.deadlineUnknown ? "" : a.deadline),
@@ -204,7 +224,7 @@ export function teamEmail(a, meta, { itemId, known = null, now = new Date() } = 
   const email = EMAIL_RX.test(a.email) ? a.email : "";
   const pv = phoneVal(a.phone);
   const body = rows("Case", [
-    ["Country", countryName(a.country1)], ["Attorney", attorneyText(a)], ["Other support letters", lettersText(a)],
+    [countriesLabel(a), countriesText(a)], ["Attorney", attorneyText(a)], ["Other support letters", lettersText(a)],
     ["Consents", consents.every(([, ok]) => ok) ? "All three given" : consents.map(([k, ok]) => `${k}: ${ok ? "yes" : "NO"}`).join("\n")],
   ])
     + rows("With QARAVAN", [
@@ -257,7 +277,7 @@ export function updateText(a, meta) {
     line("Phone", a.phone), line("Email", a.email), line("Telegram", a.telegram), line("WhatsApp", a.whatsapp), line("Instagram", a.instagram), line("Follow-up language", L.followLang[a.followLang]),
     "", "CASE",
     line("Proceeding", a.proceeding ? L.proceeding[a.proceeding] + (a.proceeding === "other" && a.proceedingText ? ` — ${a.proceedingText}` : "") : ""),
-    line("Country", countryName(a.country1)),
+    line(countriesLabel(a), countriesText(a).includes("\n") ? "\n" + countriesText(a) : countriesText(a)),
     line("Identities & experiences", Object.keys(a.claim).map((k) => L.identities[k] + (a.claimWhich[k] ? ` (${a.claimWhich[k]})` : "")).join("; ")),
     line("Attorney", attorneyText(a)), line("Letter needed by", a.deadlineUnknown ? "date not known yet" : a.deadline),
     line("Key events at home", a.incidents), line("Other support letters", lettersText(a)),
