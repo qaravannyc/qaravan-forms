@@ -28,15 +28,17 @@ without still serving the old one.
 - `/multi?e=<up to 10 ids>&p=<attendeeId>.<sig>`, `/api/didnt-attend?i=&a=&s=`, `/api/unsubscribe?e=&s=`: in events-robot emails, built in its `robot/emails.mjs`.
 - `/support/gina` (the `link` of the support group on events.qaravan.org and in its calendar feeds) and `/support/simon`.
 - `/logo-email.png`: the logo in events-robot's emails.
-- Links this repo sends itself: `/letter?r=`, `/survey?r=`, `/support/send?t=`, `/support/attendance?t=`, `/support/status?t=` (valid 365 days).
+- Links this repo sends itself: `/letter?r=`, `/survey?r=`, `/support/send?t=`, `/support/attendance?t=`, `/support/status?t=` (valid 365 days), `/club/cancel?m=<member item id>&s=<sig>` (movie club welcome email).
+- `/club` (the movie club form; events.qaravan.org/club/ links here) and `/club/welcome?session_id={CHECKOUT_SESSION_ID}`, the return address of the three Stripe payment links (set in Stripe, not here).
 
 **Endpoints other systems call.**
 - `/api/meeting-attendance` and `/api/meeting-prompts`: unauthenticated, idempotent GET. Called every 5 minutes by events-robot's Telegram worker (`FORMS_POKE_URLS` in `telegram/worker.mjs`; `FORMS_POKE = "0"` there switches it off), by the Vercel crons in `vercel.json` and by `.github/workflows/meeting-attendance.yml`.
 - `/api/album-webhook` (monday webhook on Event Calendar `date4`), `/api/agreement-invite` (monday `create_item` webhooks on boards 4806484412, 18432838181, 9710026121, 9710142984), `/api/website-inquiry` (monday `create_item` webhook on Website submissions 4939299706: the team email about a new qaravan.org inquiry) and `/api/team-email` (monday `create_item` webhooks on boards 4806484412, 9710026121, 9710142984 and RC: Submissions 5344342465: the team email about a new volunteer sign-up, role application or Rainbow Connections sign-up). These emails replaced the boards' own monday "Send an email" automations, now deactivated; turning one back on sends every email twice. The webhooks are registered in monday through the API, not in this repo. All echo `{challenge}` and re-read the item from monday.
 - `/api/slack-approve`: Slack buttons on the digest card, verified with `SLACK_SIGNING_SECRET`.
 - `/api/aggregate`: weekly Vercel cron, needs `CRON_SECRET`.
+- `/api/club-tick`: unauthenticated, idempotent GET, every 5 minutes from `.github/workflows/meeting-attendance.yml` (nothing else calls it): approves movie club exceptions whose time has come, resends a failed WhatsApp email, recounts film scores, fills in TMDB ids.
 
-**Signatures.** With `UNSUB_SECRET`: `p` = first 16 hex of HMAC-SHA256 of `eventId:attendeeId`, multi = of `multi:attendeeId`, didnt-attend = of `na:eventId:attendeeId`, unsubscribe = the full HMAC of the lowercased email. events-robot builds the same in `robot/emails.mjs`. Rotating `UNSUB_SECRET` breaks every link already emailed. Meeting and status tokens use `MEETINGS_SECRET`, or `MONDAY_TOKEN` when it is unset, so rotating `MONDAY_TOKEN` then breaks open meeting links.
+**Signatures.** With `UNSUB_SECRET`: `p` = first 16 hex of HMAC-SHA256 of `eventId:attendeeId`, multi = of `multi:attendeeId`, didnt-attend = of `na:eventId:attendeeId`, unsubscribe = the full HMAC of the lowercased email. events-robot builds the same in `robot/emails.mjs`. The movie club cancel link signs `club:<itemId>` with `UNSUB_SECRET` (first 32 hex). Rotating `UNSUB_SECRET` breaks every link already emailed. Meeting and status tokens use `MEETINGS_SECRET`, or `MONDAY_TOKEN` when it is unset, so rotating `MONDAY_TOKEN` then breaks open meeting links.
 
 **Text events-robot parses.** Change only together with its `robot/send.mjs` (digests) and `robot/sync-attendance.mjs` (attendance):
 - Feedback board 18423848983 item names `<event> — <who>`, `LEAD — <event>`, `No show — <event>`; the digest finds rows by event name, so renaming an event orphans its feedback.
@@ -56,6 +58,7 @@ without still serving the old one.
 - **Labels** in status and dropdown columns must match the board character for character: writes use `create_labels_if_missing`, so a typo creates a duplicate label instead of failing. Board structure (column titles, labels, groups) is written in English.
 - **Item names**: support-group meetings are found by `/gina|джин/` and `/simon|саймон/`; removing the name from an item stops its meeting emails.
 - **Google** as info@qaravan.org: Photos (the API only adds to albums the app created) and Gmail. **Slack** #event-feedback.
+- **The movie club** (`lib/club.mjs`): boards Movie Club Members 18437884339 (private), Movie Club Films 18437884341, Movie Club Exceptions 18437884343 (private, hardship answers: written only); their columns have readable ids (`club_*`, `film_*`, `exc_*`). **Stripe** with `STRIPE_SECRET_KEY` (a restricted key: read Checkout Sessions, Customers, Subscriptions, Invoices, Payment Methods; write Customer portal), three payment links ($5, $10, $15 a month on the product tagged `qaravan_product: movie_club`; test links in code, live ones in `CLUB_LINK_5/10/15`) and the saved customer portal settings, without which the cancel link fails. **TMDB** (`TMDB_API_KEY`, v3 key or v4 token) for posters, trailers and search; the pages must keep the TMDB credit line. `CLUB_WHATSAPP_URL`: until it's set nobody is approved or emailed.
 
 ## Deploy and limits
 

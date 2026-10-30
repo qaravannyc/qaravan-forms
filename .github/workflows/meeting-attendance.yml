@@ -1,7 +1,9 @@
-# Подстраховка для писем ведущим групп поддержки (lib/meetings.mjs):
+# Подстраховка для писем ведущим групп поддержки (lib/meetings.mjs) и основной запуск тика киноклуба:
 #  • /api/meeting-attendance — «отметьте, кто пришёл» по встречам, которые уже закончились и ещё
 #    не спрашивались;
-#  • /api/meeting-prompts — «отправьте ссылку участникам» накануне встречи с 8 вечера по Нью-Йорку.
+#  • /api/meeting-prompts — «отправьте ссылку участникам» накануне встречи с 8 вечера по Нью-Йорку;
+#  • /api/club-tick — одобряет заявки на исключение в киноклуб, когда подошло их время, и
+#    пересчитывает рейтинг фильмов (lib/club.mjs). Его вызывает только этот workflow.
 # Основной запуск — крон воркера Cloudflare раз в 5 минут (events-robot/telegram/worker.mjs,
 # pokeForms); ещё — Vercel-кроны в 00:00 и 01:00 UTC для приглашений (vercel.json).
 # Оба эндпоинта сами решают, пора ли, и по каждой встрече пишут один раз, поэтому лишние запуски
@@ -26,3 +28,6 @@ jobs:
       - name: Call /api/meeting-prompts
         if: always()
         run: curl -fsS --max-time 60 https://feedback.qaravan.org/api/meeting-prompts
+      - name: Call /api/club-tick
+        if: always()
+        run: curl -fsS --max-time 60 https://feedback.qaravan.org/api/club-tick
