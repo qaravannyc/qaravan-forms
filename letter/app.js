@@ -26,7 +26,7 @@ const RID_RX = /^[0-9a-zA-Z-]{12,64}$/;
 const A0 = () => ({
   firstName: "", lastName: "", knownAs: [""], age: "", pronouns: "", pronounsText: "",
   phone: "", email: "", telegram: "", whatsapp: "", instagram: "", followLang: "",
-  proceeding: "", proceedingText: "", country1: "",
+  proceeding: "", proceedingText: "", countries: [{ code: "", why: "" }],
   claim: {}, claimWhich: {}, noAttorney: false, attFirst: "", attLast: "", attEmail: "", attPhone: "", attFirm: "",
   deadline: "", deadlineUnknown: false, incidents: "", otherLetters: "", otherLettersList: [{ name: "", status: "" }],
   cameM: "", cameY: "", found: "", foundText: "", knowsPeople: [{ name: "", phone: "", email: "", handle: "" }, { name: "", phone: "", email: "", handle: "" }], knowsVia: {}, knowsViaText: "", frequency: "",
@@ -35,6 +35,17 @@ const A0 = () => ({
   partner: "", partnerIn: "", partnerStmt: "", partnerName: "", partnerContact: "",
   consent: {}, anythingElse: ""
 });
+const MAX_COUNTRIES = 3;
+// Drafts saved before 2026-10-30 kept one country in `country1`; now up to three countries of removal,
+// each with how the person is connected to it.
+function upgrade(a) {
+  if (!Array.isArray(a.knownAs) || !a.knownAs.length) a.knownAs = [""];
+  if (!Array.isArray(a.countries) || !a.countries.length) a.countries = [{ code: "", why: "" }];
+  a.countries = a.countries.slice(0, MAX_COUNTRIES).map((c) => ({ code: c && typeof c.code === "string" ? c.code : "", why: c && typeof c.why === "string" ? c.why : "" }));
+  if (a.country1 && !a.countries.some((c) => c.code)) a.countries[0].code = a.country1;
+  delete a.country1;
+  return a;
+}
 
 // ---------- i18n ----------
 const STRINGS = window.QARAVAN_STRINGS || {};
@@ -57,8 +68,9 @@ const months = () => t("months").split("|");
 const stepLabel = (id) => t("st_" + id);
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const eventName = (id, en) => { const v = EVI[lang] && EVI[lang][id]; return Array.isArray(v) ? v[0] : v || en; };
-let dnCache = {};
+let dnCache = {}, enNames = null;
 function countryName(code, en) {
+  if (en == null) { if (!enNames) { const C = window.QARAVAN_COUNTRIES || {}; enNames = Object.fromEntries((C.region || []).concat(C.others || [])); } en = enNames[code] || code; }
   try { if (!dnCache[lang]) dnCache[lang] = new Intl.DisplayNames([lang], { type: "region" }); const n = dnCache[lang].of(code); if (n && n !== code) return n; } catch (e) {}
   return en;
 }
@@ -70,8 +82,7 @@ let S = { view: "welcome", step: 0, langOpen: false, filter: "", a: A0(), errs: 
 let saved = null;
 try { saved = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
 if (saved && typeof saved === "object") {
-  S.a = Object.assign(A0(), saved.a || {});
-  if (!Array.isArray(S.a.knownAs) || !S.a.knownAs.length) S.a.knownAs = [""];
+  S.a = upgrade(Object.assign(A0(), saved.a || {}));
   S.log = Array.isArray(saved.log) ? saved.log : [];
   S.rid = RID_RX.test(saved.rid || "") ? saved.rid : S.rid;
   S.savedAt = saved.savedAt || null; S.startedAt = saved.startedAt || 0; S.submitted = !!saved.submitted;
@@ -103,7 +114,7 @@ function payload(mode) {
   if (mode === "submit") p.copy = copyPairs(); // копия ответов на почту человеку
   return p;
 }
-function hasAnswers() { const a = S.a; return !!(a.firstName || a.lastName || a.phone || a.email || a.proceeding || a.country1 || Object.keys(a.claim).length || Object.keys(a.events).length || a.incidents); }
+function hasAnswers() { const a = S.a; return !!(a.firstName || a.lastName || a.phone || a.email || a.proceeding || a.countries.some((c) => c.code) || Object.keys(a.claim).length || Object.keys(a.events).length || a.incidents); }
 function schedule() {
   if (S.submitted) return;
   if (!hasAnswers() && !S.log.length) return;
@@ -141,6 +152,7 @@ function clearErr(path) {
   const k = path.split(".")[0];
   delete S.errs[path]; delete S.errs[k];
   if (k === "knowsPeople") { const i = path.split(".")[1]; delete S.errs["knowsPhone" + i]; }
+  if (k === "countries") { const i = path.split(".")[1]; for (const e of Object.keys(S.errs)) if (/^country\d$/.test(e) && (i == null || (e === "country" + i && path.endsWith(".code")))) delete S.errs[e]; }
 }
 function touched() { if (!S.startedAt) S.startedAt = Date.now(); persist(); schedule(); }
 // Answer change from a click (chips, rows, add/remove): re-render.
@@ -175,7 +187,7 @@ function onInput(el) {
   if (path === "incidents") { const c = document.getElementById("inc-count"); if (c) c.textContent = tn("chars_left", 300 - v.length); }
   if (path === "anythingElse") { const c = document.getElementById("any-count"); if (c) c.textContent = tn("chars_left", 1000 - v.length); }
   document.querySelectorAll("[data-err]").forEach((n) => { if (!S.errs[n.dataset.err]) n.textContent = ""; });
-  document.querySelectorAll(".in.err").forEach((n) => { const k = (n.dataset.f || "").split(".")[0]; if (!S.errs[k]) n.classList.remove("err"); });
+  document.querySelectorAll(".in.err").forEach((n) => { const k = n.dataset.ek || (n.dataset.f || "").split(".")[0]; if (!S.errs[k]) n.classList.remove("err"); });
   const stamp = document.getElementById("stamp"); if (stamp) stamp.textContent = stampText();
 }
 
@@ -198,7 +210,7 @@ function validate() {
   if (id === "age") { const err = ageError(a); if (err) e.age = err; else if (!a.age) e.age = t("e_age"); }
   if (id === "contact") { req("phone", t("e_phone")); if (a.phone && a.phone.replace(/\D/g, "").length < 10) e.phone = t("e_phoneshort"); if (!EMAIL_RX.test(a.email.trim())) e.email = t("e_email"); }
   if (id === "proceeding" && !a.proceeding) e.proceeding = t("e_proc");
-  if (id === "country") req("country1", t("e_country"));
+  if (id === "country") a.countries.forEach((c, i) => { if (!c.code) e["country" + i] = t("e_country"); });
   if (id === "claim" && !Object.values(a.claim).some(Boolean)) e.claim = t("e_claim");
   if (id === "attorney" && !a.noAttorney) { req("attFirst", t("e_attfirst")); req("attLast", t("e_attlast")); if (!EMAIL_RX.test(a.attEmail.trim())) e.attEmail = t("e_attemail"); }
   if (id === "knows") a.knowsPeople.forEach((k, i) => { if (k.name.trim() && !k.phone.trim()) e["knowsPhone" + i] = t("e_knowsphone", { name: k.name.trim() }); });
@@ -208,7 +220,7 @@ function validate() {
 }
 function missingRequired() {
   const a = S.a;
-  const checks = { name: a.firstName.trim() && a.lastName.trim(), age: !!a.age && !ageError(a), contact: a.phone.trim() && EMAIL_RX.test(a.email.trim()), proceeding: !!a.proceeding, country: !!a.country1, claim: Object.values(a.claim).some(Boolean), attorney: a.noAttorney || (a.attFirst.trim() && a.attLast.trim() && EMAIL_RX.test(a.attEmail.trim())), consent: a.consent.truth && a.consent.share && a.consent.contact };
+  const checks = { name: a.firstName.trim() && a.lastName.trim(), age: !!a.age && !ageError(a), contact: a.phone.trim() && EMAIL_RX.test(a.email.trim()), proceeding: !!a.proceeding, country: a.countries.every((c) => c.code), claim: Object.values(a.claim).some(Boolean), attorney: a.noAttorney || (a.attFirst.trim() && a.attLast.trim() && EMAIL_RX.test(a.attEmail.trim())), consent: a.consent.truth && a.consent.share && a.consent.contact };
   return STEPS.filter((x) => x[0] in checks && !checks[x[0]]).map((x) => ({ id: x[0], idx: stepIdx(x[0]) }));
 }
 function stepIsEmpty(id) {
@@ -229,7 +241,7 @@ function stepAnswered(id) {
     case "age": return !!a.age;
     case "contact": return !!(a.phone.trim() && a.email.trim());
     case "proceeding": return !!a.proceeding;
-    case "country": return !!a.country1;
+    case "country": return a.countries.some((c) => c.code);
     case "claim": return Object.values(a.claim).some(Boolean);
     case "attorney": return a.noAttorney || !!(a.attFirst.trim() || a.attLast.trim() || a.attEmail.trim());
     case "events": return Object.keys(a.events).length > 0 || !!a.eventsNone.all || Object.values(a.eventsOther).some((v) => v && String(v).trim());
@@ -369,11 +381,21 @@ const STEP_RENDER = {
       chips([["removal", t("pc_removal")], ["affirmative", t("pc_affirmative")], ["withholding", t("pc_withholding")], ["cat", t("pc_cat")], ["parole", t("pc_parole")], ["uvisa", t("pc_uvisa")], ["other", t("other")]], "proceeding", { tall: true }) +
       (S.a.proceeding === "other" ? input("proceedingText", { aria: t("q4_other_aria"), ph: t("q4_other_ph"), max: 200 }) : "") + ferr("proceeding");
   },
+  // Up to three countries the person could be deported to (the first is usually the country of
+  // origin), each with an optional note on how they are connected to it. A country picked in one
+  // card is left out of the others' lists.
   country() {
-    const C = window.QARAVAN_COUNTRIES || { region: [], others: [] };
-    const loc = (list) => list.map(([c, en]) => [c, countryName(c, en)]).sort((p, q) => p[1].localeCompare(q[1], lang));
-    const opts = (list) => list.map(([c, n]) => '<option value="' + c + '"' + (S.a.country1 === c ? " selected" : "") + ">" + esc(n) + "</option>").join("");
-    return "<h1>" + t("q5_title") + '</h1><p class="help">' + t("q5_help") + '</p><label class="field"><span class="lbl">' + t("q5_country") + '</span><span class="selwrap"><select class="in' + (S.errs.country1 ? " err" : "") + '" data-f="country1" autocomplete="country"' + (S.errs.country1 ? ' aria-invalid="true"' : "") + '><option value="">' + t("q5_choose") + '</option><optgroup label="' + esc(t("q5_region")) + '">' + opts(loc(C.region)) + '</optgroup><optgroup label="' + esc(t("q5_others")) + '">' + opts(loc(C.others)) + "</optgroup></select>" + svgDown + "</span>" + ferr("country1") + "</label>";
+    const C = window.QARAVAN_COUNTRIES || { region: [], others: [] }, list = S.a.countries, many = list.length > 1;
+    const loc = (l) => l.map(([c, en]) => [c, countryName(c, en)]).sort((p, q) => p[1].localeCompare(q[1], lang));
+    const region = loc(C.region), others = loc(C.others);
+    const card = (x, i) => {
+      const taken = list.filter((_, j) => j !== i).map((o) => o.code), ek = "country" + i, bad = !!S.errs[ek], title = t("q5_country_n", { n: i + 1 });
+      const opts = (l) => l.filter(([c]) => !taken.includes(c)).map(([c, n]) => '<option value="' + c + '"' + (x.code === c ? " selected" : "") + ">" + esc(n) + "</option>").join("");
+      return '<div class="card"><div class="card-h"><span class="card-t">' + esc(title) + "</span>" + (many ? '<button type="button" class="textbtn sm" data-act="rmCountry" data-v="' + i + '">' + t("remove") + "</button>" : "") + "</div>" +
+        '<div><span class="selwrap"><select class="in' + (bad ? " err" : "") + '" data-f="countries.' + i + '.code" data-ek="' + ek + '" aria-label="' + esc(title) + '" autocomplete="' + (i === 0 ? "country" : "off") + '"' + (bad ? ' aria-invalid="true"' : "") + '><option value="">' + t("q5_choose") + '</option><optgroup label="' + esc(t("q5_region")) + '">' + opts(region) + '</optgroup><optgroup label="' + esc(t("q5_others")) + '">' + opts(others) + "</optgroup></select>" + svgDown + "</span>" + ferr(ek) + "</div>" +
+        '<label class="field"><span class="lbl">' + t("q5_why") + opt() + "</span>" + input("countries." + i + ".why", { max: 200 }) + '<span class="hint">' + t("q5_why_hint") + "</span></label></div>";
+    };
+    return "<h1>" + t("q5_title") + '</h1><p class="help">' + t("q5_help") + "</p>" + list.map(card).join("") + (list.length < MAX_COUNTRIES ? '<div>' + addBtn("addCountry", t("q5_add")) + "</div>" : "");
   },
   claim() {
     const a = S.a;
@@ -502,7 +524,7 @@ function copyPairs() {
   add(t("q3_phone"), a.phone); add(t("q3_email"), a.email); add("Telegram", a.telegram); add("WhatsApp", a.whatsapp); add("Instagram", a.instagram);
   add(t("q3_followlang"), a.followLang ? t("lang_" + a.followLang) : "");
   add(t("q4_title"), a.proceeding === "other" ? join([t("other"), a.proceedingText]) : a.proceeding ? t("pc_" + a.proceeding) : "");
-  add(t("q5_country"), a.country1 ? countryName(a.country1) : "");
+  add(t("q5_title"), a.countries.filter((c) => c.code).map((c) => countryName(c.code) + (c.why.trim() ? ": " + c.why.trim() : "")).join("\n"));
   add(t("q8_title"), Object.keys(a.claim).filter((k) => a.claim[k]).map((k) => (k === "other" ? t("other") : t("id_" + k)) + (a.claimWhich[k] ? ": " + a.claimWhich[k] : "")).join("; "));
   add(t("q9_title"), a.noAttorney ? t("q9_none") : join([[a.attFirst, a.attLast].filter(Boolean).join(" "), a.attEmail, a.attPhone, a.attFirm]));
   add(t("q10_title"), a.deadlineUnknown ? t("q10_unknown") : a.deadline ? fmtDate(a.deadline) : "");
@@ -618,6 +640,8 @@ const ACT = {
   rmPerson(el) { setA({ knowsPeople: S.a.knowsPeople.filter((_, j) => j !== +el.dataset.v) }); },
   addBeyond() { setA({ beyond: S.a.beyond.concat([{ what: "", since: "", howOften: "" }]) }); },
   rmBeyond(el) { setA({ beyond: S.a.beyond.filter((_, j) => j !== +el.dataset.v) }); },
+  addCountry() { if (S.a.countries.length < MAX_COUNTRIES) setA({ countries: S.a.countries.concat([{ code: "", why: "" }]) }); },
+  rmCountry(el) { setA({ countries: S.a.countries.filter((_, j) => j !== +el.dataset.v) }); },
   calPrev() { const v = calView(); S.calView = { y: v.m === 0 ? v.y - 1 : v.y, m: (v.m + 11) % 12 }; render(); },
   calNext() { const v = calView(); S.calView = { y: v.m === 11 ? v.y + 1 : v.y, m: (v.m + 1) % 12 }; render(); },
   calPick(el) { setA({ deadline: el.dataset.v }); },
@@ -664,7 +688,7 @@ document.addEventListener("input", (e) => {
 });
 document.addEventListener("change", (e) => {
   const el = e.target;
-  if (el.tagName === "SELECT" && el.dataset.f) { setA({ [el.dataset.f]: el.value }); return; }
+  if (el.tagName === "SELECT" && el.dataset.f) { setPath(S.a, el.dataset.f, el.value); clearErr(el.dataset.f); touched(); render(); return; }
 });
 // Re-render on resize only when the layout really changes (phone ↔ laptop rail). A phone keyboard
 // changes just the height; re-rendering then would replace the focused field and close the keyboard.
@@ -690,7 +714,7 @@ window.addEventListener("resize", () => {
     if (d && d.found) {
       const localBusy = r !== S.rid && hasAnswers() && !S.submitted;
       if (!localBusy || confirm(t("confirm_adopt"))) {
-        S.rid = r; S.a = Object.assign(A0(), d.a || {}); if (!Array.isArray(S.a.knownAs) || !S.a.knownAs.length) S.a.knownAs = [""];
+        S.rid = r; S.a = upgrade(Object.assign(A0(), d.a || {}));
         S.submitted = !!d.submitted; S.startedAt = d.startedAt || Date.now(); S.log = []; S.savedStep = null;
         if (d.lang && LANGS.some((l) => l[0] === d.lang) && !q.get("lang")) lang = d.lang;
         if (S.submitted) { S.view = "done"; }

@@ -92,7 +92,9 @@ tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
   finished» (Form status = In progress), отправленные — в «Form — answers
   received» (Letter Status = Answers received) плюс апдейт с полным читаемым
   текстом ответов. Колонок немного: Form status и Form progress (на каком
-  вопросе, сколько минут, язык), Age, Proceeding, Identities & experiences, Roles at QARAVAN,
+  вопросе, сколько минут, язык), Age, Proceeding, Country (до трёх стран, куда
+  человека могут депортировать, у каждой — его слова о том, как он с ней связан:
+  «Russia (там вырос); Kazakhstan (гражданство)»), Identities & experiences, Roles at QARAVAN,
   Attorney email, Key events at home, Other support letters, References at
   QARAVAN, Partner, Consents given, Anything else, Translation feedback (что
   написали в «Заметили ошибку в переводе?» внизу любого шага); всё про
