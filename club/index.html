@@ -3,12 +3,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Киноклуб QARAVAN</title>
-<meta name="description" content="Киноклуб QARAVAN: раз в месяц смотрим фильмы о том, как в США боролись за права, едим и обсуждаем.">
+<meta name="description" content="Киноклуб QARAVAN: раз в месяц смотрим фильмы о людях, которые меняли США.">
 <meta name="robots" content="noindex">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://feedback.qaravan.org/club">
 <meta property="og:title" content="Киноклуб QARAVAN / QARAVAN Movie Club">
-<meta property="og:description" content="Раз в месяц смотрим фильмы о том, как в США боролись за права, едим и обсуждаем.">
+<meta property="og:description" content="Раз в месяц смотрим фильмы о людях, которые меняли США.">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/survey/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/survey/favicon-32.png" sizes="32x32" type="image/png">
@@ -241,7 +241,7 @@ const STRINGS = {
 ru: {
   language_label: "Язык анкеты",
   eyebrow: "Киноклуб", title: "Киноклуб QARAVAN",
-  intro: "Раз в месяц смотрим фильмы о том, как в США боролись за права чернокожих, женщин и ЛГБТК+ людей и как пережили эпидемию СПИДа. В основном это игровое кино по реальным событиям. После показа едим и обсуждаем.",
+  intro: "Раз в месяц смотрим фильмы о людях, которые меняли США. Чаще всего это игровое кино по реальным событиям, хотя бывают исключения, и мы всегда открыты к предложениям членов клуба.",
   intro2: "Анкета займёт пару минут. Потом вы выберете взнос или подадите заявку на исключение.",
   q_contact: "Как вас зовут и куда прислать письмо?",
   name: "Имя", email: "Email",
@@ -261,7 +261,7 @@ ru: {
   q_talk: "На каком языке вам удобнее обсуждать фильмы?",
   talk: { ru: "По-русски", en: "По-английски", both: "На обоих" },
   q_helps: "Чем вы могли бы помочь клубу?", optional_many: "По желанию, можно выбрать несколько.",
-  helps: { intro: "Рассказать о фильме перед показом", food: "Принести или приготовить еду", host: "Вести обсуждение", photo: "Фотографировать", venue: "Найти помещение" },
+  helps: { intro: "Рассказать о фильме перед показом", host: "Вести обсуждение", photo: "Фотографировать", venue: "Найти помещение" },
   whatsapp_note: "Клуб общается в группе WhatsApp. Участники группы видят номера телефонов друг друга.",
   promise: "Вступая в клуб, я обещаю: когда мои планы будут меняться, я буду по возможности заранее отменять запись на показ, чтобы моё место мог занять кто-то другой.",
   err_promise: "Отметьте обещание, чтобы вступить.",
@@ -273,7 +273,7 @@ ru: {
   m_intro: "Участники голосуют за фильмы, предлагают свои и помогают вести клуб.",
   m_legend: "Ежемесячный взнос",
   tier: (t) => `$${t} в месяц`, rec: "Рекомендуем",
-  fee: "Все взносы идут на клуб: на еду, оформление и аренду зала, когда она нужна.",
+  fee: "Все взносы идут на клуб.",
   pay: "Перейти к оплате",
   pay_hint: "Картой, Apple Pay или Google Pay. Отменить можно в любой момент: ссылка придёт в письме.",
   pay_missing: "Оплата пока не подключена. Напишите нам на info@qaravan.org.",
@@ -297,7 +297,7 @@ ru: {
 en: {
   language_label: "Form language",
   eyebrow: "Movie club", title: "QARAVAN Movie Club",
-  intro: "Once a month we watch films about how people in the US fought for the rights of Black Americans, women and LGBTQ+ people, and how they lived through the AIDS epidemic. Mostly feature films based on real events. After the screening we eat and talk.",
+  intro: "Once a month we watch films about people who changed the US. Mostly feature films based on real events, though there are exceptions, and we’re always open to suggestions from club members.",
   intro2: "The form takes a couple of minutes. Then you choose a membership fee or apply for an exception.",
   q_contact: "What’s your name and where should we email you?",
   name: "Name", email: "Email",
@@ -317,7 +317,7 @@ en: {
   q_talk: "In which language would you rather discuss films?",
   talk: { ru: "Russian", en: "English", both: "Both" },
   q_helps: "How could you help the club?", optional_many: "Optional, you can pick several.",
-  helps: { intro: "Introduce a film before the screening", food: "Bring or cook food", host: "Host the discussion", photo: "Take photos", venue: "Find a venue" },
+  helps: { intro: "Introduce a film before the screening", host: "Host the discussion", photo: "Take photos", venue: "Find a venue" },
   whatsapp_note: "The club talks in a WhatsApp group. Group members can see each other’s phone numbers.",
   promise: "By joining the club, I agree that whenever my plans change, I’ll cancel my screening sign-up in advance where possible, so someone else can take my spot.",
   err_promise: "Tick the box to join.",
@@ -329,7 +329,7 @@ en: {
   m_intro: "Members vote on films, propose their own and help run the club.",
   m_legend: "Monthly fee",
   tier: (t) => `$${t} a month`, rec: "Recommended",
-  fee: "All membership fees go to the club: food, decorations and venue rental when needed.",
+  fee: "All membership fees go to the club.",
   pay: "Continue to payment",
   pay_hint: "Card, Apple Pay or Google Pay. You can cancel at any time: the link comes by email.",
   pay_missing: "Payment isn’t set up yet. Please write to info@qaravan.org.",
@@ -353,7 +353,7 @@ en: {
 };
 const TOPICS = ["lgbtq", "race", "hiv", "women", "politics", "immigration", "justice", "other"];
 const TALK = ["ru", "en", "both"];
-const HELPS = ["intro", "food", "host", "photo", "venue"];
+const HELPS = ["intro", "host", "photo", "venue"];
 const REASONS = ["ead", "job", "housing", "family", "other"];
 const TIERS = [5, 10, 15];
 const STEPS = 4;

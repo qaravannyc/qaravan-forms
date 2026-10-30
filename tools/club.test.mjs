@@ -27,7 +27,7 @@ function fresh() {
 }
 const films = (DB) => DB.boards[BOARD.films];
 const members = (DB) => DB.boards[BOARD.members];
-const joinBody = (DB, extra = {}) => ({ lang: "ru", name: "Анна Петрова", email: "Anna@Example.com ", ranking: films(DB).slice(0, 3).map((f) => "m:" + f.id), topics: ["race", "other"], topic_other: "суды присяжных", talk: "both", helps: ["food"], promise: true, ...extra });
+const joinBody = (DB, extra = {}) => ({ lang: "ru", name: "Анна Петрова", email: "Anna@Example.com ", ranking: films(DB).slice(0, 3).map((f) => "m:" + f.id), topics: ["race", "other"], topic_other: "суды присяжных", talk: "both", helps: ["host"], promise: true, ...extra });
 
 test("parseJoin needs a name, an email, three films and the promise", () => {
   assert.deepEqual(parseJoin({}).fields, ["name", "email", "ranking", "promise"]);
