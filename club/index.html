@@ -118,7 +118,8 @@ dialog[open]{overflow:visible; margin-top:max(64px,calc(50vh - 30vw))}
       <p class="muted" data-t="intro2"></p>
       <div class="block">
         <h2 class="qtitle" data-t="q_contact"></h2>
-        <div class="field"><label class="lbl" for="name" data-t="name"></label><input type="text" id="name" autocomplete="given-name" maxlength="120"><p class="field-hint" id="hint_name" data-t="err_name"></p></div>
+        <div class="field"><label class="lbl" for="first" data-t="first"></label><input type="text" id="first" autocomplete="given-name" maxlength="60"><p class="field-hint" id="hint_first" data-t="err_first"></p></div>
+        <div class="field"><label class="lbl" for="last" data-t="last"></label><input type="text" id="last" autocomplete="family-name" maxlength="80"><p class="field-hint" id="hint_last" data-t="err_last"></p></div>
         <div class="field"><label class="lbl" for="email" data-t="email"></label><input type="email" id="email" autocomplete="email" maxlength="200" inputmode="email"><p class="field-hint" id="hint_email" data-t="err_email"></p></div>
       </div>
     </section>
@@ -244,8 +245,8 @@ ru: {
   intro: "Раз в месяц смотрим фильмы о людях, которые меняли США. Чаще всего это игровое кино по реальным событиям, хотя бывают исключения, и мы всегда открыты к предложениям членов клуба.",
   intro2: "Анкета займёт пару минут. Потом вы выберете взнос или подадите заявку на исключение.",
   q_contact: "Как вас зовут и куда прислать письмо?",
-  name: "Имя", email: "Email",
-  err_name: "Напишите, как вас зовут.", err_email: "Проверьте почту: нужен адрес в формате name@example.com.",
+  first: "Имя", last: "Фамилия", email: "Email",
+  err_first: "Напишите имя.", err_last: "Напишите фамилию.", err_email: "Проверьте почту: нужен адрес в формате name@example.com.",
   q_rank: "Какие фильмы вам интереснее всего?",
   rank_hint: "Нажимайте на фильмы по порядку: первым — самый интересный. Выберите от 3 до 5. Это не голосование за ближайший показ: так мы узнаём, что интересно участникам.",
   count: (n) => `Выбрано ${n} из 5` + (n < 3 ? `, нужно хотя бы 3` : ""),
@@ -300,8 +301,8 @@ en: {
   intro: "Once a month we watch films about people who changed the US. Mostly feature films based on real events, though there are exceptions, and we’re always open to suggestions from club members.",
   intro2: "The form takes a couple of minutes. Then you choose a membership fee or apply for an exception.",
   q_contact: "What’s your name and where should we email you?",
-  name: "Name", email: "Email",
-  err_name: "Please write your name.", err_email: "Check the email: it should look like name@example.com.",
+  first: "First name", last: "Last name", email: "Email",
+  err_first: "Please write your first name.", err_last: "Please write your last name.", err_email: "Check the email: it should look like name@example.com.",
   q_rank: "Which films interest you most?",
   rank_hint: "Tap films in order, the most interesting first. Pick 3 to 5. This isn’t a vote for the next screening: it tells us what members are interested in.",
   count: (n) => `${n} of 5 picked` + (n < 3 ? `, pick at least 3` : ""),
@@ -361,8 +362,9 @@ const STEPS = 4;
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); for (const k of kids) if (k != null) e.append(k); return e; };
 
-let S = { lang: "ru", step: 1, name: "", email: "", order: [], added: [], topics: [], topicOther: "", talk: "", helps: [], promise: false, key: "", view: "join", tier: 10, reasons: [], xOther: "", xComment: "", state: "", shuffle: [] };
+let S = { lang: "ru", step: 1, first: "", last: "", email: "", order: [], added: [], topics: [], topicOther: "", talk: "", helps: [], promise: false, key: "", view: "join", tier: 10, reasons: [], xOther: "", xComment: "", state: "", shuffle: [] };
 try { Object.assign(S, JSON.parse(localStorage.getItem(DRAFT) || "{}")); } catch {}
+if (S.name && !S.first && !S.last) { S.first = S.name; } delete S.name; // drafts from before the name was split
 const save = () => { try { localStorage.setItem(DRAFT, JSON.stringify(S)); } catch {} };
 const t = (k) => STRINGS[S.lang][k];
 
@@ -523,7 +525,7 @@ function renderStep() {
   $("stepcount").textContent = t("step_of")(S.step, STEPS);
   $("backBtn").style.visibility = S.step > 1 ? "visible" : "hidden";
   $("nextBtn").textContent = S.step === STEPS ? t("join") : t("next");
-  $("name").value = S.name; $("email").value = S.email; $("topicOther").value = S.topicOther;
+  $("first").value = S.first; $("last").value = S.last; $("email").value = S.email; $("topicOther").value = S.topicOther;
   $("promise").checked = S.promise; $("xOther").value = S.xOther; $("xComment").value = S.xComment;
 }
 function hint(key, on, text) {
@@ -541,17 +543,17 @@ function go(view, step) {
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 function validStep(step) {
   if (step === 1) {
-    const okName = !!S.name.trim(), okMail = EMAIL_RX.test(S.email.trim());
-    hint("name", !okName); hint("email", !okMail);
-    $("name").setAttribute("aria-invalid", !okName); $("email").setAttribute("aria-invalid", !okMail);
-    if (!okName) $("name").focus(); else if (!okMail) $("email").focus();
-    return okName && okMail;
+    const ok = { first: !!S.first.trim(), last: !!S.last.trim(), email: EMAIL_RX.test(S.email.trim()) };
+    for (const k in ok) { hint(k, !ok[k]); $(k).setAttribute("aria-invalid", !ok[k]); }
+    const bad = Object.keys(ok).find((k) => !ok[k]);
+    if (bad) $(bad).focus();
+    return !bad;
   }
   if (step === 2) { const ok = S.order.length >= 3; hint("rank", !ok, t("err_rank")); return ok; }
   if (step === 4) { hint("promise", !S.promise); return S.promise; }
   return true;
 }
-$("name").oninput = (e) => { S.name = e.target.value; hint("name", false); e.target.removeAttribute("aria-invalid"); save(); };
+for (const k of ["first", "last"]) $(k).oninput = (e) => { S[k] = e.target.value; hint(k, false); e.target.removeAttribute("aria-invalid"); save(); };
 $("email").oninput = (e) => { S.email = e.target.value; hint("email", false); e.target.removeAttribute("aria-invalid"); save(); };
 $("topicOther").oninput = (e) => { S.topicOther = e.target.value; save(); };
 $("promise").onchange = (e) => { S.promise = e.target.checked; hint("promise", false); save(); };
@@ -568,12 +570,12 @@ $("joinForm").addEventListener("submit", async (e) => {
   const btn = $("nextBtn"); btn.disabled = true; btn.textContent = t("sending");
   try {
     const r = await fetch(`${API}?action=join`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-      lang: S.lang, name: S.name, email: S.email, ranking: S.order, added: S.added.map(({ tmdb, title, year }) => ({ tmdb, title, year })),
+      lang: S.lang, first: S.first, last: S.last, email: S.email, ranking: S.order, added: S.added.map(({ tmdb, title, year }) => ({ tmdb, title, year })),
       topics: S.topics, topic_other: S.topicOther, talk: S.talk, helps: S.helps, promise: S.promise, website: $("website").value,
     }) });
     const j = await r.json().catch(() => ({}));
     if (r.status === 400 && j.fields) {
-      const step = j.fields.includes("name") || j.fields.includes("email") ? 1 : j.fields.includes("ranking") ? 2 : 4;
+      const step = ["first", "last", "email"].some((f) => j.fields.includes(f)) ? 1 : j.fields.includes("ranking") ? 2 : 4;
       go(null, step); validStep(step); showErr("err", t("err_summary")); return;
     }
     if (!r.ok || !j.ok) throw new Error("net");
