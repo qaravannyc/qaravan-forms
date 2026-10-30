@@ -193,6 +193,20 @@ textarea.in{line-height:1.5; resize:vertical; min-height:140px}
 .missing .pill::before{content:""; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--danger)}
 .missing .pill:hover{background:var(--q-line)}
 .stamp{font-size:15px; color:var(--q-muted); text-align:center; margin-top:4px; min-height:1em}
+/* «Not sent yet»: until the answers are sent, every question carries this tag at the right of the Back
+   row: a white tag with an orange flag in tracked capitals; tapping it opens a short explanation */
+.steptop{display:flex; align-items:center; justify-content:space-between; gap:12px; min-width:0}
+.unsent{display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:7px 10px 7px 16px; border:1px solid var(--q-line); background:var(--q-white);
+  box-shadow:inset 5px 0 0 var(--q-orange); color:var(--q-ink); cursor:pointer; text-align:left;
+  font:600 13px/1.2 var(--font-head); letter-spacing:.08em; text-transform:uppercase; transition:background-color .12s, border-color .12s}
+.unsent:hover{background:var(--q-line); border-color:var(--q-edge)}
+.unsent .chev{width:12px; height:12px; flex:none; transition:transform .15s}
+.unsent[aria-expanded="true"] .chev{transform:rotate(180deg)}
+/* the last screen: the send button sits in a panel with an orange bar on top, like the welcome card's sky one */
+.sendbox{display:flex; flex-direction:column; gap:10px; padding:26px 22px 22px; background:var(--q-white); border:1px solid var(--q-line); box-shadow:inset 0 6px 0 var(--q-orange)}
+.sendbox h2{margin:2px 0 0; font:700 25px/1.15 var(--font-head); letter-spacing:var(--tracking-display); text-wrap:balance}
+.sendbox p{font-size:16px; color:var(--q-muted)}
+.sendbox .btn{margin-top:8px}
 .linkbox{display:flex; gap:8px; align-items:center; margin-top:10px}
 .linkbox input{font-size:15px}
 

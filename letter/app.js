@@ -122,7 +122,11 @@ function schedule() {
   clearTimeout(timer); timer = setTimeout(() => save("draft"), 1200);
 }
 async function save(mode) {
+  // A submit waits for an autosave still on its way and then goes itself: it used to take the autosave's
+  // answer as its own, so the page said «Thank you» and nothing was sent (2026-10-30).
+  if (inflight && mode === "submit") { await new Promise((r) => pendingResolve.push(r)); return save("submit"); }
   if (inflight) { dirty = true; return new Promise((r) => pendingResolve.push(r)); }
+  if (mode === "draft" && S.submitted) return null;
   inflight = true; dirty = false;
   let out = null;
   try {
@@ -140,6 +144,7 @@ async function save(mode) {
 }
 window.addEventListener("pagehide", () => { if (!dirty || S.submitted) return; try { navigator.sendBeacon("/api/letter", new Blob([JSON.stringify(payload("draft"))], { type: "application/json" })); } catch (e) {} });
 window.addEventListener("online", () => { if (dirty) schedule(); });
+window.addEventListener("beforeunload", (e) => { if (S.view === "step" && !S.submitted && maxReached() >= stepIdx("consent")) { e.preventDefault(); e.returnValue = ""; } });
 
 // ---------- answers: setters, formatters, files ----------
 function setPath(obj, path, value) {
@@ -195,8 +200,8 @@ function onInput(el) {
 // ---------- navigation, validation ----------
 const stepIdx = (id) => STEPS.findIndex((x) => x[0] === id);
 function go(i, dir) {
-  const view = i >= STEPS.length ? "done" : "step";
-  S.view = view; S.step = Math.min(i, STEPS.length - 1); S.errs = {}; S.filter = ""; S.langOpen = false;
+  const view = i >= STEPS.length && S.submitted ? "done" : "step"; // «done» only after the server took the submission
+  S.view = view; S.step = Math.min(i, STEPS.length - 1); S.errs = {}; S.filter = ""; S.langOpen = false; S.nsOpen = false;
   if (dir !== "contact-next") S.linkNotice = null;
   addLog(view === "done" ? "submitted" : STEPS[S.step][0], dir === "contact-next" ? "next" : dir);
   render(); window.scrollTo({ top: 0 });
@@ -326,7 +331,7 @@ function renderRail() {
     if (expand) html += '<span class="ritems">' + items.map((x) => { const ii = stepIdx(x[0]), isCur = ii === S.step, isDone = stepAnswered(x[0]); return '<span class="ritem' + (isCur ? " cur" : isDone ? " done" : "") + '"' + (isCur ? "" : ' data-act="go" data-v="' + ii + '" data-dir="' + (ii > mr ? "peek" : "jump") + '"') + "><i></i><span>" + esc(cap(stepLabel(x[0]))) + "</span></span>"; }).join("") + "</span>";
     html += "</span></div>";
   }
-  return html + '</div><div class="rail-f">' + t("rail_foot") + "</div></nav>";
+  return html + '</div><div class="rail-f">' + t("rail_foot", { submit: t("submit") }) + "</div></nav>";
 }
 
 function renderWelcome() {
@@ -335,17 +340,17 @@ function renderWelcome() {
   return '<div class="stack fade"><div class="eyebrow">' + t("w_eyebrow") + '</div><h1 class="big">' + t("w_title") + "</h1><p>" + t("w_p1") + '</p><div class="card ink">' +
     [1, 2].map((n) => '<div class="li"><span class="n">' + n + "</span><span>" + t("w_part" + n) + "</span></div>").join("") +
     "</div><p>" + t("w_p2") + "</p><p>" + t("w_p3") + '</p><p class="small">' + t("w_disclaimer") + "</p>" +
-    (has ? '<div class="note green">' + esc(t("w_started", { where })) + "</div>" : "") +
+    (has ? '<div class="note orange">' + esc(t("w_started", { where })) + "</div>" : "") +
     '<div class="stack" style="gap:10px;margin-top:4px">' + (has ? '<button type="button" class="btn full" data-act="resume">' + t("w_resume") + '</button><button type="button" class="textbtn" data-act="startOver">' + t("w_startover") + "</button>" : '<button type="button" class="btn full" data-act="start">' + t("w_start") + "</button>") + "</div>" +
     '<footer class="site">qaravan.org</footer></div>';
 }
 function renderSavedScreen() {
   const a = S.a;
-  return '<div class="stack fade"><div class="eyebrow green">' + t("sv_eyebrow") + "</div><h1>" + t("sv_title") + "</h1><p>" + esc(a.email ? t("sv_explain_email", { email: a.email }) : t("sv_explain_noemail")) + '</p><p class="small">' + t("sv_followup") + '</p><button type="button" class="btn full" data-act="resume">' + t("sv_keep") + "</button></div>";
+  return '<div class="stack fade"><div class="eyebrow orange">' + t("sv_eyebrow") + "</div><h1>" + t("sv_title") + '</h1><div class="note orange">' + esc(t("sv_send", { submit: t("submit") })) + "</div><p>" + esc(a.email ? t("sv_explain_email", { email: a.email }) : t("sv_explain_noemail")) + '</p><p class="small">' + t("sv_followup") + '</p><button type="button" class="btn full" data-act="resume">' + t("sv_keep") + "</button></div>";
 }
 function renderDone() {
   const a = S.a, name = a.firstName || t("friend");
-  return '<div class="stack fade"><h1 class="big">' + esc(t("d_title", { name })) + "</h1><p>" + esc(t("d_body", { email: a.email, phone: a.phone ? t("d_or_call", { phone: a.phone }) : "" })) + "</p>" +
+  return '<div class="stack fade"><div class="eyebrow green">' + t("d_eyebrow") + '</div><h1 class="big">' + esc(t("d_title", { name })) + "</h1><p>" + esc(t("d_body", { email: a.email, phone: a.phone ? t("d_or_call", { phone: a.phone }) : "" })) + "</p>" +
     '<p class="luck">' + t("d_luck") + '</p><p class="small">' + t("d_close") + "</p>" +
     // One browser can send many forms: a volunteer may fill them in for several people.
     '<div class="divider stack" style="gap:12px"><p class="small">' + t("d_new_hint") + '</p><button type="button" class="btn outline md" data-act="newForm">' + svgPlus + "<span>" + t("d_new") + "</span></button></div>" + renderTrBlock() + "</div>";
@@ -548,7 +553,9 @@ function fmtDate(iso) { const d = new Date(iso + "T00:00:00"); try { return d.to
 // ---------- step frame + footer nav ----------
 function renderStep() {
   const id = STEPS[S.step][0], isLast = S.step === STEPS.length - 1;
-  let html = '<div class="stack step fade"><button type="button" class="backbtn" data-act="back">' + svgLeft + "<span>" + t("back") + "</span></button>";
+  let html = '<div class="stack step fade"><div class="steptop"><button type="button" class="backbtn" data-act="back">' + svgLeft + "<span>" + t("back") + "</span></button>" +
+    '<button type="button" class="unsent" data-act="nsToggle" aria-expanded="' + !!S.nsOpen + '" aria-controls="nsmore">' + t("ns_tag") + svgDown + "</button></div>";
+  if (S.nsOpen) html += '<div class="note orange fade" id="nsmore">' + esc(t("ns_more", { submit: t("submit") })) + "</div>";
   if (S.linkNotice === "sent") html += '<div class="note green">' + esc(t("link_sent", { email: S.a.email })) + "</div>";
   if (S.linkNotice === "failed") html += '<div class="note orange">' + esc(t("link_failed")) + '<div class="linkbox"><input class="in" readonly value="' + esc(resumeURL()) + '" aria-label="' + esc(t("your_link")) + '"><button type="button" class="btn outline md" data-act="copyLink">' + t("copy") + "</button></div></div>";
   html += STEP_RENDER[id]();
@@ -566,8 +573,10 @@ function renderStep() {
   else if (isLast) label = t("submit");
   else if (id === "contact") label = t("save_next_to", { step: nextTitle });
   else label = t("next_to", { step: nextTitle });
-  foot += '<button type="button" id="nextbtn" class="btn full' + (isLast ? " green" : "") + '" data-act="next">' + esc(label) + "</button>";
-  if (OPTIONAL.has(id) && stepIsEmpty(id)) foot += '<button type="button" class="textbtn" data-act="skip">' + t("skip") + "</button>";
+  const btn = '<button type="button" id="nextbtn" class="btn full' + (isLast ? " green" : "") + '" data-act="next">' + esc(label) + (isLast ? svgRight : "") + "</button>";
+  // The last screen: the button sits in a panel that says plainly nothing is sent until it is pressed.
+  foot += isLast ? '<div class="sendbox"><div class="eyebrow orange">' + t("ns_tag") + "</div><h2>" + t("send_title") + "</h2><p>" + t("send_body") + "</p>" + btn + "</div>" : btn;
+  if (OPTIONAL.has(id) && stepIsEmpty(id) && !isLast) foot += '<button type="button" class="textbtn" data-act="skip">' + t("skip") + "</button>";
   foot += '<div class="stamp" id="stamp">' + esc(stampText()) + "</div></div>";
   return html + foot + renderTrBlock() + "</div>";
 }
@@ -592,7 +601,7 @@ function renderTrBlock() {
 
 function render() {
   S.step = Math.min(Math.max(S.step | 0, 0), STEPS.length - 1); if (S.savedStep != null) S.savedStep = Math.min(S.savedStep, STEPS.length - 1);
-  document.documentElement.lang = lang; document.title = t("title");
+  document.documentElement.lang = lang; document.title = (inStep() || S.view === "saved") && !S.submitted && hasAnswers() ? t("ns_tag") + ": " + t("title") : t("title");
   renderHeader();
   const app = $("app");
   const rail = inStep() && wide();
@@ -626,6 +635,7 @@ const ACT = {
   go(el) { go(+el.dataset.v, el.dataset.dir || "jump"); },
   back() { if (S.step === 0) { S.view = "welcome"; S.savedStep = 0; S.savedView = "step"; persist(); render(); window.scrollTo({ top: 0 }); return; } go(S.step - 1, "back"); },
   next() { next(); },
+  nsToggle() { S.nsOpen = !S.nsOpen; if (S.nsOpen) addLog(STEPS[S.step][0], "why-unsent"); render(); },
   skip() { go(S.step + 1, "skip"); },
   chip(el) { const k = el.dataset.k, v = el.dataset.v; const p = {}; p[k] = S.a[k] === v ? "" : v; setA(p); },
   check(el) { const k = el.dataset.k, v = el.dataset.v; const cur = Object.assign({}, S.a[k]); if (k === "role") { if (v === "none") { const on = cur.none; for (const x in cur) delete cur[x]; if (!on) cur.none = true; } else { cur[v] = !cur[v]; if (!cur[v]) delete cur[v]; delete cur.none; } } else { cur[v] = !cur[v]; if (!cur[v]) delete cur[v]; } const p = {}; p[k] = cur; setA(p); },

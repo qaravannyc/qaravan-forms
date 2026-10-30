@@ -96,3 +96,13 @@ test("one country reads as «Country of removal»", async () => {
   assert.equal(S.cv[C.country], "Georgia");
   assert.match(S.updates[0], /\nCountry of removal: Georgia\n/);
 });
+
+test("the link email after the contact step says the form is not sent yet, in every language", async () => {
+  const { resumeEmail } = await import("../lib/letter-mail.mjs");
+  const words = { en: "isn’t sent yet", ru: "ещё не отправлена", uk: "ще не надіслано", ka: "ჯერ არ არის გაგზავნილი", uz: "hali yuborilmagan", kk: "әлі жіберілмеген" };
+  for (const [lang, w] of Object.entries(words)) {
+    const { html } = resumeEmail({ name: "A", lang, link: "https://feedback.qaravan.org/letter?r=x" });
+    assert.ok(html.includes(w), lang);
+    assert.match(html, /border-left:6px solid #ff9933/);
+  }
+});
