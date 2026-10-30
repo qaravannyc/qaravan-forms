@@ -23,23 +23,27 @@
 .intro{margin:0; font:400 17px/1.5 var(--font-brand); color:var(--q-ink); text-wrap:pretty}
 .muted{margin:12px 0 0; color:var(--q-muted); font:400 15px/1.45 var(--font-brand); text-wrap:pretty}
 [hidden]{display:none !important}
-.progress{height:4px; background:var(--q-line); margin:28px 0 0}
+.stepname{margin:28px 0 10px; font:600 15px/1.3 var(--font-head); letter-spacing:.01em; color:var(--q-muted); font-variant-numeric:tabular-nums}
+.progress{height:4px; background:var(--q-line); margin:0}
 .progress i{display:block; height:100%; width:0; background:var(--q-ink); transition:width .25s ease-out}
 @media (prefers-reduced-motion:reduce){ .progress i{transition:none} }
 .screen{padding-top:28px}
 .screen:focus{outline:none}
 .qtitle{margin:0 0 6px; font:600 21px/1.35 var(--font-brand); text-wrap:pretty}
 .field+.field{margin-top:20px}
+.qtitle+.field{margin-top:18px}
 .lbl{display:block; margin:0 0 8px; font:600 16px/1.3 var(--font-brand)}
-.lbl .opt{color:var(--q-muted); font-weight:400}
+.opt{color:var(--q-muted); font-weight:400; font-size:15px}
 .field input{margin-top:0}
-input[aria-invalid="true"]{border-color:var(--danger)}
+input[aria-invalid="true"],input[aria-invalid="true"]:hover,input[aria-invalid="true"]:focus{border-color:var(--danger); box-shadow:inset 0 0 0 1px var(--danger)}
+.suggest{display:flex; flex-wrap:wrap; align-items:center; gap:0 12px; margin:8px 0 0; font:400 15px/1.4 var(--font-brand)}
+.suggest .na-link{margin-top:0}
+.other-input .lbl{margin-top:4px}
 .err{box-shadow:none; border:2px solid var(--danger); padding:14px 18px 15px}
 .block{margin-top:32px; padding-top:28px; border-top:1px solid var(--q-line)}
 
 /* ranking: posters in a grid, the picked ones carry an ink square with their place */
-.count{margin:16px 0 0; font:600 15px/1.3 var(--font-head); letter-spacing:.01em; font-variant-numeric:tabular-nums}
-.order{margin:8px 0 0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:6px 14px; font:400 15px/1.4 var(--font-brand); color:var(--q-muted)}
+.order{margin:14px 0 0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:6px 14px; font:400 15px/1.4 var(--font-brand); color:var(--q-muted)}
 .order b{color:var(--q-ink); font-weight:600}
 .grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 14px; margin-top:20px}
 @media (min-width:600px){ .grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px 18px} }
@@ -62,7 +66,6 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 .note{margin:6px 0 0; font:400 14px/1.4 var(--font-brand); color:var(--q-muted); text-wrap:pretty}
 .trailer{min-height:40px; margin-top:4px; font-size:15px}
 .trailer::before{content:""; width:0; height:0; margin-right:8px; border-left:9px solid var(--q-ink); border-top:6px solid transparent; border-bottom:6px solid transparent}
-.toast{margin:14px 0 0}
 
 /* adding your own film: search field, results as rows */
 .results{display:grid; gap:8px; margin-top:12px}
@@ -70,6 +73,7 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 .results button:hover{border-color:var(--q-ink)}
 .results img,.results .noimg{flex:none; width:36px; height:54px; object-fit:cover; background:var(--q-line)}
 .results small{display:block; color:var(--q-muted); font-size:14px}
+.results .add{margin-left:auto; flex:none; padding-left:8px; font:600 15px/1 var(--font-head)}
 
 /* membership tiers */
 .tiers label{justify-content:space-between; align-items:center}
@@ -79,6 +83,14 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 .fee{margin:16px 0 0; font:600 16px/1.45 var(--font-brand); text-wrap:pretty}
 .promise{display:flex; gap:12px; align-items:flex-start; margin-top:4px; cursor:pointer; font:400 16px/1.45 var(--font-brand); text-wrap:pretty}
 .promise input{margin-top:2px}
+.stepbar{max-width:560px; margin-top:36px}
+.stepbar .stepnav{margin-top:0}
+/* on the long film step the bar stays at the bottom of the screen: the count and the Next button are
+   always in view. Only there: on the steps with text fields it would cover them above a phone keyboard */
+.stepbar.sticky{position:sticky; bottom:0; z-index:5; max-width:none; padding:12px 0 calc(12px + env(safe-area-inset-bottom));
+  background:var(--q-white); border-top:1px solid var(--q-line); box-shadow:0 0 0 100vmax var(--q-white); clip-path:inset(0 -100vmax)}
+.navstatus{display:flex; gap:8px; align-items:baseline; margin:0 0 10px; font:600 15px/1.35 var(--font-head); letter-spacing:.01em; font-variant-numeric:tabular-nums}
+.navstatus.bad::before{content:""; flex:none; width:10px; height:10px; background:var(--danger)}
 .actions{margin-top:36px}
 .actions .na-link{margin-top:20px}
 .credit{margin-top:56px; display:flex; gap:12px; align-items:center; color:var(--q-muted); font:400 13px/1.4 var(--font-brand)}
@@ -111,70 +123,72 @@ dialog[open]{overflow:visible; margin-top:max(64px,calc(50vh - 30vw))}
   <!-- 1–4: the join form -->
   <form id="joinForm" novalidate>
     <input class="hp" type="text" name="website" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-    <div class="progress col" aria-hidden="true"><i id="bar"></i></div>
+    <div class="col"><p class="stepname" id="stepname"></p><div class="progress" aria-hidden="true"><i id="bar"></i></div></div>
 
     <section class="screen col" data-step="1" tabindex="-1">
       <p class="intro" data-t="intro"></p>
       <p class="muted" data-t="intro2"></p>
       <div class="block">
         <h2 class="qtitle" data-t="q_contact"></h2>
-        <div class="field"><label class="lbl" for="first" data-t="first"></label><input type="text" id="first" autocomplete="given-name" maxlength="60"><p class="field-hint" id="hint_first" data-t="err_first"></p></div>
-        <div class="field"><label class="lbl" for="last" data-t="last"></label><input type="text" id="last" autocomplete="family-name" maxlength="80"><p class="field-hint" id="hint_last" data-t="err_last"></p></div>
-        <div class="field"><label class="lbl" for="email" data-t="email"></label><input type="email" id="email" autocomplete="email" maxlength="200" inputmode="email"><p class="field-hint" id="hint_email" data-t="err_email"></p></div>
+        <div class="field"><label class="lbl" for="first"><span data-t="first"></span> <span class="req" aria-hidden="true">*</span></label><input type="text" id="first" autocomplete="given-name" maxlength="60" required aria-describedby="hint_first"><p class="field-hint" id="hint_first" data-t="err_first"></p></div>
+        <div class="field"><label class="lbl" for="last"><span data-t="last"></span> <span class="req" aria-hidden="true">*</span></label><input type="text" id="last" autocomplete="family-name" maxlength="80" required aria-describedby="hint_last"><p class="field-hint" id="hint_last" data-t="err_last"></p></div>
+        <div class="field"><label class="lbl" for="email"><span data-t="email"></span> <span class="req" aria-hidden="true">*</span></label><input type="email" id="email" autocomplete="email" maxlength="200" inputmode="email" required aria-describedby="hint_email email_suggest"><p class="field-hint" id="hint_email" data-t="err_email"></p>
+          <p class="suggest" id="email_suggest" aria-live="polite" hidden><span id="suggestText"></span><button type="button" class="na-link" id="suggestFix" data-t="suggest_fix"></button></p></div>
       </div>
     </section>
 
     <section class="screen" data-step="2" tabindex="-1" hidden>
       <div class="col">
-        <h2 class="qtitle" data-t="q_rank"></h2>
+        <h2 class="qtitle"><span data-t="q_rank"></span> <span class="req" aria-hidden="true">*</span></h2>
         <p class="muted" data-t="rank_hint"></p>
-        <p class="count" id="count" aria-live="polite"></p>
+        <p class="muted" data-t="rank_why"></p>
         <ol class="order" id="order"></ol>
-        <p class="field-hint toast" id="hint_rank"></p>
       </div>
       <div class="grid" id="grid"></div>
       <div class="block col" id="addBlock" hidden>
         <h2 class="qtitle" data-t="add_title"></h2>
         <p class="muted" data-t="add_hint"></p>
-        <input type="text" id="search" autocomplete="off" maxlength="80" data-ph="search_ph">
-        <div class="results" id="results" aria-live="polite"></div>
-        <p class="muted" id="searchNote" hidden></p>
+        <div class="field" style="margin-top:20px"><label class="lbl" for="search" data-t="search_label"></label><input type="text" id="search" autocomplete="off" maxlength="80" enterkeyhint="search"></div>
+        <p class="muted" id="searchNote" aria-live="polite" hidden></p>
+        <div class="results" id="results"></div>
       </div>
     </section>
 
     <section class="screen col" data-step="3" tabindex="-1" hidden>
       <fieldset>
-        <legend data-t="q_topics"></legend>
+        <legend><span data-t="q_topics"></span> <span class="req" aria-hidden="true">*</span></legend>
         <p class="hint" data-t="many"></p>
         <div class="chips" id="topics" style="margin-top:16px"></div>
-        <div class="other-input" id="topicOtherWrap"><input type="text" id="topicOther" maxlength="200" data-ph="other_ph"></div>
+        <div class="other-input" id="topicOtherWrap"><label class="lbl" for="topicOther" data-t="other_label"></label><input type="text" id="topicOther" maxlength="200"></div>
+        <p class="field-hint" id="hint_topics" data-t="err_topics"></p>
       </fieldset>
       <fieldset>
-        <legend data-t="q_talk"></legend>
+        <legend><span data-t="q_talk"></span> <span class="req" aria-hidden="true">*</span></legend>
         <div class="opts" id="talk"></div>
+        <p class="field-hint" id="hint_talk" data-t="err_talk"></p>
       </fieldset>
     </section>
 
     <section class="screen col" data-step="4" tabindex="-1" hidden>
       <fieldset>
-        <legend data-t="q_helps"></legend>
-        <p class="hint" data-t="optional_many"></p>
+        <legend><span data-t="q_helps"></span> <span class="opt" data-t="optional"></span></legend>
+        <p class="hint" data-t="many"></p>
         <div class="chips" id="helps" style="margin-top:16px"></div>
       </fieldset>
       <div class="block">
         <p class="muted" style="margin:0 0 16px" data-t="whatsapp_note"></p>
-        <label class="promise"><input type="checkbox" id="promise"><span data-t="promise"></span></label>
+        <label class="promise"><input type="checkbox" id="promise" required aria-describedby="hint_promise"><span><span data-t="promise"></span> <span class="req" aria-hidden="true">*</span></span></label>
         <p class="field-hint" id="hint_promise" data-t="err_promise"></p>
       </div>
     </section>
 
-    <div class="col">
-      <p class="err" id="err" role="alert"></p>
-      <nav class="stepnav">
+    <p class="err col" id="err" role="alert"></p>
+    <div class="stepbar" id="stepbar">
+      <p class="navstatus" id="navstatus" aria-live="polite" hidden></p>
+      <div class="stepnav">
         <button type="button" class="back" id="backBtn" data-t="back"></button>
-        <span class="stepcount" id="stepcount"></span>
         <button type="submit" class="next" id="nextBtn"></button>
-      </nav>
+      </div>
     </div>
   </form>
 
@@ -192,19 +206,20 @@ dialog[open]{overflow:visible; margin-top:max(64px,calc(50vh - 30vw))}
       <p class="muted" data-t="pay_hint"></p>
       <button type="button" class="na-link" id="excLink" data-t="exc_link"></button>
     </div>
+    <div class="submit" style="margin-top:28px"><button type="button" class="back" id="mBack" data-t="m_back"></button></div>
   </section>
 
   <!-- 6: exception request -->
   <form class="screen col" id="excForm" tabindex="-1" novalidate hidden>
     <fieldset>
-      <legend data-t="x_q"></legend>
+      <legend><span data-t="x_q"></span> <span class="req" aria-hidden="true">*</span></legend>
       <p class="hint" data-t="many"></p>
       <div class="chips" id="reasons" style="margin-top:16px"></div>
-      <div class="other-input" id="xOtherWrap"><input type="text" id="xOther" maxlength="200" data-ph="other_ph"></div>
+      <div class="other-input" id="xOtherWrap"><label class="lbl" for="xOther" data-t="other_label"></label><input type="text" id="xOther" maxlength="200"></div>
       <p class="field-hint" id="hint_reasons" data-t="err_reasons"></p>
     </fieldset>
     <fieldset>
-      <legend><span data-t="x_comment"></span> <span class="hint" style="display:inline" data-t="optional"></span></legend>
+      <legend><label for="xComment" data-t="x_comment"></label> <span class="opt" data-t="optional"></span></legend>
       <textarea id="xComment" maxlength="2000"></textarea>
     </fieldset>
     <p class="muted" data-t="x_privacy"></p>
@@ -245,29 +260,34 @@ ru: {
   intro: "Раз в месяц смотрим фильмы о людях, которые меняли США. Чаще всего это игровое кино по реальным событиям, хотя бывают исключения, и мы всегда открыты к предложениям членов клуба.",
   intro2: "Анкета займёт пару минут. Потом вы выберете взнос или подадите заявку на исключение.",
   q_contact: "Укажите имя и почту для связи",
-  first: "Имя", last: "Фамилия", email: "Email",
+  first: "Имя", last: "Фамилия", email: "Электронная почта",
   err_first: "Напишите имя.", err_last: "Напишите фамилию.", err_email: "Проверьте почту: нужен адрес в формате name@example.com.",
+  suggest: (e) => `Может быть, ${e}?`, suggest_fix: "Да, исправить",
   q_rank: "Какие фильмы вам интереснее всего?",
-  rank_hint: "Нажимайте на фильмы по порядку: первым — самый интересный. Выберите от 3 до 5. Это не голосование за ближайший показ: так мы узнаём, что интересно участникам.",
+  rank_hint: "Нажимайте на фильмы по порядку: первым — самый интересный. Выберите от 3 до 5. Чтобы убрать фильм, нажмите на него ещё раз.",
+  rank_why: "Это не голосование за ближайший показ: так мы узнаём, что интересно участникам.",
   count: (n) => `Выбрано ${n} из 5` + (n < 3 ? `, нужно хотя бы 3` : ""),
   rank_full: "Можно выбрать не больше пяти. Нажмите на выбранный фильм, чтобы убрать его.",
   err_rank: "Выберите хотя бы 3 фильма.",
   trailer: "Трейлер", close: "Закрыть",
   add_title: "Нет любимого фильма в списке?",
   add_hint: "Найдите и добавьте до трёх своих. Их увидят и смогут выбрать другие участники.",
-  search_ph: "Название фильма", search_none: "Ничего не нашлось. Попробуйте английское название.",
+  search_label: "Название фильма", searching: "Ищем…", add: "Добавить",
+  search_none: "Ничего не нашлось. Попробуйте английское название.", search_err: "Поиск сейчас не работает. Попробуйте позже.",
   add_max: "Можно добавить до трёх фильмов.", mine: "Ваш фильм",
-  q_topics: "Что вам интересно понять про США?", many: "Можно выбрать несколько.", other_ph: "Напишите, что именно",
+  q_topics: "Что вам интересно понять про США?", many: "Можно выбрать несколько.", other_label: "Что именно?",
+  err_topics: "Выберите хотя бы одну тему.", err_talk: "Выберите язык.",
   topics: { lgbtq: "Как ЛГБТК+ люди добились своих прав", race: "Расизм и борьба за равенство", hiv: "ВИЧ и СПИД", women: "Права женщин", politics: "Выборы и как устроена власть", immigration: "История иммиграции", justice: "Полиция и суды", other: "Другое" },
   q_talk: "На каком языке вам удобнее обсуждать фильмы?",
   talk: { ru: "По-русски", en: "По-английски", both: "На обоих" },
-  q_helps: "Чем вы могли бы помочь клубу?", optional_many: "По желанию, можно выбрать несколько.",
+  q_helps: "Чем вы могли бы помочь клубу?",
   helps: { intro: "Рассказать о фильме перед показом", host: "Вести обсуждение", photo: "Фотографировать", venue: "Найти помещение" },
   whatsapp_note: "Клуб общается в группе WhatsApp. Участники группы видят номера телефонов друг друга.",
   promise: "Вступая в клуб, я обещаю: когда мои планы будут меняться, я буду по возможности заранее отменять запись на показ, чтобы моё место мог занять кто-то другой.",
   err_promise: "Отметьте обещание, чтобы вступить.",
   back: "Назад", next: "Дальше", join: "Дальше: членство", sending: "Отправляем…",
-  step_of: (i, n) => `Шаг ${i} из ${n}`,
+  steps: ["контакты", "фильмы", "интересы", "участие"],
+  step_of: (i, n, s) => `Шаг ${i} из ${n}: ${s}`, next_to: (s) => `Дальше: ${s}`,
   err_summary: "Проверьте отмеченные поля.",
   err_net: "Не получилось отправить. Ответы сохранились на этой странице: проверьте интернет и попробуйте ещё раз.",
   m_eyebrow: "Членство", m_title: "Членство в клубе",
@@ -276,7 +296,8 @@ ru: {
   tier: (t) => `$${t} в месяц`, rec: "Рекомендуем",
   fee: "Все взносы идут на клуб.",
   pay: "Перейти к оплате",
-  pay_hint: "Картой, Apple Pay или Google Pay. Отменить можно в любой момент: ссылка придёт в письме.",
+  pay_hint: "Откроется страница оплаты Stripe: картой, Apple Pay или Google Pay. Отменить членство можно в любой момент, ссылка придёт в письме.",
+  m_back: "Назад к анкете",
   pay_missing: "Оплата пока не подключена. Напишите нам на info@qaravan.org.",
   exc_link: "Сейчас не могу платить, подам заявку на исключение",
   x_eyebrow: "Исключение", x_title: "Заявка на исключение",
@@ -303,27 +324,32 @@ en: {
   q_contact: "Please enter your name and a contact email",
   first: "First name", last: "Last name", email: "Email",
   err_first: "Please write your first name.", err_last: "Please write your last name.", err_email: "Check the email: it should look like name@example.com.",
+  suggest: (e) => `Did you mean ${e}?`, suggest_fix: "Yes, fix it",
   q_rank: "Which films interest you most?",
-  rank_hint: "Tap films in order, the most interesting first. Pick 3 to 5. This isn’t a vote for the next screening: it tells us what members are interested in.",
+  rank_hint: "Tap films in order, the most interesting first. Pick 3 to 5. To remove a film, tap it again.",
+  rank_why: "This isn’t a vote for the next screening: it tells us what members are interested in.",
   count: (n) => `${n} of 5 picked` + (n < 3 ? `, pick at least 3` : ""),
   rank_full: "You can pick up to five. Tap a picked film to remove it.",
   err_rank: "Pick at least 3 films.",
   trailer: "Trailer", close: "Close",
   add_title: "Is a film you love missing?",
   add_hint: "Find and add up to three. Other members will see them and can pick them too.",
-  search_ph: "Film title", search_none: "Nothing found. Try the English title.",
+  search_label: "Film title", searching: "Searching…", add: "Add",
+  search_none: "Nothing found. Try the English title.", search_err: "Search isn’t working right now. Please try later.",
   add_max: "You can add up to three films.", mine: "Your film",
-  q_topics: "What would you like to understand about the US?", many: "You can pick several.", other_ph: "Tell us what",
+  q_topics: "What would you like to understand about the US?", many: "You can pick several.", other_label: "What exactly?",
+  err_topics: "Pick at least one topic.", err_talk: "Pick a language.",
   topics: { lgbtq: "How LGBTQ+ people won their rights", race: "Racism and the fight for equality", hiv: "HIV and AIDS", women: "Women’s rights", politics: "Elections and how government works", immigration: "Immigration history", justice: "Police and courts", other: "Other" },
   q_talk: "In which language would you rather discuss films?",
   talk: { ru: "Russian", en: "English", both: "Both" },
-  q_helps: "How could you help the club?", optional_many: "Optional, you can pick several.",
+  q_helps: "How could you help the club?",
   helps: { intro: "Introduce a film before the screening", host: "Host the discussion", photo: "Take photos", venue: "Find a venue" },
   whatsapp_note: "The club talks in a WhatsApp group. Group members can see each other’s phone numbers.",
   promise: "By joining the club, I agree that whenever my plans change, I’ll cancel my screening sign-up in advance where possible, so someone else can take my spot.",
   err_promise: "Tick the box to join.",
   back: "Back", next: "Next", join: "Next: membership", sending: "Sending…",
-  step_of: (i, n) => `Step ${i} of ${n}`,
+  steps: ["contact details", "films", "interests", "taking part"],
+  step_of: (i, n, s) => `Step ${i} of ${n}: ${s}`, next_to: (s) => `Next: ${s}`,
   err_summary: "Check the marked fields.",
   err_net: "We couldn’t send this. Your answers are saved on this page: check your connection and try again.",
   m_eyebrow: "Membership", m_title: "Club membership",
@@ -332,7 +358,8 @@ en: {
   tier: (t) => `$${t} a month`, rec: "Recommended",
   fee: "All membership fees go to the club.",
   pay: "Continue to payment",
-  pay_hint: "Card, Apple Pay or Google Pay. You can cancel at any time: the link comes by email.",
+  pay_hint: "Stripe’s payment page will open: card, Apple Pay or Google Pay. You can cancel your membership at any time: the link comes by email.",
+  m_back: "Back to the form",
   pay_missing: "Payment isn’t set up yet. Please write to info@qaravan.org.",
   exc_link: "Can’t pay right now, I’ll apply for an exception",
   x_eyebrow: "Exception", x_title: "Apply for an exception",
@@ -379,12 +406,13 @@ function applyTexts() {
   document.querySelectorAll("[data-ph]").forEach((n) => (n.placeholder = t(n.dataset.ph)));
   const head = { join: ["eyebrow", "title"], member: ["m_eyebrow", "m_title"], exception: ["x_eyebrow", "x_title"], done: ["eyebrow", "title"] }[S.view];
   $("eyebrow").textContent = t(head[0]); $("h1").textContent = t(head[1]);
-  renderChips($("topics"), TOPICS, "topics", S.topics, (c) => { S.topics = c; $("topicOtherWrap").classList.toggle("show", c.includes("other")); });
+  renderChips($("topics"), TOPICS, "topics", S.topics, (c) => { S.topics = c; $("topicOtherWrap").classList.toggle("show", c.includes("other")); if (c.length) hint("topics", false); });
   $("topicOtherWrap").classList.toggle("show", S.topics.includes("other"));
   renderChips($("helps"), HELPS, "helps", S.helps, (c) => (S.helps = c));
   renderChips($("reasons"), REASONS, "reasons", S.reasons, (c) => { S.reasons = c; $("xOtherWrap").classList.toggle("show", c.includes("other")); hint("reasons", false); });
   $("xOtherWrap").classList.toggle("show", S.reasons.includes("other"));
-  renderOpts($("talk"), "talk", TALK, (c) => t("talk")[c], S.talk, (v) => (S.talk = v));
+  renderOpts($("talk"), "talk", TALK, (c) => t("talk")[c], S.talk, (v) => { S.talk = v; hint("talk", false); });
+  if (!$("email_suggest").hidden) $("suggestText").textContent = t("suggest")($("suggestFix").dataset.v);
   renderTiers();
   renderFilms();
   renderStep();
@@ -457,8 +485,10 @@ function renderFilms() {
   }));
   updatePicks();
   $("addBlock").hidden = !TMDB_ON;
-  $("credit").hidden = !TMDB_ON;
+  syncCredit();
 }
+// the TMDB credit sits under the films, the only step that shows TMDB posters and trailers
+const syncCredit = () => ($("credit").hidden = !TMDB_ON || S.view !== "join" || S.step !== 2);
 // a tap changes only the marks, so focus and scroll stay where they are
 function updatePicks() {
   for (const [k, c] of Object.entries(CARDS)) {
@@ -466,15 +496,15 @@ function updatePicks() {
     c.pick.setAttribute("aria-pressed", place >= 0);
     c.badge.textContent = place >= 0 ? place + 1 : "";
   }
-  $("count").textContent = t("count")(S.order.length);
+  $("navstatus").textContent = t("count")(S.order.length); $("navstatus").classList.remove("bad");
   $("order").replaceChildren(...S.order.map((k, i) => el("li", {}, el("b", { textContent: `${i + 1}.` }), " ", BYKEY[k].title)));
 }
 function togglePick(key) {
   const i = S.order.indexOf(key);
   if (i >= 0) S.order.splice(i, 1);
-  else if (S.order.length >= 5) { hint("rank", true, t("rank_full")); return; }
+  else if (S.order.length >= 5) { $("navstatus").textContent = t("rank_full"); $("navstatus").classList.add("bad"); return; }
   else S.order.push(key);
-  hint("rank", false); save(); updatePicks();
+  save(); updatePicks();
 }
 function play(key, title) {
   $("playerFrame").src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(key)}?autoplay=1&rel=0&modestbranding=1&hl=${S.lang}`;
@@ -493,6 +523,7 @@ $("search").addEventListener("input", () => {
   if (q.length < 2) { $("results").replaceChildren(); $("searchNote").hidden = true; return; }
   searchTimer = setTimeout(async () => {
     const seq = ++searchSeq;
+    $("searchNote").hidden = false; $("searchNote").textContent = t("searching");
     try {
       const r = await fetch(`${API}?action=search&q=${encodeURIComponent(q)}`).then((x) => x.json());
       if (seq !== searchSeq) return;
@@ -500,11 +531,11 @@ $("search").addEventListener("input", () => {
       const rows = (r.results || []).filter((f) => !known.has(f.tmdb));
       $("searchNote").hidden = rows.length > 0; $("searchNote").textContent = t("search_none");
       $("results").replaceChildren(...rows.map((f) => {
-        const b = el("button", { type: "button" }, f.poster ? el("img", { src: f.poster, alt: "" }) : el("span", { className: "noimg" }), el("span", {}, f.title, el("small", { textContent: f.year || "" })));
+        const b = el("button", { type: "button" }, f.poster ? el("img", { src: f.poster, alt: "" }) : el("span", { className: "noimg" }), el("span", {}, f.title, el("small", { textContent: f.year || "" })), el("span", { className: "add", textContent: `+ ${t("add")}` }));
         b.onclick = () => addFilm(f);
         return b;
       }));
-    } catch { /* search is a bonus: a failure leaves the list as it is */ }
+    } catch { if (seq === searchSeq) { $("searchNote").hidden = false; $("searchNote").textContent = t("search_err"); } }
   }, 300);
 });
 function addFilm(f) {
@@ -522,9 +553,14 @@ function renderStep() {
   $({ join: "joinForm", member: "memberView", exception: "excForm", done: "doneView" }[S.view]).hidden = false;
   document.querySelectorAll("#joinForm .screen").forEach((s) => (s.hidden = +s.dataset.step !== S.step));
   $("bar").style.width = `${(S.step / STEPS) * 100}%`;
-  $("stepcount").textContent = t("step_of")(S.step, STEPS);
+  $("stepname").textContent = t("step_of")(S.step, STEPS, t("steps")[S.step - 1]);
+  document.querySelector(`#joinForm .screen[data-step="${S.step}"]`).setAttribute("aria-label", $("stepname").textContent);
   $("backBtn").style.visibility = S.step > 1 ? "visible" : "hidden";
-  $("nextBtn").textContent = S.step === STEPS ? t("join") : t("next");
+  // the button names the step it leads to
+  $("nextBtn").textContent = S.step === STEPS ? t("join") : t("next_to")(t("steps")[S.step]);
+  $("stepbar").classList.toggle("sticky", S.step === 2);
+  $("navstatus").hidden = S.step !== 2;
+  syncCredit();
   $("first").value = S.first; $("last").value = S.last; $("email").value = S.email; $("topicOther").value = S.topicOther;
   $("promise").checked = S.promise; $("xOther").value = S.xOther; $("xComment").value = S.xComment;
 }
@@ -534,13 +570,38 @@ function hint(key, on, text) {
   h.classList.toggle("show", on);
 }
 function showErr(id, msg) { const e = $(id); e.textContent = msg || ""; e.classList.toggle("show", !!msg); }
-function go(view, step) {
+// every screen is a browser history entry, so the phone's Back button goes one step back
+function go(view, step, fromHistory) {
   if (view) S.view = view; if (step) S.step = step;
+  if (!fromHistory) history.pushState({ v: S.view, s: S.step }, "");
   save(); applyTexts(); showErr("err", ""); window.scrollTo(0, 0);
   const focus = S.view === "join" ? document.querySelector(`#joinForm .screen[data-step="${S.step}"]`) : $({ member: "memberView", exception: "excForm", done: "doneView" }[S.view]);
   focus?.focus({ preventScroll: true });
 }
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+// a likely typo in a common mail domain (gmial.com, yandex.ry): offered as a one-tap fix, never forced
+const DOMAINS = ["gmail.com", "googlemail.com", "yahoo.com", "ymail.com", "hotmail.com", "outlook.com", "live.com", "msn.com", "icloud.com", "me.com", "mac.com", "aol.com", "mail.com", "gmx.com", "proton.me", "protonmail.com", "comcast.net", "verizon.net", "att.net", "mail.ru", "bk.ru", "inbox.ru", "list.ru", "yandex.ru", "yandex.com", "ya.ru", "rambler.ru", "ukr.net", "qaravan.org"];
+function lev(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1), i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1] ? d[i - 2][j - 2] + 1 : 99);
+  return d[a.length][b.length];
+}
+function suggestEmail(v) {
+  const m = /^([^\s@]+)@([^\s@]+)$/.exec(v.trim().toLowerCase());
+  if (!m || DOMAINS.includes(m[2]) || m[2].length < 5) return "";
+  let best = "", dist = 9;
+  for (const x of DOMAINS) { const k = lev(m[2], x); if (k < dist) { dist = k; best = x; } }
+  return dist <= (best.length >= 8 ? 2 : 1) ? `${m[1]}@${best}` : "";
+}
+function stepOk(step) {
+  if (step === 1) return !!S.first.trim() && !!S.last.trim() && EMAIL_RX.test(S.email.trim());
+  if (step === 2) return S.order.length >= 3;
+  if (step === 3) return S.topics.length > 0 && !!S.talk;
+  if (step === 4) return S.promise;
+  return true;
+}
 function validStep(step) {
   if (step === 1) {
     const ok = { first: !!S.first.trim(), last: !!S.last.trim(), email: EMAIL_RX.test(S.email.trim()) };
@@ -549,12 +610,35 @@ function validStep(step) {
     if (bad) $(bad).focus();
     return !bad;
   }
-  if (step === 2) { const ok = S.order.length >= 3; hint("rank", !ok, t("err_rank")); return ok; }
-  if (step === 4) { hint("promise", !S.promise); return S.promise; }
+  if (step === 2) { const ok = S.order.length >= 3; if (!ok) { $("navstatus").textContent = t("err_rank"); $("navstatus").classList.add("bad"); } return ok; }
+  if (step === 3) {
+    const okT = S.topics.length > 0, okL = !!S.talk;
+    hint("topics", !okT); hint("talk", !okL);
+    if (!okT) $("topics").querySelector("button")?.focus(); else if (!okL) $("talk").querySelector("input")?.focus();
+    return okT && okL;
+  }
+  if (step === 4) { hint("promise", !S.promise); if (!S.promise) $("promise").focus(); return S.promise; }
   return true;
 }
-for (const k of ["first", "last"]) $(k).oninput = (e) => { S[k] = e.target.value; hint(k, false); e.target.removeAttribute("aria-invalid"); save(); };
-$("email").oninput = (e) => { S.email = e.target.value; hint("email", false); e.target.removeAttribute("aria-invalid"); save(); };
+// an error stays on screen until the field is actually fixed
+for (const k of ["first", "last"]) $(k).oninput = (e) => { S[k] = e.target.value; if (S[k].trim()) { hint(k, false); e.target.removeAttribute("aria-invalid"); } save(); };
+$("email").oninput = (e) => {
+  S.email = e.target.value; $("email_suggest").hidden = true;
+  if (EMAIL_RX.test(S.email.trim())) { hint("email", false); e.target.removeAttribute("aria-invalid"); }
+  save();
+};
+// checked when the person leaves the field, not while they type
+$("email").addEventListener("blur", () => {
+  const v = S.email.trim();
+  if (v && !EMAIL_RX.test(v)) { hint("email", true); $("email").setAttribute("aria-invalid", "true"); }
+  const s = EMAIL_RX.test(v) ? suggestEmail(v) : "";
+  $("email_suggest").hidden = !s;
+  if (s) { $("suggestFix").dataset.v = s; $("suggestText").textContent = t("suggest")(s); }
+});
+$("suggestFix").onclick = () => {
+  S.email = $("suggestFix").dataset.v; $("email").value = S.email; $("email_suggest").hidden = true;
+  hint("email", false); $("email").removeAttribute("aria-invalid"); save(); $("email").focus();
+};
 $("topicOther").oninput = (e) => { S.topicOther = e.target.value; save(); };
 $("promise").onchange = (e) => { S.promise = e.target.checked; hint("promise", false); save(); };
 $("xOther").oninput = (e) => { S.xOther = e.target.value; save(); };
@@ -565,8 +649,11 @@ $("btnEn").onclick = () => { S.lang = "en"; save(); applyTexts(); };
 
 $("joinForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!validStep(S.step)) { showErr("err", ""); return; }
-  if (S.step < STEPS) return go(null, S.step + 1);
+  showErr("err", "");
+  if (S.step < STEPS) { if (validStep(S.step)) go(null, S.step + 1); return; }
+  // before sending, every step: the browser's Forward button can skip one
+  const bad = [1, 2, 3, 4].find((n) => !stepOk(n));
+  if (bad) { if (bad !== S.step) go(null, bad); validStep(bad); return; }
   const btn = $("nextBtn"); btn.disabled = true; btn.textContent = t("sending");
   try {
     const r = await fetch(`${API}?action=join`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
@@ -575,7 +662,8 @@ $("joinForm").addEventListener("submit", async (e) => {
     }) });
     const j = await r.json().catch(() => ({}));
     if (r.status === 400 && j.fields) {
-      const step = ["first", "last", "email"].some((f) => j.fields.includes(f)) ? 1 : j.fields.includes("ranking") ? 2 : 4;
+      const has = (...f) => f.some((x) => j.fields.includes(x));
+      const step = has("first", "last", "email") ? 1 : has("ranking") ? 2 : has("topics", "talk") ? 3 : 4;
       go(null, step); validStep(step); showErr("err", t("err_summary")); return;
     }
     if (!r.ok || !j.ok) throw new Error("net");
@@ -583,7 +671,7 @@ $("joinForm").addEventListener("submit", async (e) => {
     if (j.state === "member" || j.state === "requested") return go("done");
     go("member");
   } catch { showErr("err", t("err_net")); }
-  finally { btn.disabled = false; btn.textContent = S.step === STEPS ? t("join") : t("next"); }
+  finally { btn.disabled = false; btn.textContent = t("join"); }
 });
 
 $("payBtn").onclick = () => {
@@ -597,6 +685,7 @@ $("payBtn").onclick = () => {
 $("excLink").onclick = () => go("exception");
 $("restart").onclick = () => { try { localStorage.setItem(DRAFT, JSON.stringify({ lang: S.lang })); } catch {} location.reload(); };
 $("xBack").onclick = () => go("member");
+$("mBack").onclick = () => go("join", STEPS);
 $("excForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!S.reasons.length) { hint("reasons", true); return; }
@@ -618,6 +707,8 @@ function renderDone() {
 }
 
 // ===== start =====
+history.replaceState({ v: S.view, s: S.step }, "");
+addEventListener("popstate", (e) => e.state && go(e.state.v, e.state.s, true));
 applyTexts();
 document.getElementById("hero").classList.add("on");
 fetch(`${API}?action=films`).then((r) => r.json()).then((j) => {

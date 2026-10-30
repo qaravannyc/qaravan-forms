@@ -30,9 +30,9 @@ const members = (DB) => DB.boards[BOARD.members];
 const joinBody = (DB, extra = {}) => ({ lang: "ru", first: " Анна ", last: "Петрова", email: "Anna@Example.com ", ranking: films(DB).slice(0, 3).map((f) => "m:" + f.id), topics: ["race", "other"], topic_other: "суды присяжных", talk: "both", helps: ["host"], promise: true, ...extra });
 
 test("parseJoin needs a name, an email, three films and the promise", () => {
-  assert.deepEqual(parseJoin({}).fields, ["first", "last", "email", "ranking", "promise"]);
-  assert.deepEqual(parseJoin({ first: "Ann" }).fields, ["last", "email", "ranking", "promise"]);
-  const { ok, a } = parseJoin({ first: " Ann ", last: "Lee", email: "A@B.co", ranking: ["m:1", "m:1", "m:2", "t:55", "x:3", "m:4"], added: [{ tmdb: "55", title: "Pride", year: 2014 }], promise: true, topics: ["race", "nope"] });
+  assert.deepEqual(parseJoin({}).fields, ["first", "last", "email", "ranking", "topics", "talk", "promise"]);
+  assert.deepEqual(parseJoin({ first: "Ann" }).fields, ["last", "email", "ranking", "topics", "talk", "promise"]);
+  const { ok, a } = parseJoin({ first: " Ann ", last: "Lee", email: "A@B.co", ranking: ["m:1", "m:1", "m:2", "t:55", "x:3", "m:4"], added: [{ tmdb: "55", title: "Pride", year: 2014 }], promise: true, topics: ["race", "nope"], talk: "ru" });
   assert.equal(ok, true);
   assert.deepEqual(a.ranking, ["m:1", "m:2", "t:55", "m:4"]);
   assert.equal(a.email, "a@b.co"); assert.equal(a.name, "Ann Lee");
