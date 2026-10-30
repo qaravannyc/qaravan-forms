@@ -100,6 +100,26 @@
       "destination": "/api/survey?form=team-email"
     },
     {
+      "source": "/club",
+      "destination": "/club/index.html"
+    },
+    {
+      "source": "/club/welcome",
+      "destination": "/club/welcome.html"
+    },
+    {
+      "source": "/club/cancel",
+      "destination": "/api/survey?form=club&action=cancel"
+    },
+    {
+      "source": "/api/club",
+      "destination": "/api/survey?form=club"
+    },
+    {
+      "source": "/api/club-tick",
+      "destination": "/api/survey?form=club-tick"
+    },
+    {
       "source": "/feedback/:id(\\d+)/lead",
       "destination": "/api/page?id=:id&lead=1"
     },

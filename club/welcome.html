@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Киноклуб QARAVAN</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="/survey/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/survey/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="preload" href="/assets/fonts/FiraSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/FiraSansCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/qaravan.css">
+<link rel="stylesheet" href="/assets/forms.css">
+<style>
+.intro{margin:0; font:400 17px/1.5 var(--font-brand); color:var(--q-ink); text-wrap:pretty}
+.muted{margin:16px 0 0; color:var(--q-muted); font:400 15px/1.45 var(--font-brand); text-wrap:pretty}
+.start{margin-top:28px}
+.start a{display:flex; align-items:center; justify-content:center; min-height:52px; padding:10px 24px; border:2px solid var(--q-ink); background:var(--q-ink); color:var(--q-white);
+  font:600 19px/1.15 var(--font-head); letter-spacing:.01em; text-decoration:none; transition:box-shadow .15s ease-out}
+.start a:hover{box-shadow:inset 0 0 0 999px rgba(0,0,0,.14)}
+[hidden]{display:none !important}
+h1:focus{outline:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="wordmark" href="https://qaravan.org" aria-label="qaravan.org"><img src="/assets/logo-wordmark.svg" width="140" height="28" alt="qaravan"></a>
+  </div>
+  <header class="hero on">
+    <div class="eyebrow" style="--flag:var(--q-red)" id="eyebrow"></div>
+    <h1 id="h1" tabindex="-1"></h1>
+  </header>
+  <p class="intro" id="text"></p>
+  <div class="start" id="joinBox" hidden><a id="join" href="#" target="_blank" rel="noopener"></a></div>
+  <p class="muted" id="note"></p>
+  <footer>qaravan.org</footer>
+</div>
+<script>
+// Страница после оплаты в Stripe: /club/welcome?session_id=… Спрашивает /api/club?action=welcome,
+// прошла ли оплата (lib/club.mjs), и показывает ссылку на группу WhatsApp. Письмо с этой же
+// ссылкой и ссылкой на отмену уходит с info@qaravan.org.
+const T = {
+  ru: {
+    eyebrow: "Киноклуб", checking: "Проверяем оплату…", wait: "Секунду, проверяем оплату в Stripe.",
+    paid: (n) => (n ? `${n}, вы в клубе!` : "Вы в клубе!"),
+    paid_text: "Спасибо, что поддерживаете клуб. Вступите в группу WhatsApp: там мы голосуем за фильмы, предлагаем свои и договариваемся о показах.",
+    join: "Вступить в группу WhatsApp",
+    note: "Ссылка на группу и ссылка на отмену членства придут на почту от info@qaravan.org. Участники группы видят номера телефонов друг друга.",
+    pending: "Оплата прошла", pending_text: "Письмо со ссылкой на группу WhatsApp придёт на почту от info@qaravan.org. Если его нет через час, проверьте папку «Спам» или напишите нам.",
+    unpaid: "Оплата не завершилась", unpaid_text: "Похоже, оплата не прошла. Вернитесь к анкете и попробуйте ещё раз.", back: "Вернуться к анкете",
+  },
+  en: {
+    eyebrow: "Movie club", checking: "Checking your payment…", wait: "One moment, we’re checking your payment with Stripe.",
+    paid: (n) => (n ? `${n}, you’re in the club!` : "You’re in the club!"),
+    paid_text: "Thank you for supporting the club. Join the WhatsApp group: that’s where we vote on films, propose new ones and plan screenings.",
+    join: "Join the WhatsApp group",
+    note: "The group link and a link to cancel your membership will come by email from info@qaravan.org. Group members can see each other’s phone numbers.",
+    pending: "Payment received", pending_text: "An email with the WhatsApp group link will come from info@qaravan.org. If it hasn’t arrived within an hour, check spam or write to us.",
+    unpaid: "The payment didn’t go through", unpaid_text: "It looks like the payment didn’t finish. Go back to the form and try again.", back: "Back to the form",
+  },
+};
+let lang = "ru";
+try { lang = JSON.parse(localStorage.getItem("qaravan.club.v1") || "{}").lang === "en" ? "en" : "ru"; } catch {}
+const t = T[lang];
+const $ = (id) => document.getElementById(id);
+document.documentElement.lang = lang;
+$("eyebrow").textContent = t.eyebrow; $("h1").textContent = t.checking; $("text").textContent = t.wait;
+const sid = new URLSearchParams(location.search).get("session_id") || "";
+async function check(tries) {
+  try {
+    const j = await fetch(`/api/club?action=welcome&session_id=${encodeURIComponent(sid)}`).then((r) => r.json());
+    if (j.state === "paid") {
+      $("h1").textContent = t.paid(j.name); $("text").textContent = t.paid_text; $("note").textContent = t.note;
+      if (j.whatsapp) { $("join").href = j.whatsapp; $("join").textContent = t.join; $("joinBox").hidden = false; }
+      // the form is done: next time it starts fresh, in the same language
+      try { localStorage.setItem("qaravan.club.v1", JSON.stringify({ lang })); } catch {}
+    } else if (j.state === "unpaid" && tries > 0) { return setTimeout(() => check(tries - 1), 2500); }
+    else if (j.state === "unpaid") {
+      $("h1").textContent = t.unpaid; $("text").textContent = t.unpaid_text;
+      $("join").href = "/club"; $("join").removeAttribute("target"); $("join").textContent = t.back; $("joinBox").hidden = false;
+    } else { $("h1").textContent = t.pending; $("text").textContent = t.pending_text; }
+  } catch { $("h1").textContent = t.pending; $("text").textContent = t.pending_text; }
+  $("h1").focus();
+}
+check(sid ? 3 : 0);
+</script>
+</body>
+</html>
