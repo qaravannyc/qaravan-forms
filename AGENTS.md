@@ -86,6 +86,7 @@ to merge.
 - 2026-09-03 (fixed in 8b409d7): a 13th file in `api/` went over Vercel's limit; the deploy failed silently and new routes answered 404. Rule: at most 12 files in `api/`.
 - August and September 2026: columns deleted on the Event Calendar (the album id cache, Attendance, "Checked in") broke code that still read or wrote them in this repo and in events-robot. Rule: grep for a column id in all three repos before deleting it.
 - 2026-09-30: events.qaravan.org changed the shape of its `EVENTS` list and broke the Telegram bot in events-robot. Rule: anything another repository parses is a contract; change both sides together.
+- 2026-10-30: the `/letter` form showed «Thank you» without sending in two ways: Submit pressed while an autosave was still on its way took the autosave's answer as its own (one person that day, row 13430571911 stayed «In progress»), and Skip on the optional last question opened the thank-you screen. Rule: a thank-you screen appears only after the server confirmed that very submission.
 
 ## Keeping this file live
 
