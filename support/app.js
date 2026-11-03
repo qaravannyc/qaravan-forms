@@ -108,8 +108,8 @@ const GINA_RULES_EN = [
 const TEXTS = {
 gina: {
   ru: {
-    title: "Группа поддержки",
-    eyebrow: "Группа поддержки",
+    title: "Группа взаимной поддержки",
+    eyebrow: "Группа взаимной поддержки",
     intro: ["Раз в неделю мы встречаемся в Zoom и говорим о жизни здесь, какая она есть: ожидание документов, поиск работы и жилья, семья на расстоянии, одиночество в большом городе. Это постоянная группа для ЛГБТК+ людей, которые живут в США и говорят по-русски."],
     second: "A weekly Zoom support group for LGBTQ+ people in the US who speak Russian.",
     note: "Правила группы — в конце анкеты. Главное из них: то, что сказано в группе, остаётся в группе.",
@@ -141,8 +141,8 @@ gina: {
     thanks_p: "Анкета у нас, мы скоро с вами свяжемся. Копия ваших ответов придёт вам на почту.",
   },
   en: {
-    title: "Support Group",
-    eyebrow: "Support group",
+    title: "Peer Support Group",
+    eyebrow: "Peer support group",
     intro: ["Once a week we meet on Zoom to talk about life here as it actually is: waiting on paperwork, looking for work and housing, family far away, feeling alone in a big city. It’s an ongoing group for LGBTQ+ people who live in the US and speak Russian."],
     note: "The group rules are at the end of the form. The main one: what’s said in the group stays in the group.",
     steps: "Fill in the form: we’ll get in touch, set up a short Zoom intro and send you the meeting link.",
