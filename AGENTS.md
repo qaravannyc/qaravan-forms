@@ -73,6 +73,7 @@ without still serving the old one.
 
 - `node --test tools/*.test.mjs` (no CI runs them). Local servers with a fake monday: `tools/*-dev.mjs`.
 - `ls api | wc -l` prints 12 or less.
+- A change to `letter/` or `club/` (or `assets/qaravan.css`, `assets/forms.css`, which the club page uses) must be imported into qaravan-site with its `tools/letter-import.mjs` or `tools/club-import.mjs`, then checked there with `node scripts/forms-e2e.mjs`: qaravan.org draws its own copy of both apps, so a fix made only here never reaches the people who use them there.
 - Grep all three repos for any monday id, URL shape or text format you change. With the other two checked out next to this one: `grep -rn "<id or text>" . ../events-robot ../qaravan-events`
 
 ## Publishing
