@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="ru"><head>
 <meta charset="utf-8">
+<script>
+// This form's home is qaravan.org/forms/gina/ now (qaravan-site TASKS 10, 2026-11-06): a visit here moves there, in the same language.
+// Only on feedback.qaravan.org (not on a copy served elsewhere).
+(function () {
+  if (location.hostname !== "feedback.qaravan.org") return;
+  var q = new URLSearchParams(location.search);
+  var lang = q.get("lang") || "ru";
+  location.replace("https://www.qaravan.org" + (lang === "en" ? "" : "/ru") + "/forms/gina/");
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Группа взаимной поддержки</title>
 <meta name="description" content="Раз в неделю встречаемся в Zoom и говорим о жизни здесь. Постоянная группа для ЛГБТК+ людей в США, которые говорят по-русски. Вход по анкете.">

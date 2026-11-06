@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="ru"><head>
 <meta charset="utf-8">
+<script>
+// This form's home is qaravan.org/forms/legal-needs/ now (qaravan-site TASKS 10, 2026-11-06): a visit here moves there, in the same language.
+// Only on feedback.qaravan.org, and not while answers started on this device are still in progress here (their draft is in this site's storage): that person stays here.
+(function () {
+  if (location.hostname !== "feedback.qaravan.org") return;
+  var q = new URLSearchParams(location.search);
+  try { if (localStorage.getItem("qaravan.legal-help.v1")) return; } catch (e) {}
+  var lang = q.get("lang") || "ru";
+  location.replace("https://www.qaravan.org" + (lang === "en" ? "" : "/ru") + "/forms/legal-needs/");
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Вам нужен иммиграционный адвокат?</title>
 <meta name="description" content="Анкета QARAVAN: расскажите, ищете ли вы иммиграционного адвоката. Ответы помогут добиться от города денег на бесплатных адвокатов для ЛГБТК+ иммигрантов.">

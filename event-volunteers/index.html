@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="ru"><head>
 <meta charset="utf-8">
+<script>
+// This form's home is qaravan.org/forms/event-volunteers/ now (qaravan-site TASKS 10, 2026-11-06): a visit here moves there, in the same language.
+// Only on feedback.qaravan.org, and not with roles chosen in the link (?role=, which qaravan.org's form doesn't read) or while a sign-up started on this device is still in progress here (its draft is in this site's storage): that person stays here.
+(function () {
+  if (location.hostname !== "feedback.qaravan.org") return;
+  var q = new URLSearchParams(location.search);
+  if (q.get("role")) return;
+  try { if (localStorage.getItem("qaravan.event-volunteers.v1")) return; } catch (e) {}
+  var lang = q.get("lang") || "ru";
+  location.replace("https://www.qaravan.org" + (lang === "en" ? "" : "/ru") + "/forms/event-volunteers/");
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Стать волонтёром событий QARAVAN</title>
 <meta name="description" content="События QARAVAN теперь придумывают и ведут люди из сообщества. Шесть ролей, помогать можно хоть раз в пару месяцев.">

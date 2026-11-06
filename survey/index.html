@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html lang="ru"><head>
 <meta charset="utf-8">
+<script>
+// This form's home is qaravan.org/forms/survey/ now (qaravan-site TASKS 10, 2026-11-06): a visit here moves there, in the same language.
+// Only on feedback.qaravan.org, and not with a personal link (?r=), in a language qaravan.org has no survey in, or while a survey started on this device is still in progress here (its draft is in this site's storage): that person stays here.
+(function () {
+  if (location.hostname !== "feedback.qaravan.org") return;
+  var q = new URLSearchParams(location.search);
+  if (q.get("r")) return;
+  var d = null; try { d = JSON.parse(localStorage.getItem("qsurvey26.v1") || "null"); } catch (e) {}
+  if (d && !d.done && d.A && Object.keys(d.A).length) return;
+  var lang = (d && d.lang) || q.get("lang") || "ru";
+  if (lang !== "ru" && lang !== "en") return;
+  location.replace("https://www.qaravan.org" + (lang === "en" ? "" : "/ru") + "/forms/survey/");
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Исследование потребностей сообщества — QARAVAN</title>
 <meta name="robots" content="noindex">
