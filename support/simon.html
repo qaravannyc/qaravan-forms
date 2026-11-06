@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="ru"><head>
 <meta charset="utf-8">
+<script>
+// This form's home is qaravan.org/forms/simon/ now (qaravan-site TASKS 10, 2026-11-06): a visit here moves there, in the same language.
+// Only on feedback.qaravan.org (not on a copy served elsewhere).
+(function () {
+  if (location.hostname !== "feedback.qaravan.org") return;
+  var q = new URLSearchParams(location.search);
+  var lang = q.get("lang") || "ru";
+  location.replace("https://www.qaravan.org" + (lang === "en" ? "" : "/ru") + "/forms/simon/");
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Сопровождение: практическая помощь</title>
 <meta name="description" content="Онлайн-встречи, на которых помогаем с практическими делами: анкетами, записями, пособиями, жильём и работой. Вход по анкете.">

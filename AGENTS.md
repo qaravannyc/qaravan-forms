@@ -73,6 +73,7 @@ without still serving the old one.
 
 - `node --test tools/*.test.mjs` (no CI runs them). Local servers with a fake monday: `tools/*-dev.mjs`.
 - `ls api | wc -l` prints 12 or less.
+- `/support/gina`, `/support/simon`, `/survey`, `/event-volunteers`, `/legal-help`: since 2026-11-06 their homes are qaravan.org/forms/gina/, /forms/simon/, /forms/survey/, /forms/event-volunteers/ and /forms/legal-needs/ (qaravan-site TASKS 10; that site's own forms, which send to the `/api/*` here server to server). A visit here moves there in its language (Russian unless `?lang=en`), by a script at the top of each page, feedback.qaravan.org only. It stays here with `/survey?r=`, a survey language other than ru or en, `/event-volunteers?role=`, and while a draft started on that device is in progress (keys `qsurvey26.v1`, `qaravan.event-volunteers.v1`, `qaravan.legal-help.v1`). The token pages `/support/send`, `/support/attendance`, `/support/status` don't move.
 - A change to `letter/` or `club/` (or `assets/qaravan.css`, `assets/forms.css`, which the club page uses) must be imported into qaravan-site with its `tools/letter-import.mjs` or `tools/club-import.mjs`, then checked there with `node scripts/forms-e2e.mjs`: qaravan.org draws its own copy of both apps, so a fix made only here never reaches the people who use them there.
 - Grep all three repos for any monday id, URL shape or text format you change. With the other two checked out next to this one: `grep -rn "<id or text>" . ../events-robot ../qaravan-events`
 
