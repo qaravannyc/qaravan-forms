@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8">
+<script>
+// The letter's home is qaravan.org/forms/letter/ now (qaravan-site TASKS 40, 2026-11-05): a visit here moves there, in the same language.
+// Not when this page is a copy served elsewhere (only on feedback.qaravan.org), not with a personal link (?r=, it opens here as before),
+// and not while a letter started on this device is still in progress here (its draft is in this site's storage): that person finishes here.
+(function () {
+  if (location.hostname !== "feedback.qaravan.org") return;
+  var q = new URLSearchParams(location.search); if (q.get("r")) return;
+  var d = null; try { d = JSON.parse(localStorage.getItem("qaravan-intake-draft-v2") || "null"); } catch (e) {}
+  if (d && !d.submitted && (d.startedAt || (d.log && d.log.length))) return;
+  var lang = q.get("lang") || "";
+  location.replace("https://www.qaravan.org" + (lang === "ru" ? "/ru" : "") + "/forms/letter/" + (lang && lang !== "ru" && lang !== "en" ? "?lang=" + encodeURIComponent(lang) : ""));
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Support letter — QARAVAN</title>
 <meta name="robots" content="noindex">
