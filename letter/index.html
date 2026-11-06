@@ -39,7 +39,6 @@ main h1[tabindex]:focus{outline:none}
 .tojump{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:15; display:inline-flex; align-items:center; gap:8px;
   min-height:44px; padding:8px 16px 8px 22px; border:2px solid var(--q-ink); background:var(--q-ink); color:var(--q-white); cursor:pointer; white-space:nowrap;
   font:600 16px/1.15 var(--font-head); letter-spacing:.01em; box-shadow:var(--shadow-pop); animation:q-rise .3s ease-out}
-.tojump::before{content:""; position:absolute; left:-2px; top:-2px; bottom:-2px; width:8px; background:var(--q-sky)}
 .tojump[hidden]{display:none}
 .tojump:hover{box-shadow:inset 0 0 0 999px rgba(0,0,0,.14), var(--shadow-pop)}
 .tojump:active{transform:translate(-50%,1px)}
@@ -72,8 +71,7 @@ main h1[tabindex]:focus{outline:none}
   color:var(--q-ink); font:500 17px/1.3 var(--font-brand)}
 .langopt:hover{background:var(--q-line)}
 .langopt:focus-visible{outline-offset:-3px}
-.langopt.on{font-weight:600}
-.langopt.on::before{content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--q-sky)}
+.langopt.on{font-weight:600; box-shadow:inset 0 0 0 2px var(--q-ink)}
 .langopt .name{flex:1; min-width:0}
 .langopt .tick{width:16px; height:16px; flex:none}
 /* progress on phones */
@@ -141,7 +139,7 @@ textarea.in{line-height:1.5; resize:vertical; min-height:140px}
 .row{display:flex; gap:12px; align-items:flex-start; min-height:52px; padding:13px 16px 13px 22px; border:2px solid var(--q-edge); background:var(--q-white);
   cursor:pointer; user-select:none; font:400 16px/1.4 var(--font-brand); transition:border-color .12s}
 .row:hover{border-color:var(--q-ink)}
-.row.on{border-color:var(--q-ink); box-shadow:inset 6px 0 0 var(--q-sky); font-weight:600}
+.row.on{border-color:var(--q-ink); font-weight:600}
 .row .sub{font-size:15px; color:var(--q-muted); font-weight:400}
 .row .col{display:flex; flex-direction:column; gap:2px}
 /* checkbox (square, green when on, the check drawn in ink) and radio (the one round shape) */
@@ -181,21 +179,23 @@ textarea.in{line-height:1.5; resize:vertical; min-height:140px}
 .card-h{display:flex; justify-content:space-between; align-items:center; gap:12px}
 .card-t{font:600 17px/1.3 var(--font-head); letter-spacing:.01em; color:var(--q-ink)}
 .card-t.q{font:600 17px/1.3 var(--font-brand); letter-spacing:0}
-.card.ink{gap:12px; padding:26px 22px 20px; font-size:16px; box-shadow:inset 0 6px 0 var(--q-sky)}
+.card.ink{gap:12px; padding:22px 22px 20px; font-size:16px}
 .card.ink .n{flex:none; min-width:22px; font:700 20px/1.2 var(--font-head)}
 .card.ink .li{display:flex; gap:12px}
 .card.plain{padding:0; gap:0; overflow:hidden}
 /* notes: white with a colour bar; the words stay ink */
-.note{padding:14px 18px 15px 24px; background:var(--q-white); border:1px solid var(--q-line); box-shadow:inset 6px 0 0 var(--q-sky);
+.note{--nc:var(--q-sky); position:relative; padding:14px 18px 15px 40px; background:var(--q-white); border:1px solid var(--q-line);
   color:var(--q-ink); font:600 15px/1.45 var(--font-brand)}
-.note.green{box-shadow:inset 6px 0 0 var(--q-green)}
-.note.red{box-shadow:inset 6px 0 0 var(--danger)}
-.note.orange{box-shadow:inset 6px 0 0 var(--q-orange)}
+/* the note's colour is a small square mark before its first line (design rule: no coloured bar on any side) */
+.note::before{content:""; position:absolute; left:18px; top:20px; width:10px; height:10px; background:var(--nc)}
+.note.green{--nc:var(--q-green)}
+.note.red{--nc:var(--danger)}
+.note.orange{--nc:var(--q-orange)}
 .divider{border-top:1px solid var(--q-line); padding-top:18px}
 .consent{display:flex; gap:16px; align-items:flex-start; padding:18px 20px 18px 24px; cursor:pointer; user-select:none; transition:background-color .12s}
 .consent+.consent{border-top:1px solid var(--q-line)}
 .consent:hover{background:var(--q-line)}
-.consent.on{box-shadow:inset 6px 0 0 var(--q-green)}
+.consent.on{box-shadow:inset 0 0 0 2px var(--q-ink)}
 .consent .t{font:600 16px/1.35 var(--font-brand); color:var(--q-ink)}
 .consent .s{font-size:15px; line-height:1.5; color:var(--q-muted)}
 .consent .txt{display:flex; flex-direction:column; gap:4px; flex:1; min-width:0}
@@ -209,14 +209,15 @@ textarea.in{line-height:1.5; resize:vertical; min-height:140px}
 /* «Not sent yet»: until the answers are sent, every question carries this tag at the right of the Back
    row: a white tag with an orange flag in tracked capitals; tapping it opens a short explanation */
 .steptop{display:flex; align-items:center; justify-content:space-between; gap:12px; min-width:0}
-.unsent{display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:7px 10px 7px 16px; border:1px solid var(--q-line); background:var(--q-white);
-  box-shadow:inset 5px 0 0 var(--q-orange); color:var(--q-ink); cursor:pointer; text-align:left;
+.unsent{display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:7px 10px 7px 12px; border:1px solid var(--q-line); background:var(--q-white);
+  color:var(--q-ink); cursor:pointer; text-align:left;
   font:600 13px/1.2 var(--font-head); letter-spacing:.08em; text-transform:uppercase; transition:background-color .12s, border-color .12s}
+.unsent::before{content:""; flex:none; width:10px; height:10px; background:var(--q-orange)}
 .unsent:hover{background:var(--q-line); border-color:var(--q-edge)}
 .unsent .chev{width:12px; height:12px; flex:none; transition:transform .15s}
 .unsent[aria-expanded="true"] .chev{transform:rotate(180deg)}
 /* the last screen: the send button sits in a panel with an orange bar on top, like the welcome card's sky one */
-.sendbox{display:flex; flex-direction:column; gap:10px; padding:26px 22px 22px; background:var(--q-white); border:1px solid var(--q-line); box-shadow:inset 0 6px 0 var(--q-orange)}
+.sendbox{display:flex; flex-direction:column; gap:10px; padding:22px 22px 22px; background:var(--q-white); border:1px solid var(--q-line)}
 .sendbox h2{margin:2px 0 0; font:700 25px/1.15 var(--font-head); letter-spacing:var(--tracking-display); text-wrap:balance}
 .sendbox p{font-size:16px; color:var(--q-muted)}
 .sendbox .btn{margin-top:8px}
@@ -260,7 +261,7 @@ textarea.in{line-height:1.5; resize:vertical; min-height:140px}
 .lrow{display:flex; gap:14px; align-items:flex-start; min-height:52px; padding:14px 12px 14px 16px; cursor:pointer; user-select:none; background:transparent;
   font:500 16px/1.4 var(--font-brand); transition:background-color .12s}
 .lrow:hover{background:var(--q-line)}
-.lrow.on{font-weight:600; box-shadow:inset 5px 0 0 var(--q-sky)}
+.lrow.on{font-weight:600; box-shadow:inset 0 0 0 2px var(--q-ink)}
 .lrow .det{font-size:15px; color:var(--q-muted); font-weight:400}
 .lrow .col{display:flex; flex-direction:column; gap:3px}
 .counts{margin:4px 0 8px 52px; display:flex; flex-direction:column; gap:8px}
@@ -292,7 +293,7 @@ nav.railnav{width:248px; flex:none; position:sticky; top:88px; display:none; fle
 .ritems{display:flex; flex-direction:column; margin-top:8px; padding:0 0 4px}
 .ritem{display:flex; align-items:center; gap:10px; min-height:32px; padding:5px 8px; margin-left:-8px; cursor:pointer; color:var(--q-ink); font:500 15px/1.35 var(--font-brand)}
 .ritem:hover{background:var(--q-line)}
-.ritem.cur{font-weight:600; background:var(--q-line); box-shadow:inset 4px 0 0 var(--q-sky); cursor:default}
+.ritem.cur{font-weight:600; background:var(--q-line); cursor:default}
 .ritem.done{color:var(--q-muted)}
 .ritem i{width:8px; height:8px; flex:none; border:2px solid var(--q-edge)}
 .ritem.cur i{background:var(--q-sky); border:0}
