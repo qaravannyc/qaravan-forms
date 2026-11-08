@@ -13,7 +13,7 @@ see "Keeping this file live". Human-facing details are in `README.md`.
 | - | - | - |
 | `qaravannyc/qaravan-forms` (this one, public) | feedback.qaravan.org: survey, lead and photo forms, the weekly combined form, unsubscribe, letters, volunteer and support-group forms, monday and Slack webhooks | Vercel |
 | `qaravannyc/events-robot` (private) | Robots between Partiful, monday.com, Gmail, Google Photos and Slack; the Telegram bot @qaravan_door_bot | GitHub Actions; Cloudflare Workers |
-| `qaravannyc/qaravan-events` | events.qaravan.org: the events page with its `EVENTS` list, the embeds on qaravan.org, the `.ics` feeds | GitHub Pages from `main` |
+| `qaravannyc/qaravan-events` | Retired (owner, 2026-11-07): holds the bio page server's code. events.qaravan.org is a custom domain of qaravan-site's Worker since 2026-11-08, which answers the `.ics` feeds and redirects every other address to www.qaravan.org | nothing served from it |
 
 Shared state outside git: monday.com boards, info@qaravan.org (Gmail, Google
 Photos), Slack, and secrets kept both in Vercel and in events-robot's GitHub
@@ -26,12 +26,12 @@ there are verified here; `GOOGLE_*` belong to info@qaravan.org in both.
 without still serving the old one.
 - `/<event item id>`, `/<id>/lead`, `/<id>/photos` (`api/page.mjs`), `/<id>` with optional `?p=<attendeeId>.<sig>`; the older `/feedback/<id>[/lead|/photos]` is still served. Built by events-robot (`robot/send.mjs`, `robot/photos-link.mjs`) and by the Event Calendar formula columns "Feedback link" (`formula_mm64pdt9`) and "Photo upload link" (`formula_mm688t01`), which people paste into chats.
 - `/multi?e=<up to 10 ids>&p=<attendeeId>.<sig>`, `/api/didnt-attend?i=&a=&s=`, `/api/unsubscribe?e=&s=`: in events-robot emails, built in its `robot/emails.mjs`.
-- `/support/gina` (the `link` of the support group on events.qaravan.org and in its calendar feeds) and `/support/simon`.
+- `/support/gina` (the `link` of the support group in qaravan.org's events, `/data/site-events.json`, and in its calendar feeds) and `/support/simon`.
 - `/logo-email.png`: the logo in events-robot's emails.
 - Links this repo sends itself: `/letter?r=`, `/survey?r=`, `/support/send?t=`, `/support/attendance?t=`, `/support/status?t=` (valid 365 days), `/club/cancel?m=<member item id>&s=<sig>` (movie club welcome email).
 - `/letter`: since 2026-11-05 its home is qaravan.org/forms/letter/ (qaravan-site TASKS 40: the site copies `letter/*.js` and the page's `<style>` with its `tools/letter-import.mjs`, which stops if one of its patches no longer matches exactly, so after a change to the letter app, import it there again). A visit to /letter here moves there (a script at the top of `letter/index.html`, feedback.qaravan.org only), except with `?r=` and while a letter started on that device is still in progress here. `/api/letter` stays here: qaravan.org sends to it server to server.
 - `/club`: since 2026-11-05 its home is qaravan.org/forms/club/ (qaravan-site TASKS 40, imported there by `tools/club-import.mjs` from `club/index.html`, `assets/qaravan.css` and `assets/forms.css`; after a change to the club page, import it there again). A visit to /club here moves there (a script at the top of `club/index.html`, feedback.qaravan.org only), except while someone who started joining on that device is still in the middle of it. `/api/club`, `/club/welcome` and `/club/cancel` stay here.
-- `/club` (the movie club form; events.qaravan.org/club/ links here) and `/club/welcome?session_id={CHECKOUT_SESSION_ID}`, the return address of the three Stripe payment links (set in Stripe, not here).
+- `/club` (the movie club form) and `/club/welcome?session_id={CHECKOUT_SESSION_ID}`, the return address of the three Stripe payment links (set in Stripe, not here).
 
 **Endpoints other systems call.**
 - `/api/meeting-attendance` and `/api/meeting-prompts`: unauthenticated, idempotent GET. Called every 5 minutes by events-robot's Telegram worker (`FORMS_POKE_URLS` in `telegram/worker.mjs`; `FORMS_POKE = "0"` there switches it off), by the Vercel crons in `vercel.json` and by `.github/workflows/meeting-attendance.yml`.
