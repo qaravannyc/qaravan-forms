@@ -77,6 +77,10 @@ without still serving the old one.
 - A change to `letter/` or `club/` (or `assets/qaravan.css`, `assets/forms.css`, which the club page uses) must be imported into qaravan-site with its `tools/letter-import.mjs` or `tools/club-import.mjs`, then checked there with `node scripts/forms-e2e.mjs`: qaravan.org draws its own copy of both apps, so a fix made only here never reaches the people who use them there.
 - Grep all three repos for any monday id, URL shape or text format you change. With the other two checked out next to this one: `grep -rn "<id or text>" . ../events-robot ../qaravan-events`
 
+## Talking to the owner
+
+Owner, 2026-11-08 ("speak like that always, in all chats"): everything you write to the owner is in plain, everyday language. Say what happens, to whom and when, in short sentences, the way you would explain it to someone who doesn't build websites. Example: "When someone signs in, the site remembers them on that phone or computer for 90 days. After 90 days, it asks them to sign in again with a new code." Not: "the session runs out after 90 days." No jargon, code names or file names unless the owner asks for them; when a technical word can't be avoided, say what it means in the same sentence. This holds in every chat, in all four QARAVAN repositories.
+
 ## Publishing
 
 The owner wants work finished, not parked: open a pull request from your
