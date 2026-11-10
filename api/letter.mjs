@@ -18,7 +18,7 @@
 // board labels are English (repository rule). Column ids: lib/letter-board.mjs.
 import { BOARD, C, L, LANGS, RID_RX, GROUP_ANSWERS, monday, findByRid, createRow } from "../lib/letter-board.mjs";
 import { sendResumeEmail, sendSubmitEmail, sendEmail } from "../lib/letter-mail.mjs";
-import { sendAnswersCopy } from "../lib/answers-copy.mjs";
+import { sendAnswersCopy, formQuestions } from "../lib/answers-copy.mjs";
 import { escText } from "../lib/gate.mjs"; // monday updates are HTML: typed text goes in escaped
 // название анкеты для письма с копией ответов — w_title из letter/strings.js
 const LETTER_TITLE = { en: "A letter from QARAVAN for your immigration case", ru: "Письмо от QARAVAN для вашего иммиграционного дела", uk: "Лист від QARAVAN для вашої імміграційної справи", ka: "წერილი QARAVAN-ისგან თქვენი საიმიგრაციო საქმისთვის", uz: "Immigratsiya ishingiz uchun QARAVAN’dan xat", kk: "Иммиграциялық ісіңізге QARAVAN-дан хат" };
@@ -389,7 +389,10 @@ export default async function handler(req, res) {
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t) { id } }`, { i: String(itemId), t: escText(updateText(answers, { ...meta, repeat: wasSubmitted })) }).catch((e) => console.error("update failed:", e.message));
       if (EMAIL_RX.test(answers.email)) await sendSubmitEmail({ to: answers.email, name: answers.firstName, lang: meta.lang }).catch((e) => console.error("submit email failed:", e.message));
       // копия ответов человеку (lib/answers-copy.mjs), отдельным письмом после подтверждения
-      await sendAnswersCopy({ to: answers.email, lang: meta.lang, form: LETTER_TITLE[meta.lang] || LETTER_TITLE.en, copy: b.copy })
+      // the questions come from the letter's own texts (letter/strings.js, the same on qaravan.org): a copy never
+      // carries headings someone else wrote; the per-address cap is in sendAnswersCopy (no IP cap: qaravan.org
+      // relays every letter from the same few addresses)
+      await sendAnswersCopy({ to: answers.email, lang: meta.lang, form: LETTER_TITLE[meta.lang] || LETTER_TITLE.en, copy: b.copy, questions: formQuestions("letter") })
         .catch((e) => console.error("letter answers copy failed:", e.message));
       const team = teamRecipients();
       if (firstSubmit && team.length) {

@@ -32,7 +32,8 @@ const RESPONDENT_COL = "text_mm63r903"; // eventId:attendeeId, on the feedback b
 const THREAD_COL = "text_mm681056";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { albumTitle } from "../lib/album.mjs";
-import { sendAnswersCopy, isEmail } from "../lib/answers-copy.mjs";
+import { sendAnswersCopy, isEmail, formQuestions } from "../lib/answers-copy.mjs";
+import { clientIp } from "../lib/gate.mjs";
 
 // Отзывы с событий — column map
 const F = {
@@ -162,11 +163,15 @@ async function attendeeEmail(attendeeId) {
   const e = (cv.find((c) => c.id === MEMBERS_BOARD_EMAIL)?.text || "").trim();
   return isEmail(e) ? e : null;
 }
-async function sendCopy(b, attendeeId, form) {
+// The questions of a copy come from the pages' own texts plus what the server knows about the events (their
+// names, dates and own question, as the page shows them), never from the request (audit D3).
+const byLang = (text, lng) => { const l = String(text || "").split(/\n+/).map((t) => t.trim()).filter(Boolean); return !l.length ? "" : lng === "en" && l[1] ? l.slice(1).join(" ") : l[0]; };
+const eventQuestions = (evs) => evs.filter(Boolean).flatMap((e) => [e.name, [e.name || "—", e.date].filter(Boolean).join(", "), byLang(e.custom, "ru"), byLang(e.custom, "en")]);
+async function sendCopy(b, attendeeId, form, events = [], req = null) {
   const to = isEmail(b.email) ? String(b.email).trim() : attendeeId ? await attendeeEmail(attendeeId) : null;
   if (!to) return;
   const lang = b.lang === "en" ? "en" : "ru";
-  await sendAnswersCopy({ to, lang, form: (lang === "en" ? "Feedback: " : "Отзыв: ") + form, copy: b.copy });
+  await sendAnswersCopy({ to, lang, form: (lang === "en" ? "Feedback: " : "Отзыв: ") + form, copy: b.copy, questions: formQuestions("feedback", eventQuestions(events)), ip: req ? clientIp(req) : "" });
 }
 
 async function findByRespondentKey(key) {
@@ -545,9 +550,11 @@ export default async function handler(req, res) {
     const summary = [];
     const rescue = [];   // файлы, которые Google не взял никуда — форма дошлёт их нам
     let processed = 0;
+    const seenEvents = []; // for the copy's questions
     for (const entry of entries) {
       const evi = await getEvent(entry.id).catch(() => null);
       if (!evi) continue;
+      seenEvents.push(evi);
       const noShow = !!entry.no_show;
       const rating = Number(entry.rating) || 0;
       const comment = String(entry.comment || "").trim().slice(0, 2000);
@@ -628,7 +635,7 @@ export default async function handler(req, res) {
         { type: "section", text: { type: "mrkdwn", text: summary.join("\n\n").slice(0, 2900) } },
       ]);
     }
-    await sendCopy(b, attendeeId, b.lang === "en" ? "events of the week" : "события недели")
+    await sendCopy(b, attendeeId, b.lang === "en" ? "events of the week" : "события недели", seenEvents, req)
       .catch((e) => console.error("multi answers copy failed:", e.message));
     return res.end(JSON.stringify({ ok: true, processed, rescue }));
   }
@@ -754,7 +761,7 @@ export default async function handler(req, res) {
     slackBlocks(`${header}`, ev, `*${stars}*\n${esc3(slackSafe.join("\n"))}`, itemId),
     await eventThread(ev));
 
-  await sendCopy(b, rKey ? rKey.split(":")[1] : null, ev?.name || (b.lang === "en" ? "event" : "событие"))
+  await sendCopy(b, rKey ? rKey.split(":")[1] : null, ev?.name || (b.lang === "en" ? "event" : "событие"), [ev], req)
     .catch((e) => console.error("attendee answers copy failed:", e.message));
   res.end(JSON.stringify({ ok: true, updated, rescue }));
 }
