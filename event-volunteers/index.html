@@ -8,7 +8,7 @@
   if (location.hostname !== "feedback.qaravan.org") return;
   var q = new URLSearchParams(location.search);
   if (q.get("role")) return;
-  try { if (localStorage.getItem("qaravan.event-volunteers.v1")) return; } catch (e) {}
+  try { var d = JSON.parse(localStorage.getItem("qaravan.event-volunteers.v1") || "null"); if (d && (!d.at || Date.now() - d.at < 4838400000)) return; localStorage.removeItem("qaravan.event-volunteers.v1"); } catch (e) {} // a draft older than 8 weeks doesn't count
   var lang = q.get("lang") || "ru";
   location.replace("https://www.qaravan.org" + (lang === "en" ? "" : "/ru") + "/forms/event-volunteers/");
 })();
@@ -183,6 +183,16 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 // («Октябрь 2026») сервер создаёт сам, когда месяц впервые выбирают.
 const MONTHS_AHEAD = 6;
 const DRAFT_KEY = "qaravan.event-volunteers.v1";
+// A draft not touched for 8 weeks is dropped, so answers don't stay on a shared device for ever.
+// A draft saved before this rule (no `at`) gets its 8 weeks from the first visit after it.
+const DRAFT_TTL = 56 * 864e5;
+function draftFresh(key, d) {
+  if (!d || typeof d !== "object") return false;
+  if (!(d.at > 0)) { d.at = Date.now(); try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) {} return true; }
+  if (Date.now() - d.at < DRAFT_TTL) return true;
+  try { localStorage.removeItem(key); } catch (e) {}
+  return false;
+}
 
 // ===== все тексты — редактируются здесь =====
 // Названия ролей остаются по-английски в обоих языках: так они называются на доске.
@@ -312,14 +322,14 @@ const monthName = (code) => { const [y, m] = code.split("-"); return `${T().mont
 
 // ===== черновик: всё, что человек ввёл, переживает перезагрузку страницы =====
 function saveDraft() {
-  const d = { lang, roles: [...roles], months: [...months], freq, attended };
+  const d = { lang, roles: [...roles], months: [...months], freq, attended, at: Date.now() };
   for (const id of TEXT_IDS) d[id] = $(id).value;
   try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch (e) {}
 }
 function loadDraft() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) {}
-  if (!d || typeof d !== "object") return;
+  if (!draftFresh(DRAFT_KEY, d)) return;
   for (const id of TEXT_IDS) if (typeof d[id] === "string") $(id).value = d[id];
   (d.roles || []).forEach((r) => ROLE_CODES.includes(r) && roles.add(r));
   (d.months || []).forEach((m) => MONTHS.includes(m) && months.add(m));

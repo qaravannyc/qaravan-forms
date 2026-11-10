@@ -295,8 +295,11 @@ test("routes: /api/meetings answers through the survey function; prompts: a plai
   assert.equal(r3.statusCode, 200);
   assert.equal(JSON.parse(r3.body).ok, true);
   const r7 = fakeRes();
-  await survey(fakeReq("/api/meeting-prompts?key=cron&to=me@example.org"), r7);
+  await survey(fakeReq("/api/meeting-prompts?to=me@example.org", "GET", null, { authorization: "Bearer cron" }), r7);
   assert.equal(r7.statusCode, 400); // to — только вместе с item
+  const r9 = fakeRes();
+  await survey(fakeReq("/api/meeting-prompts?key=cron&dry=1"), r9);
+  assert.equal(r9.statusCode, 401); // the secret in the address is no longer taken
   // без CRON_SECRET: обычный прогон можно, ручные режимы — нет
   delete process.env.CRON_SECRET;
   const r4 = fakeRes();

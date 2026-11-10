@@ -7,7 +7,8 @@
 //                   Letter Status → Answers received, a readable update is posted.
 //   mode "feedback" — "Spotted a translation problem?": text goes to the row's Translation feedback column.
 // GET ?rid=… — the draft for the personal resume link (answers, step, language),
-//   or {submitted:true} once it was sent.
+//   or only {found:true, submitted:true} once it was sent: the answers never go back out after that.
+//   A submitted letter takes no more drafts or submissions (409); translation feedback still goes in.
 // Everything lives in this one function: Vercel's Hobby plan allows at most 12
 // serverless functions per deployment and the repository already has 11.
 //
@@ -17,7 +18,8 @@
 // board labels are English (repository rule). Column ids: lib/letter-board.mjs.
 import { BOARD, C, L, LANGS, RID_RX, GROUP_ANSWERS, monday, findByRid, createRow } from "../lib/letter-board.mjs";
 import { sendResumeEmail, sendSubmitEmail, sendEmail } from "../lib/letter-mail.mjs";
-import { sendAnswersCopy } from "../lib/answers-copy.mjs";
+import { sendAnswersCopy, formQuestions } from "../lib/answers-copy.mjs";
+import { escText } from "../lib/gate.mjs"; // monday updates are HTML: typed text goes in escaped
 // название анкеты для письма с копией ответов — w_title из letter/strings.js
 const LETTER_TITLE = { en: "A letter from QARAVAN for your immigration case", ru: "Письмо от QARAVAN для вашего иммиграционного дела", uk: "Лист від QARAVAN для вашої імміграційної справи", ka: "წერილი QARAVAN-ისგან თქვენი საიმიგრაციო საქმისთვის", uz: "Immigratsiya ishingiz uchun QARAVAN’dan xat", kk: "Иммиграциялық ісіңізге QARAVAN-дан хат" };
 import { recipients as teamRecipients, teamLetter } from "../lib/team-email.mjs";
@@ -306,7 +308,8 @@ export default async function handler(req, res) {
       const row = await findByRid(rid);
       if (!row || !row.raw) return res.end('{"found":false}');
       const r = row.raw;
-      return res.end(JSON.stringify({ found: true, submitted: !!r.submitted, a: r.a || {}, step: r.step || 0, lang: langOf(r.lang), startedAt: r.startedAt || 0, emailSent: !!r.emailSent }));
+      if (r.submitted) return res.end('{"found":true,"submitted":true}');
+      return res.end(JSON.stringify({ found: true, submitted: false, a: r.a || {}, step: r.step || 0, lang: langOf(r.lang), startedAt: r.startedAt || 0, emailSent: !!r.emailSent }));
     } catch (e) { console.error("letter draft read failed:", e.message); res.statusCode = 502; return res.end("{}"); }
   }
 
@@ -343,6 +346,9 @@ export default async function handler(req, res) {
     const existing = await findByRid(rid);
     const prev = existing && existing.raw ? existing.raw : {};
     const wasSubmitted = !!prev.submitted;
+    // Once sent, a letter is closed: the resume link must not let anyone overwrite or resend it (the team
+    // changes it with the person). The page already stops saving after its own submit.
+    if (wasSubmitted) { res.statusCode = 409; return res.end('{"ok":false,"error":"submitted"}'); }
     const startedAt = Number(b.startedAt) || Number(prev.startedAt) || Date.now();
     const meta = {
       rid, mode, lang: langOf(b.lang), log, startedAt,
@@ -380,10 +386,13 @@ export default async function handler(req, res) {
     }
     if (mode === "submit") {
       if (!existing || existing.group !== GROUP_ANSWERS) await monday(`mutation ($i: ID!) { move_item_to_group(item_id:$i, group_id:"${GROUP_ANSWERS}") { id } }`, { i: String(itemId) }).catch((e) => console.error("move failed:", e.message));
-      await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t) { id } }`, { i: String(itemId), t: updateText(answers, { ...meta, repeat: wasSubmitted }) }).catch((e) => console.error("update failed:", e.message));
+      await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t) { id } }`, { i: String(itemId), t: escText(updateText(answers, { ...meta, repeat: wasSubmitted })) }).catch((e) => console.error("update failed:", e.message));
       if (EMAIL_RX.test(answers.email)) await sendSubmitEmail({ to: answers.email, name: answers.firstName, lang: meta.lang }).catch((e) => console.error("submit email failed:", e.message));
       // копия ответов человеку (lib/answers-copy.mjs), отдельным письмом после подтверждения
-      await sendAnswersCopy({ to: answers.email, lang: meta.lang, form: LETTER_TITLE[meta.lang] || LETTER_TITLE.en, copy: b.copy })
+      // the questions come from the letter's own texts (letter/strings.js, the same on qaravan.org): a copy never
+      // carries headings someone else wrote; the per-address cap is in sendAnswersCopy (no IP cap: qaravan.org
+      // relays every letter from the same few addresses)
+      await sendAnswersCopy({ to: answers.email, lang: meta.lang, form: LETTER_TITLE[meta.lang] || LETTER_TITLE.en, copy: b.copy, questions: formQuestions("letter") })
         .catch((e) => console.error("letter answers copy failed:", e.message));
       const team = teamRecipients();
       if (firstSubmit && team.length) {

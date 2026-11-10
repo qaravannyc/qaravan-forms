@@ -5,11 +5,11 @@ import vm from "node:vm";
 
 // Run the real handler with isolated service boundaries: no credentials or
 // external requests are used, and the response is what the browser receives.
+// Every top-level import line goes (the handler's lead path needs none of them) and exports become
+// plain declarations, so the file runs as a script in the context below.
 const source = readFileSync(new URL("../api/submit.mjs", import.meta.url), "utf8")
-  .replace('import { createHmac } from "node:crypto";', "")
-  .replace('import { albumTitle } from "../lib/album.mjs";', "")
-  .replace('import { sendAnswersCopy, isEmail } from "../lib/answers-copy.mjs";', "")
-  .replace("export default async function handler", "async function handler");
+  .replace(/^import [^\n]* from "[^"]+";$/gm, "")
+  .replace(/^export (?:default )?(async function|function|const)/gm, "$1");
 
 async function submitLead(photos, result) {
   const context = vm.createContext({ Buffer, process: { env: {} }, console });

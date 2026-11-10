@@ -7,6 +7,16 @@ const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.crea
 const T = new URLSearchParams(location.search).get("t") || "";
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DRAFT_KEY = "qaravan.meeting-send." + T.slice(0, 24);
+// A draft not touched for 8 weeks is dropped, so answers don't stay on a shared device for ever.
+// A draft saved before this rule (no `at`) gets its 8 weeks from the first visit after it.
+const DRAFT_TTL = 56 * 864e5;
+function draftFresh(key, d) {
+  if (!d || typeof d !== "object") return false;
+  if (!(d.at > 0)) { d.at = Date.now(); try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) {} return true; }
+  if (Date.now() - d.at < DRAFT_TTL) return true;
+  try { localStorage.removeItem(key); } catch (e) {}
+  return false;
+}
 let data = null, people = [], sending = false, tried = false, again = false;
 const COLL = new Intl.Collator("ru", { sensitivity: "base" });
 
@@ -20,12 +30,12 @@ function problem(title, text) {
 
 // ===== черновик: правки переживают перезагрузку до отправки =====
 function saveDraft() {
-  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ link: $("link").value, dial: $("dial").value, subject: $("subject").value, text: $("text").value, people: people.map((p) => [p.email, p.name, p.checked, !!p.added]) })); } catch (e) {}
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ link: $("link").value, dial: $("dial").value, subject: $("subject").value, text: $("text").value, people: people.map((p) => [p.email, p.name, p.checked, !!p.added]), at: Date.now() })); } catch (e) {}
 }
 function loadDraft() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) {}
-  if (!d || typeof d !== "object") return;
+  if (!draftFresh(DRAFT_KEY, d)) return;
   for (const k of ["link", "dial", "subject", "text"]) if (typeof d[k] === "string") $(k).value = d[k];
   if (Array.isArray(d.people)) {
     const byEmail = new Map(people.map((p) => [p.email, p]));

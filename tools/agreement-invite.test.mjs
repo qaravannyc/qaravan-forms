@@ -200,3 +200,17 @@ test("?dry=1 says what would happen and writes nothing; GET without it is refuse
   assert.equal((await call(undefined, { method: "GET", path: "/api/survey?form=agreement-invite&item=5" })).status, 405);
   assert.deepEqual([S.writes, S.mails], [[], []]);
 });
+
+test("the invite carries the signed unsubscribe link the robot's invites carry (security review, 2026-11-10)", async () => {
+  const before = process.env.UNSUB_SECRET;
+  process.env.UNSUB_SECRET = "test-secret";
+  try {
+    reset({ [VOLUNTEERS]: [signup(1, "Maria Orlova", "Maria@Example.com")] });
+    assert.equal((await call({ itemId: 1, boardId: VOLUNTEERS })).json.result, "sent");
+    const { createHmac } = await import("node:crypto");
+    const e = Buffer.from("maria@example.com").toString("base64url"), s = createHmac("sha256", "test-secret").update("maria@example.com").digest("hex");
+    const html = htmlOf(S.mails[0]);
+    assert.ok(html.includes(`https://feedback.qaravan.org/api/unsubscribe?e=${e}&amp;s=${s}`), "signed link in the email");
+    assert.ok(html.includes("Unsubscribe") && html.includes("Отписаться"));
+  } finally { if (before === undefined) delete process.env.UNSUB_SECRET; else process.env.UNSUB_SECRET = before; }
+});

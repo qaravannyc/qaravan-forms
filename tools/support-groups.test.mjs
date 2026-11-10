@@ -103,7 +103,8 @@ test("Gina: needs — up to three picks in pick order; «Другое» needs ow
   const { cv, upd } = await send({ ...gina(), needs: ["support", "other", "talk", "friends"], needs_text: "Найти психолога" });
   assert.deepEqual(cv.needs_pick, { labels: ["Support & understanding", "Something else", "Talking with people"] });
   assert.deepEqual(cv.needs, { text: "Найти психолога" });
-  assert.match(upd.variables.t, /Что нужнее всего: Support & understanding, Something else, Talking with people\nДругое, своими словами:\nНайти психолога/);
+  // the update body is HTML (audit D6): "&" is written "&amp;" and monday shows "&"
+  assert.match(upd.variables.t, /Что нужнее всего: Support &amp; understanding, Something else, Talking with people\nДругое, своими словами:\nНайти психолога/);
   const { cv: cv2 } = await send({ ...gina(), needs: ["talk"], needs_text: "осталось от «Другого»" });
   assert.equal("needs" in cv2, false);
   const { res } = await send({ ...gina(), needs: ["other"], needs_text: " " });

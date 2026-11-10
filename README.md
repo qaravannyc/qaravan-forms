@@ -62,7 +62,7 @@ Submitted. Один респондент — одна строка; браузе
 Запуск: еженедельно по понедельникам Vercel-кроном через `/api/aggregate` —
 для этого в переменных окружения Vercel должен быть задан `CRON_SECRET`
 (без него эндпоинт отказывает). Вручную: `MONDAY_TOKEN=… node
-tools/aggregate-survey.mjs` или GET `/api/aggregate?key=<CRON_SECRET>`.
+tools/aggregate-survey.mjs` или GET `/api/aggregate` с заголовком `Authorization: Bearer <CRON_SECRET>` (секрет в адресе, `?key=`, не принимается).
 
 ## Анкета на письмо поддержки (`/letter`)
 
@@ -256,7 +256,7 @@ Typeform (dbH75jNe), `feedback.qaravan.org/support/simon` — форму monday 
 monday и оставляет на строке апдейт «Статус: New → Joined». С «Joined» человек начинает
 получать письма со ссылкой на встречу. Ключ — тот же HMAC, что у страниц встречи, с
 назначением `k: "st"`, на эту строку и группу, работает год. Для анкет, пришедших до
-этой кнопки: `/api/status?key=<CRON_SECRET>&item=<id строки>` отдаёт ссылку на страницу.
+этой кнопки: `/api/status?item=<id строки>` с заголовком `Authorization: Bearer <CRON_SECRET>` отдаёт ссылку на страницу.
 Проверки: `node --test tools/status.test.mjs`; локально — `node tools/meetings-dev.mjs`.
 
 ## Письмо со ссылкой на встречу (`/support/send`)
@@ -301,7 +301,7 @@ monday и оставляет на строке апдейт «Статус: New 
 - **Ключ** в ссылке — HMAC от строки встречи, группы и срока (до 6 часов после начала);
   секрет — `MEETINGS_SECRET` или, если его нет, производный от `MONDAY_TOKEN`. По ссылке
   видны адреса участников, поэтому её получает только ведущая.
-- **Вручную** (нужен `CRON_SECRET` в Vercel): `/api/meeting-prompts?key=<CRON_SECRET>&item=<id
+- **Вручную** (нужен `CRON_SECRET` в Vercel, в заголовке `Authorization: Bearer <CRON_SECRET>`): `/api/meeting-prompts?item=<id
   строки>` — письмо ведущей по этой встрече прямо сейчас; `&to=<почта>` вместе с `item` —
   тестовая копия на другой адрес (встреча не помечается): кнопка открывает настоящую
   страницу, но в её ключе записан этот адрес, и «Отправить» шлёт письмо только ему — без
@@ -354,7 +354,7 @@ monday и оставляет на строке апдейт «Статус: New 
   пишет: у них нет ссылки на Partiful.
 - **Ключ** — тот же HMAC, что у `/support/send`, с пометкой назначения (`k: "att"`):
   ключ одной страницы другую не открывает.
-- **Вручную** (нужен `CRON_SECRET`): `/api/meeting-attendance?key=<CRON_SECRET>&item=<id
+- **Вручную** (нужен `CRON_SECRET`, в заголовке `Authorization: Bearer <CRON_SECRET>`): `/api/meeting-attendance?item=<id
   строки>` — письмо ведущей по этой встрече сейчас, даже если уже спрашивали; `&to=<почта>`
   вместе с `item` — тестовая копия на другой адрес (встреча не помечается): страница
   настоящая, но «Сохранить» ничего не записывает в monday; `&dry=1` — ничего не отправлять,

@@ -8,6 +8,7 @@
   if (location.hostname !== "feedback.qaravan.org") return;
   var q = new URLSearchParams(location.search);
   var lang = q.get("lang") || "ru";
+  try { localStorage.removeItem("qaravan.support.simon.v1"); } catch (e) {} // this page always moves, so a draft left here is never used again
   location.replace("https://www.qaravan.org" + (lang === "en" ? "" : "/ru") + "/forms/simon/");
 })();
 </script>

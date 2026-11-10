@@ -61,7 +61,7 @@ export function install(DB, realFetch = globalThis.fetch) {
       return new Response("{}");
     }
     if (u.startsWith("https://api.stripe.com/v1/checkout/sessions/")) {
-      const s = DB.sessions[u.split("/").pop()];
+      const s = DB.sessions[u.split("?")[0].split("/").pop()]; // the session id, with or without ?expand[]=
       return s ? new Response(JSON.stringify(s)) : new Response(JSON.stringify({ error: { message: "No such session" } }), { status: 404 });
     }
     if (u.startsWith("https://api.stripe.com/v1/billing_portal/sessions")) {
@@ -75,7 +75,7 @@ export function install(DB, realFetch = globalThis.fetch) {
     }
     if (u.startsWith("https://api.themoviedb.org/3/movie/")) {
       const id = u.split("/movie/")[1].split("?")[0];
-      return new Response(JSON.stringify({ id, poster_path: "", release_date: "2000-01-01", videos: { results: [{ site: "YouTube", type: "Trailer", official: true, key: "yt" + id }] }, translations: { translations: [{ iso_639_1: "ru", data: { title: "Фильм " + id } }] } }));
+      return new Response(JSON.stringify({ id, title: (DB.tmdbTitles || {})[id] || "", poster_path: "", release_date: "2000-01-01", videos: { results: [{ site: "YouTube", type: "Trailer", official: true, key: "yt" + id }] }, translations: { translations: [{ iso_639_1: "ru", data: { title: "Фильм " + id } }] } }));
     }
     return realFetch(url, opts);
   };

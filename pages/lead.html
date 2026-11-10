@@ -323,15 +323,38 @@ let phSaveFailed = 0;
 const PH_MAX_SIZE = 300 * 1024 * 1024, PH_MAX_COUNT = 50, PH_PARALLEL = 4;
 const photos = []; // {file, el, status: "wait"|"up"|"done"|"fail", token}
 let phAccess = null, phAccessExp = 0, phAccessReq = null, phActive = 0;
+// Who may get an upload token (api/photos-token.mjs): the personal link from our email (p) or, without one,
+// Cloudflare's bot check once the server has it on (window.__TS_KEY__, put on the page by api/page.mjs).
+// Each answer carries a ticket for its event, which later token requests and the rescue upload show.
+const phTickets = {};       // eventId -> ticket from /api/photos-token
+const phLink = () => (typeof pTok === "string" ? pTok : "");
+const phNeedsCheck = (id) => !!window.__TS_KEY__ && !phLink() && !phTickets[id];
+function phCheck(){
+  return new Promise(resolve => {
+    const box = document.createElement("div");
+    const done = (t) => { try { box.remove(); } catch (_) {} resolve(t || ""); };
+    box.setAttribute("style", "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60");
+    document.body.appendChild(box);
+    const draw = () => { try { window.turnstile.render(box, { sitekey: window.__TS_KEY__, appearance: "interaction-only", callback: done, "error-callback": () => done(""), "expired-callback": () => done("") }); } catch (_) { done(""); } };
+    if (window.turnstile) return draw();
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"; s.async = true;
+    s.onload = draw; s.onerror = () => done("");
+    document.head.appendChild(s);
+  });
+}
+const phAsk = (id, turnstile) => fetch("/api/photos-token", { method:"POST", headers:{ "Content-Type":"application/json" },
+  body: JSON.stringify({ eventId: id, p: phLink(), ticket: phTickets[id] || "", turnstile: turnstile || "" }) });
 
 async function phGetAccess(){
   if (phAccess && Date.now() < phAccessExp - 60000) return phAccess;
   // один запрос на всех: параллельные загрузки не должны ходить за токеном каждая сама
-  phAccessReq = phAccessReq || fetch("/api/photos-token", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ eventId }) })
+  phAccessReq = phAccessReq || (phNeedsCheck(eventId) ? phCheck().then(t => phAsk(eventId, t)) : phAsk(eventId, ""))
     .then(async r => {
       if (!r.ok) throw new Error("token");
       const d = await r.json();
       phAccess = d.token; phAccessExp = Date.now() + (d.expiresIn || 3600) * 1000;
+      if (d.ticket) phTickets[eventId] = d.ticket;
       return phAccess;
     })
     .finally(() => { phAccessReq = null; });
@@ -450,7 +473,7 @@ async function rescueFiles(list, eventIdFallback = ""){
     if (!record?.file || record.file.size > 4 * 1024 * 1024) continue;
     try {
       const response = await fetch(`/api/rescue-file?event=${encodeURIComponent(item.eventId || eventIdFallback)}&name=${encodeURIComponent(item.name)}`,
-        { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: record.file });
+        { method: "POST", headers: { "Content-Type": "application/octet-stream", "X-QV-Ticket": phTickets[item.eventId || eventIdFallback] || "", "X-QV-P": phLink() }, body: record.file });
       if (!response.ok) continue;
     } catch (_) { /* The warning below still tells the user to keep their originals. */ }
   }
