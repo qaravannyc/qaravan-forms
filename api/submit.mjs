@@ -428,7 +428,7 @@ async function eventThread(ev) {
 
 const slackCtx = (ev) => esc3([ev?.date, ev?.location, ev?.lead ? `Ведущие: ${ev.lead}` : ""].filter(Boolean).join(" — ") || "событие с календаря QARAVAN");
 const slackLinks = (ev, itemId) => [
-  ev?.partiful ? `<${ev.partiful}|Регистрация на Partiful>` : "",
+  ev?.partiful ? `<${ev.partiful}|Страница события>` : "",
   ev?.albumShareUrl ? `<${ev.albumShareUrl}|Фотоальбом события>` : "",
   `<https://qaravan.monday.com/boards/${FEEDBACK_BOARD}/pulses/${itemId}|Открыть отзыв на доске>`,
 ].filter(Boolean).join("     ");

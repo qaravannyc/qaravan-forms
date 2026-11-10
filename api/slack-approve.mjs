@@ -67,7 +67,7 @@ function fmtDate(text) {
 // Must mirror the message the send robot posts (robot/send.mjs).
 export function digestBlocks(ev, note) {
   const ctx = [fmtDate(ev.date), ev.location, ev.lead ? `Ведущие: ${ev.lead}` : ""].filter(Boolean).join(" — ");
-  const links = [ev.partiful ? `<${ev.partiful}|Регистрация на Partiful>` : "", `<https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${ev.id}|Строка события на доске>`].filter(Boolean).join("     ");
+  const links = [ev.partiful ? `<${ev.partiful}|Страница события>` : "", `<https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${ev.id}|Строка события на доске>`].filter(Boolean).join("     ");
   return [
     { type: "header", text: { type: "plain_text", text: `Дайджест ждёт проверки — ${ev.name}`.slice(0, 150), emoji: true } },
     { type: "context", elements: [{ type: "mrkdwn", text: (ctx || "событие с календаря").slice(0, 250) }] },
