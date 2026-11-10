@@ -111,9 +111,12 @@ test("join → exception → approval by the tick → one email with the WhatsAp
   // scores: Milk first on the only ballot
   const milk = films(DB).find((f) => f.name === "Milk");
   assert.equal(milk.cv.film_score, "5"); assert.equal(milk.cv.film_first, "1"); assert.equal(milk.cv.film_ballots, "1");
-  // a second join with the same email is told it's already a member
+  // a second join with the same email: the page gets what any new applicant gets (audit D5: the answer must
+  // not tell who is in the club), the row is untouched and the member hears about it by email instead
   const again = await call("/api/club?action=join", { method: "POST", body: joinBody(DB) });
-  assert.equal(again.body.state, "member"); assert.equal(members(DB).length, 1);
+  assert.equal(again.body.state, "applied"); assert.match(again.body.key, /^[a-f0-9]{24}$/); assert.notEqual(again.body.key, j.body.key);
+  assert.equal(members(DB).length, 1); assert.equal(row.cv[M.status].label, "Member");
+  assert.equal(DB.mails.length, 2); assert.equal(DB.mails[1].to, "anna@example.com"); assert.match(DB.mails[1].subject, /уже в киноклубе/);
 });
 
 test("nobody is approved or emailed while the WhatsApp link isn't set", async () => {
