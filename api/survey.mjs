@@ -38,6 +38,7 @@ import { websiteInquiryHandler } from "../lib/website-inquiry.mjs";
 import { teamEmailHandler } from "../lib/team-email.mjs";
 import { legalHelpHandler } from "../lib/legal-help.mjs";
 import { clubHandler, clubTickHandler } from "../lib/club.mjs";
+import { escText } from "../lib/gate.mjs"; // monday updates are HTML: typed text goes in escaped
 
 const MONDAY = "https://api.monday.com/v2";
 const SURVEY_BOARD = "18426996689";
@@ -441,7 +442,7 @@ export default async function handler(req, res) {
     }
     if (mode === "submit") {
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
-        { i: String(itemId), t: updateText(a, meta, !!existing && existing.group?.id === GROUP_SUBMITTED) })
+        { i: String(itemId), t: escText(updateText(a, meta, !!existing && existing.group?.id === GROUP_SUBMITTED)) })
         .catch((e) => console.error("update write failed:", e.message)); // ответ уже в колонках — не валим отправку
     }
     return res.end('{"ok":true}');

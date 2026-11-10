@@ -7,6 +7,7 @@
 //
 // Ограничение: тело запроса у Vercel — 4.5 МБ, поэтому больший файл сюда не
 // доедет. Форма это знает и о таких файлах пишет прямо в отзыв и в Slack.
+import { escText } from "../lib/gate.mjs"; // the file name comes from the request: escaped before Slack
 const MONDAY_FILE = "https://api.monday.com/v2/file";
 const MONDAY = "https://api.monday.com/v2";
 const EVENTS_BOARD = "4774572020";
@@ -67,11 +68,11 @@ export default async function handler(req, res) {
 
     if (!up.data?.add_file_to_column?.id) {
       console.error("rescue upload failed:", JSON.stringify(up).slice(0, 300));
-      await slackNotify(`⚠️ Файл гостя «${name}» (${Math.round(buf.length / 1024)} КБ) не принял ни Google Photos, ни monday — событие «${item.name}». Нужно попросить прислать заново.`);
+      await slackNotify(`⚠️ Файл гостя «${escText(name)}» (${Math.round(buf.length / 1024)} КБ) не принял ни Google Photos, ни monday — событие «${escText(item.name)}». Нужно попросить прислать заново.`);
       res.statusCode = 502;
       return res.end('{"ok":false,"error":"monday upload failed"}');
     }
-    await slackNotify(`📎 Google Photos не принял файл «${name}» с события «${item.name}» — сохранил его в колонку «📎 Rescued photos» на строке события: https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${eventId}`);
+    await slackNotify(`📎 Google Photos не принял файл «${escText(name)}» с события «${escText(item.name)}» — сохранил его в колонку «📎 Rescued photos» на строке события: https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${eventId}`);
     return res.end('{"ok":true}');
   } catch (e) {
     console.error("rescue-file failed:", e.message);

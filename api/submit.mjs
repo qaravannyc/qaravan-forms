@@ -61,6 +61,14 @@ const CANON = {
     "Языковой барьер", "Мало информации заранее", "Дорого вышло", "Другое", "Всё было ок"],
 };
 
+// Consent to quotes: the three labels the pages send (pages/attendee.html, multi.html: STRINGS.ru.consent).
+// A label column is written with create_labels_if_missing, so anything else would add a new label to the board.
+const CONSENT = ["Да, с именем", "Да, но без имени", "Лучше не надо"];
+const consentLabel = (v) => (CONSENT.includes(v) ? v : "");
+// Typed text on its way into Slack mrkdwn (`<…>` there is a link or a mention) or a monday update (HTML):
+// & < > escaped. Kept here, not imported: tools/photo-*.test.mjs run this file with its imports stripped.
+const esc3 = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 async function monday(query, variables = {}) {
   const r = await fetch(MONDAY, {
     method: "POST",
@@ -257,7 +265,7 @@ async function filePhotos(ev, photos, credit) {
     // а файлы легли в новый альбом — про такое расхождение молчать нельзя.
     if (staleShare) {
       await slackNotify(`⚠️ Альбомы разъехались — ${ev.name}`, [
-        { type: "section", text: { type: "mrkdwn", text: `⚠️ *«${ev.name}»*: в колонке «Photo album» лежала публичная ссылка (${staleShare}), но id того альбома роботу неизвестен — новые фото ушли в НОВЫЙ альбом, колонка перезаписана. Если альбом должен быть один — перенеси фото из старого руками и включи новому доступ по ссылке. <https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${ev.id}|Строка события>`.slice(0, 2900) } },
+        { type: "section", text: { type: "mrkdwn", text: `⚠️ *«${esc3(ev.name)}»*: в колонке «Photo album» лежала публичная ссылка (${staleShare}), но id того альбома роботу неизвестен — новые фото ушли в НОВЫЙ альбом, колонка перезаписана. Если альбом должен быть один — перенеси фото из старого руками и включи новому доступ по ссылке. <https://qaravan.monday.com/boards/${EVENTS_BOARD}/pulses/${ev.id}|Строка события>`.slice(0, 2900) } },
       ]);
     }
     // Album "description": Google Photos albums have no description field, so
@@ -413,7 +421,7 @@ async function eventThread(ev) {
   return parent.ts;
 }
 
-const slackCtx = (ev) => [ev?.date, ev?.location, ev?.lead ? `Ведущие: ${ev.lead}` : ""].filter(Boolean).join(" — ") || "событие с календаря QARAVAN";
+const slackCtx = (ev) => esc3([ev?.date, ev?.location, ev?.lead ? `Ведущие: ${ev.lead}` : ""].filter(Boolean).join(" — ") || "событие с календаря QARAVAN");
 const slackLinks = (ev, itemId) => [
   ev?.partiful ? `<${ev.partiful}|Регистрация на Partiful>` : "",
   ev?.albumShareUrl ? `<${ev.albumShareUrl}|Фотоальбом события>` : "",
@@ -497,7 +505,7 @@ export default async function handler(req, res) {
         { i: String(c.create_item.id), t: "Отметил(а) в форме: не был(а) на событии" });
     }
     await slackNotify(`«Меня там не было» — ${ev.name}`, [
-      { type: "section", text: { type: "mrkdwn", text: `*«Меня там не было»* — ${ev.name}${rKey ? "" : " — аноним"}` } },
+      { type: "section", text: { type: "mrkdwn", text: `*«Меня там не было»* — ${esc3(ev.name)}${rKey ? "" : " — аноним"}` } },
     ], await eventThread(ev));
     return res.end('{"ok":true}');
   }
@@ -525,7 +533,7 @@ export default async function handler(req, res) {
     }
     // Квитанция уходит только в Slack-тред события — апдейты-комментарии на строках убраны (15.08.2026).
     await slackNotify(`📷 Фото с события — ${ev.name} (${media.length} шт.)`, [
-      { type: "section", text: { type: "mrkdwn", text: `📷 *Фото: ${media.length} шт.*${credit ? ` — автор: ${credit}` : ""}\n${photoLine}`.slice(0, 2900) } },
+      { type: "section", text: { type: "mrkdwn", text: `📷 *Фото: ${media.length} шт.*${credit ? ` — автор: ${esc3(credit)}` : ""}\n${esc3(photoLine)}`.slice(0, 2900) } },
     ], await eventThread(ev));
     return res.end(JSON.stringify({ ok: true, rescue }));
   }
@@ -555,7 +563,7 @@ export default async function handler(req, res) {
       const lo = tags.filter((t) => CANON.discomfort.includes(t));
       if (!noShow && hi.length) cv[F.highlights] = { labels: hi };
       if (!noShow && lo.length) cv[F.discomfort] = { labels: lo };
-      if (!noShow && b.consent) cv[F.consent] = { labels: [b.consent] };
+      if (!noShow && consentLabel(b.consent)) cv[F.consent] = { labels: [consentLabel(b.consent)] };
       if (!noShow && b.name) cv[F.quoteName] = String(b.name).slice(0, 120);
       // отдельный вопрос этого события: сохраняем и сам вопрос, и ответ
       if (!noShow && evi.custom) cv[F.customQ] = evi.custom.slice(0, 250);
@@ -608,14 +616,14 @@ export default async function handler(req, res) {
             `Язык формы: ${b.lang || "ru"}`,
           ];
       await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
-        { i: String(itemId), t: lines.filter(Boolean).join("\n") });
+        { i: String(itemId), t: esc3(lines.filter(Boolean).join("\n")) });
       const stars = noShow ? "не был(а)" : (rating ? "★".repeat(rating) + "☆".repeat(5 - rating) : "без оценки");
       const albumRef = evi.albumShareUrl ? ` · <${evi.albumShareUrl}|альбом>` : "";
-      summary.push(`*${evi.name}* — ${stars}${media.length ? ` · 📷 ${media.length}${albumRef}` : ""}${comment ? `\n${comment}` : ""}`);
+      summary.push(`*${esc3(evi.name)}* — ${stars}${media.length ? ` · 📷 ${media.length}${albumRef}` : ""}${comment ? `\n${esc3(comment)}` : ""}`);
     }
     if (summary.length) {
       const who = b.name || b.contact_name || "аноним";
-      await slackNotify(`Новый отзыв (общая форма, ${processed} соб.) — ${who}`, [
+      await slackNotify(`Новый отзыв (общая форма, ${processed} соб.) — ${esc3(who)}`, [
         { type: "header", text: { type: "plain_text", text: `Новый отзыв — общая форма недели (${processed} соб.)`.slice(0, 150), emoji: true } },
         { type: "section", text: { type: "mrkdwn", text: summary.join("\n\n").slice(0, 2900) } },
       ]);
@@ -658,9 +666,9 @@ export default async function handler(req, res) {
       leadPhotoLine,
     ].filter(Boolean).join("\n");
     await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
-      { i: String(d.create_item.id), t: body });
-    await slackNotify(`Отзыв ведущего — ${ev?.name || "событие"}`,
-      slackBlocks(`Отзыв ведущего — ${ev?.name || "событие"}`, ev, body, d.create_item.id));
+      { i: String(d.create_item.id), t: esc3(body) });
+    await slackNotify(`Отзыв ведущего — ${esc3(ev?.name || "событие")}`,
+      slackBlocks(`Отзыв ведущего — ${ev?.name || "событие"}`, ev, esc3(body), d.create_item.id));
     return res.end(JSON.stringify({ ok: true, rescue }));
   }
 
@@ -678,9 +686,10 @@ export default async function handler(req, res) {
   if (lo.labels.length) cv[F.discomfort] = { labels: lo.labels.filter((l) => CANON.discomfort.includes(l)) };
   if (b.moment) cv[F.moment] = { text: String(b.moment).slice(0, 4000) };
   if (Array.isArray(b.why_come) && b.why_come.length) cv[F.whyCome] = { text: b.why_come.join("; ").slice(0, 4000) };
-  if (b.consent) cv[F.consent] = { labels: [b.consent] };
+  if (consentLabel(b.consent)) cv[F.consent] = { labels: [consentLabel(b.consent)] };
   if (b.name) cv[F.quoteName] = String(b.name).slice(0, 120);
-  if (b.donate) cv[F.donate] = { labels: [b.donate] };
+  // F.donate: no page sends a donate answer any more, and a label column takes only known labels, so the
+  // column is never written from the request (an answer, if one comes, stays in the update text below).
   if (ev?.custom) cv[F.customQ] = ev.custom.slice(0, 250);
   if (b.custom_a) cv[F.customA] = { text: String(b.custom_a).slice(0, 4000) };
 
@@ -734,15 +743,15 @@ export default async function handler(req, res) {
     `Язык формы: ${b.lang || "ru"}`,
   ].filter(Boolean);
   await monday(`mutation ($i: ID!, $t: String!) { create_update(item_id:$i, body:$t){id} }`,
-    { i: String(itemId), t: lines.join("\n") });
+    { i: String(itemId), t: esc3(lines.join("\n")) });
 
   const stars = b.rating >= 1 && b.rating <= 5 ? "★".repeat(b.rating) + "☆".repeat(5 - b.rating) : "без оценки";
   const header = `${updated ? "Обновлённый отзыв" : "Новый отзыв"} — ${ev?.name || "событие"}`;
   // Контакты и демография — только на monday: в Slack карточка идёт без строк
   // «Связь» (почта, телефон) и «В стране | Возраст».
   const slackSafe = lines.filter((l) => !/^(Связь|В стране):/.test(l));
-  await slackNotify(`${header} (${stars})`,
-    slackBlocks(`${header}`, ev, `*${stars}*\n${slackSafe.join("\n")}`, itemId),
+  await slackNotify(`${esc3(header)} (${stars})`,
+    slackBlocks(`${header}`, ev, `*${stars}*\n${esc3(slackSafe.join("\n"))}`, itemId),
     await eventThread(ev));
 
   await sendCopy(b, rKey ? rKey.split(":")[1] : null, ev?.name || (b.lang === "en" ? "event" : "событие"))
