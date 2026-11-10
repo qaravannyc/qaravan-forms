@@ -72,6 +72,9 @@ test("a submitted form writes every country to the board, the update and the tea
     countries: [{ code: "RU", why: "Родился и вырос там" }, { code: "KZ", why: "citizenship" }], claim: { gay: true }, noAttorney: true,
     consent: { truth: true, share: true, contact: true } };
   const copy = [{ q: "Which countries could you be deported to?", a: "Russia: Родился и вырос там\nKazakhstan: citizenship" }, { q: "Email", a: "ivan@example.org" }];
+  // the personal link reads the countries of a draft back (a draft without the email: no link email here)
+  await post({ rid, mode: "draft", lang: "en", step: 5, log: [], a: { ...a, email: "" } });
+  assert.deepEqual((await get(rid)).a.countries, [{ code: "RU", why: "Родился и вырос там" }, { code: "KZ", why: "citizenship" }]);
   const r = await post({ rid, mode: "submit", lang: "en", step: 18, progress: 100, log: [], a, copy });
   assert.equal(r.statusCode, 200);
   assert.equal(S.cv[C.country], "Russia (Родился и вырос там); Kazakhstan (citizenship)");
@@ -85,8 +88,8 @@ test("a submitted form writes every country to the board, the update and the tea
   assert.ok(copyMail, "copy of the answers sent");
   assert.match(html(copyMail), /Which countries could you be deported to\?/);
   assert.match(html(copyMail), /Russia: Родился и вырос там<br>Kazakhstan: citizenship/);
-  // the personal link reads the countries back
-  assert.deepEqual((await get(rid)).a.countries, [{ code: "RU", why: "Родился и вырос там" }, { code: "KZ", why: "citizenship" }]);
+  // once sent, the personal link gives back only that it was sent (audit D2), never the answers
+  assert.deepEqual(await get(rid), { found: true, submitted: true });
 });
 
 test("one country reads as «Country of removal»", async () => {

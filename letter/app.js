@@ -81,6 +81,10 @@ const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xx
 let S = { view: "welcome", step: 0, langOpen: false, filter: "", a: A0(), errs: {}, log: [], rid: uuid(), savedAt: null, startedAt: 0, linkNotice: null, submitted: false, calView: null, saveState: "" };
 let saved = null;
 try { saved = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
+// The device keeps answers only while they are needed: an unsent draft untouched for 8 weeks is dropped, and
+// a sent letter keeps only its id and that it was sent (records saved before this rule are trimmed now).
+if (saved && typeof saved === "object" && !saved.submitted && !(Date.now() - (+saved.savedAt || 0) < 56 * 864e5)) { saved = null; try { localStorage.removeItem(KEY); } catch (e) {} }
+if (saved && typeof saved === "object" && saved.submitted && (saved.a || saved.log)) { saved = { rid: saved.rid, lang: saved.lang, savedAt: saved.savedAt, submitted: true }; try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {} }
 if (saved && typeof saved === "object") {
   S.a = upgrade(Object.assign(A0(), saved.a || {}));
   S.log = Array.isArray(saved.log) ? saved.log : [];
@@ -94,7 +98,9 @@ if (!saved && urlLang && LANGS.some((l) => l[0] === urlLang)) lang = urlLang;
 
 function persist() {
   const savedAt = Date.now();
-  try { localStorage.setItem(KEY, JSON.stringify({ rid: S.rid, a: S.a, step: S.step, view: S.view, log: S.log, lang, savedAt, startedAt: S.startedAt, submitted: S.submitted })); } catch (e) {}
+  const rec = S.submitted ? { rid: S.rid, lang, savedAt, submitted: true } // sent: no answers stay on the device
+    : { rid: S.rid, a: S.a, step: S.step, view: S.view, log: S.log, lang, savedAt, startedAt: S.startedAt, submitted: false };
+  try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {}
   S.savedAt = savedAt;
   return savedAt;
 }
@@ -131,8 +137,10 @@ async function save(mode) {
   let out = null;
   try {
     const r = await fetch("/api/letter", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload(mode)) });
-    if (!r.ok) throw new Error("http " + r.status);
-    out = await r.json().catch(() => ({ ok: true }));
+    // 409: this letter was already sent (from here or from its link on another device): nothing more to save
+    if (r.status === 409) { S.submitted = true; dirty = false; persist(); out = { ok: true, sent: true }; }
+    else if (!r.ok) throw new Error("http " + r.status);
+    else out = await r.json().catch(() => ({ ok: true }));
     setSaveState("");
   } catch (e) { dirty = true; setSaveState("local"); }
   finally {
@@ -350,7 +358,7 @@ function renderSavedScreen() {
 }
 function renderDone() {
   const a = S.a, name = a.firstName || t("friend");
-  return '<div class="stack fade"><div class="eyebrow green">' + t("d_eyebrow") + '</div><h1 class="big">' + esc(t("d_title", { name })) + "</h1><p>" + esc(t("d_body", { email: a.email, phone: a.phone ? t("d_or_call", { phone: a.phone }) : "" })) + "</p>" +
+  return '<div class="stack fade"><div class="eyebrow green">' + t("d_eyebrow") + '</div><h1 class="big">' + esc(t("d_title", { name })) + "</h1>" + (a.email ? "<p>" + esc(t("d_body", { email: a.email, phone: a.phone ? t("d_or_call", { phone: a.phone }) : "" })) + "</p>" : "") +
     '<p class="luck">' + t("d_luck") + '</p><p class="small">' + t("d_close") + "</p>" +
     // One browser can send many forms: a volunteer may fill them in for several people.
     '<div class="divider stack" style="gap:12px"><p class="small">' + t("d_new_hint") + '</p><button type="button" class="btn outline md" data-act="newForm">' + svgPlus + "<span>" + t("d_new") + "</span></button></div>" + renderTrBlock() + "</div>";

@@ -7,7 +7,8 @@
 //                   Letter Status → Answers received, a readable update is posted.
 //   mode "feedback" — "Spotted a translation problem?": text goes to the row's Translation feedback column.
 // GET ?rid=… — the draft for the personal resume link (answers, step, language),
-//   or {submitted:true} once it was sent.
+//   or only {found:true, submitted:true} once it was sent: the answers never go back out after that.
+//   A submitted letter takes no more drafts or submissions (409); translation feedback still goes in.
 // Everything lives in this one function: Vercel's Hobby plan allows at most 12
 // serverless functions per deployment and the repository already has 11.
 //
@@ -307,7 +308,8 @@ export default async function handler(req, res) {
       const row = await findByRid(rid);
       if (!row || !row.raw) return res.end('{"found":false}');
       const r = row.raw;
-      return res.end(JSON.stringify({ found: true, submitted: !!r.submitted, a: r.a || {}, step: r.step || 0, lang: langOf(r.lang), startedAt: r.startedAt || 0, emailSent: !!r.emailSent }));
+      if (r.submitted) return res.end('{"found":true,"submitted":true}');
+      return res.end(JSON.stringify({ found: true, submitted: false, a: r.a || {}, step: r.step || 0, lang: langOf(r.lang), startedAt: r.startedAt || 0, emailSent: !!r.emailSent }));
     } catch (e) { console.error("letter draft read failed:", e.message); res.statusCode = 502; return res.end("{}"); }
   }
 
@@ -344,6 +346,9 @@ export default async function handler(req, res) {
     const existing = await findByRid(rid);
     const prev = existing && existing.raw ? existing.raw : {};
     const wasSubmitted = !!prev.submitted;
+    // Once sent, a letter is closed: the resume link must not let anyone overwrite or resend it (the team
+    // changes it with the person). The page already stops saving after its own submit.
+    if (wasSubmitted) { res.statusCode = 409; return res.end('{"ok":false,"error":"submitted"}'); }
     const startedAt = Number(b.startedAt) || Number(prev.startedAt) || Date.now();
     const meta = {
       rid, mode, lang: langOf(b.lang), log, startedAt,
