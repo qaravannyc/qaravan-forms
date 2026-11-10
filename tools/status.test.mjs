@@ -19,7 +19,7 @@ const SETTINGS = JSON.stringify({ labels: { 0: "Contacted", 1: "Joined", 4: "Int
   labels_positions_v2: { 0: 1, 1: 3, 4: 2, 7: 0, 17: 4, 9: 5 }, deactivated_labels: [9] });
 function fake() {
   const s = {
-    rows: { "13165851018": { id: "13165851018", name: "Stanislav", status: "New", email: "goldenstas.ua@gmail.com", date: "2026-09-29 18:07" } },
+    rows: { "10000000001": { id: "10000000001", name: "Sasha", status: "New", email: "sasha@example.org", date: "2026-09-01 12:00" } },
     set: [], notes: [],
     async load(group, id) { return { item: s.rows[id] ? { ...s.rows[id] } : null, labels: S.labelsOf(SETTINGS) }; },
     async setStatus(group, id, label) { s.set.push([group, id, label]); s.rows[id].status = label; },
@@ -28,7 +28,7 @@ function fake() {
   return s;
 }
 const NOW = new Date("2026-09-30T16:00:00Z");
-const key = (item = "13165851018", group = "gina", exp = NOW.getTime() + 86400000) => M.signToken({ item, group, exp, kind: "st" });
+const key = (item = "10000000001", group = "gina", exp = NOW.getTime() + 86400000) => M.signToken({ item, group, exp, kind: "st" });
 
 async function call(method, url, body) {
   const chunks = body === undefined ? [] : [Buffer.from(typeof body === "string" ? body : JSON.stringify(body))];
@@ -47,37 +47,37 @@ test("labels: the board's own statuses in monday's order, without switched-off o
 
 test("key: a year long, only for the status page and only for its row", async () => {
   {
-    const url = S.statusUrl("13165851018", "gina", NOW);
+    const url = S.statusUrl("10000000001", "gina", NOW);
     assert.match(url, /^https:\/\/feedback\.qaravan\.org\/support\/status\?t=[\w-]+\.[\w-]+$/);
     const t = new URL(url).searchParams.get("t");
-    assert.deepEqual(M.verifyToken(t, NOW.getTime() + 364 * 86400000, process.env, "st"), { item: "13165851018", group: "gina" });
+    assert.deepEqual(M.verifyToken(t, NOW.getTime() + 364 * 86400000, process.env, "st"), { item: "10000000001", group: "gina" });
     assert.deepEqual(M.verifyToken(t, NOW.getTime() + 366 * 86400000, process.env, "st"), { error: "expired" });
     assert.deepEqual(M.verifyToken(t, NOW.getTime()), { error: "bad" }); // страницу отправки письма не открывает
     assert.deepEqual(M.verifyToken(t, NOW.getTime(), process.env, "att"), { error: "bad" }); // и отметки пришедших тоже
   }
   S.setStore(fake());
-  assert.deepEqual(await S.statusData(M.signToken({ item: "13165851018", group: "gina", exp: NOW.getTime() + 86400000, kind: "att" }), NOW), { error: "bad" });
-  assert.deepEqual(await S.statusData(key("13165851018", "simon"), NOW), { error: "bad" });
+  assert.deepEqual(await S.statusData(M.signToken({ item: "10000000001", group: "gina", exp: NOW.getTime() + 86400000, kind: "att" }), NOW), { error: "bad" });
+  assert.deepEqual(await S.statusData(key("10000000001", "simon"), NOW), { error: "bad" });
   assert.deepEqual(await S.statusData(key("999"), NOW), { error: "gone" });
 });
 
 test("page: name, email, date, the current status and every status with its meaning", async () => {
   S.setStore(fake());
   const d = await S.statusData(key(), NOW);
-  assert.equal(d.name, "Stanislav");
-  assert.equal(d.email, "goldenstas.ua@gmail.com");
-  assert.equal(d.date, "2026-09-29");
+  assert.equal(d.name, "Sasha");
+  assert.equal(d.email, "sasha@example.org");
+  assert.equal(d.date, "2026-09-01");
   assert.equal(d.status, "New");
   assert.deepEqual(d.options.map((o) => o.label), ["New", "Contacted", "Intro call done", "Joined", "Not now"]);
   assert.match(d.options.find((o) => o.label === "Joined").hint, /получает письма со ссылкой на встречу/);
-  assert.equal(d.url, "https://qaravan.monday.com/boards/18433061986/pulses/13165851018");
+  assert.equal(d.url, "https://qaravan.monday.com/boards/18433061986/pulses/10000000001");
 });
 
 test("save: the chosen status goes to the board with an update; the same one writes nothing; others refused", async () => {
   const s = fake(); S.setStore(s);
   const r = await S.saveStatus(key(), { status: "Joined" }, NOW);
   assert.deepEqual([r.status, r.label, r.was, r.changed], [200, "Joined", "New", true]);
-  assert.deepEqual(s.set, [["gina", "13165851018", "Joined"]]);
+  assert.deepEqual(s.set, [["gina", "10000000001", "Joined"]]);
   assert.match(s.notes[0].text, /^Статус: New → Joined\. По кнопке «Изменить статус» из письма о новой анкете\.$/);
   const same = await S.saveStatus(key(), { status: "Joined" }, NOW);
   assert.equal(same.changed, false); assert.equal(s.set.length, 1); assert.equal(s.notes.length, 1);
@@ -90,12 +90,12 @@ test("save: the chosen status goes to the board with an update; the same one wri
 
 test("routes: /api/status through the survey function", async () => {
   const s = fake(); S.setStore(s);
-  const t = M.signToken({ item: "13165851018", group: "gina", exp: Date.now() + 86400000, kind: "st" });
+  const t = M.signToken({ item: "10000000001", group: "gina", exp: Date.now() + 86400000, kind: "st" });
   const g = await call("GET", `/api/survey?form=status&t=${t}`);
   assert.equal(g.status, 200); assert.equal(g.json.status, "New");
   assert.equal((await call("GET", "/api/survey?form=status&t=bad")).status, 403);
   const p = await call("POST", "/api/survey?form=status", { t, status: "Contacted" });
-  assert.equal(p.status, 200); assert.equal(s.rows["13165851018"].status, "Contacted");
+  assert.equal(p.status, 200); assert.equal(s.rows["10000000001"].status, "Contacted");
   assert.equal((await call("POST", "/api/survey?form=status", "{x")).status, 400);
   // ссылка для старой анкеты — только с секретом
   process.env.CRON_SECRET = "cron";
