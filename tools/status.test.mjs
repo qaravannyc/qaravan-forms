@@ -30,9 +30,9 @@ function fake() {
 const NOW = new Date("2026-09-30T16:00:00Z");
 const key = (item = "10000000001", group = "gina", exp = NOW.getTime() + 86400000) => M.signToken({ item, group, exp, kind: "st" });
 
-async function call(method, url, body) {
+async function call(method, url, body, headers = {}) {
   const chunks = body === undefined ? [] : [Buffer.from(typeof body === "string" ? body : JSON.stringify(body))];
-  const req = { method, url, headers: {}, async *[Symbol.asyncIterator]() { yield* chunks; } };
+  const req = { method, url, headers, async *[Symbol.asyncIterator]() { yield* chunks; } };
   const res = { statusCode: 200, body: "", setHeader() {}, end(b) { this.body = b || ""; } };
   await survey(req, res);
   return { status: res.statusCode, json: res.body ? JSON.parse(res.body) : null };
@@ -99,13 +99,16 @@ test("routes: /api/status through the survey function", async () => {
   assert.equal((await call("POST", "/api/survey?form=status", "{x")).status, 400);
   // ссылка для старой анкеты — только с секретом
   process.env.CRON_SECRET = "cron";
-  assert.equal((await call("GET", "/api/survey?form=status&key=nope&item=42")).status, 401);
-  assert.equal((await call("GET", "/api/survey?form=status&key=cron&item=42&group=simon")).status, 400);
-  const l = await call("GET", "/api/survey?form=status&key=cron&item=42");
+  const auth = { authorization: "Bearer cron" };
+  assert.equal((await call("GET", "/api/survey?form=status&item=42", undefined, { authorization: "Bearer nope" })).status, 401);
+  assert.equal((await call("GET", "/api/survey?form=status&key=cron&item=42")).status, 401); // the secret in the address is no longer taken
+  assert.equal((await call("GET", "/api/survey?form=status&item=42&group=simon", undefined, auth)).status, 400);
+  const l = await call("GET", "/api/survey?form=status&item=42", undefined, auth);
   assert.equal(l.status, 200);
   assert.deepEqual(M.verifyToken(new URL(l.json.url).searchParams.get("t"), Date.now(), process.env, "st"), { item: "42", group: "gina" });
   delete process.env.CRON_SECRET;
   assert.equal((await call("GET", "/api/survey?form=status&key=&item=42")).status, 401); // без секрета в Vercel — никогда
+  assert.equal((await call("GET", "/api/survey?form=status&item=42", undefined, { authorization: "Bearer " })).status, 401);
 });
 
 test("team email: Gina's has «Изменить статус» leading to the status page and monday as a link; Simon's keeps the monday button", () => {

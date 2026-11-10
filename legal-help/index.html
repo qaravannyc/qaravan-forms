@@ -7,7 +7,7 @@
 (function () {
   if (location.hostname !== "feedback.qaravan.org") return;
   var q = new URLSearchParams(location.search);
-  try { if (localStorage.getItem("qaravan.legal-help.v1")) return; } catch (e) {}
+  try { var d = JSON.parse(localStorage.getItem("qaravan.legal-help.v1") || "null"); if (d && (!d.at || Date.now() - d.at < 4838400000)) return; localStorage.removeItem("qaravan.legal-help.v1"); } catch (e) {} // a draft older than 8 weeks doesn't count
   var lang = q.get("lang") || "ru";
   location.replace("https://www.qaravan.org" + (lang === "en" ? "" : "/ru") + "/forms/legal-needs/");
 })();
@@ -136,6 +136,16 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 // с картой L в lib/legal-help.mjs. Вопросы с show() видны только при условии,
 // скрытые ответы не отправляются.
 const DRAFT_KEY = "qaravan.legal-help.v1";
+// A draft not touched for 8 weeks is dropped, so answers don't stay on a shared device for ever.
+// A draft saved before this rule (no `at`) gets its 8 weeks from the first visit after it.
+const DRAFT_TTL = 56 * 864e5;
+function draftFresh(key, d) {
+  if (!d || typeof d !== "object") return false;
+  if (!(d.at > 0)) { d.at = Date.now(); try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) {} return true; }
+  if (Date.now() - d.at < DRAFT_TTL) return true;
+  try { localStorage.removeItem(key); } catch (e) {}
+  return false;
+}
 const noLawyer = (s) => s.lawyer !== "free" && s.lawyer !== "paid";
 
 // type: one (один ответ), many (несколько), money, text. cols — сетка коротких ответов.
@@ -376,12 +386,12 @@ const seq = () => ORDER.filter(visible); // вопросы, которые че�
 
 // ===== черновик =====
 function saveDraft() {
-  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ lang, cur, S, OTHERS, RID })); } catch (e) {}
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ lang, cur, S, OTHERS, RID, at: Date.now() })); } catch (e) {}
 }
 function loadDraft() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) {}
-  if (!d || typeof d !== "object") return;
+  if (!draftFresh(DRAFT_KEY, d)) return;
   if (d.lang === "en" || d.lang === "ru") lang = d.lang;
   if (d.S && typeof d.S === "object") for (const k of Object.keys(S)) {
     const v = d.S[k];

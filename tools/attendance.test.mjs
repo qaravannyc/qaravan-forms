@@ -84,9 +84,9 @@ function attendanceFake() {
 const AFTER = at("2026-10-01T00:55:00Z"); // через 10 минут после конца встречи 900
 const attToken = (item = "900", group = "gina", exp = START.getTime() + 14 * 86400000) => M.signToken({ item, group, exp, kind: "att" });
 
-async function call(method, url, body) {
+async function call(method, url, body, headers = {}) {
   const chunks = body === undefined ? [] : [Buffer.from(typeof body === "string" ? body : JSON.stringify(body))];
-  const req = { method, url, headers: {}, async *[Symbol.asyncIterator]() { yield* chunks; } };
+  const req = { method, url, headers, async *[Symbol.asyncIterator]() { yield* chunks; } };
   const res = { statusCode: 200, headers: {}, body: "", setHeader(k, v) { this.headers[k.toLowerCase()] = v; }, end(b) { this.body = b || ""; } };
   await survey(req, res);
   return { status: res.statusCode, json: res.body ? JSON.parse(res.body) : null };
@@ -279,7 +279,9 @@ test("routes: /api/attendance through the survey function; /api/meeting-attendan
   assert.ok(Array.isArray(run.json.asked));
   assert.doesNotMatch(JSON.stringify(run.json), /support\/attendance|"to"/); // без ссылок и адресов
   assert.equal((await call("GET", "/api/survey?form=meeting-attendance&item=900&dry=1")).status, 401);
-  const dry = await call("GET", "/api/survey?form=meeting-attendance&item=900&dry=1&key=cron");
+  assert.equal((await call("GET", "/api/survey?form=meeting-attendance&item=900&dry=1&key=cron")).status, 401); // the secret in the address is no longer taken
+  const auth = { authorization: "Bearer cron" };
+  const dry = await call("GET", "/api/survey?form=meeting-attendance&item=900&dry=1", undefined, auth);
   assert.equal(dry.status, 200); assert.match(dry.json.asked[0].url, /\/support\/attendance\?t=/);
-  assert.equal((await call("GET", "/api/survey?form=meeting-attendance&to=x@example.com&key=cron")).status, 400); // to — только с item
+  assert.equal((await call("GET", "/api/survey?form=meeting-attendance&to=x@example.com", undefined, auth)).status, 400); // to — только с item
 });

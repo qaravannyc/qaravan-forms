@@ -1,10 +1,11 @@
 // GET /api/didnt-attend?i=<eventId>&a=<attendeeId>&s=<signature>
-// The "I didn't attend" link from survey emails. Records the fact on the
+// The "I didn't attend" link from survey emails. The GET only asks (mail scanners open every link
+// in a message); its button POSTs the same signed address, and the POST records it. Records the fact on the
 // Отзывы board under the person's respondent key, so a later real submission
 // through their personal link lands in the same row. The link is signed with
 // UNSUB_SECRET; nobody can mark другого человека by guessing ids.
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { statusPage as page } from "../lib/status-page.mjs";
+import { statusPage as page, confirmPage } from "../lib/status-page.mjs";
 
 const MONDAY = "https://api.monday.com/v2";
 const EVENTS_BOARD = "4774572020";
@@ -41,6 +42,11 @@ export default async function handler(req, res) {
   if (!ok) {
     res.statusCode = 400;
     return res.end(page("Ссылка не сработала", "Похоже, ссылка повреждена. Напишите нам на info@qaravan.org.<br><br>This link didn't work. Email info@qaravan.org."));
+  }
+  if (req.method !== "POST") {
+    res.setHeader("Cache-Control", "no-store");
+    return res.end(confirmPage("Вас не было на событии?", "Нажмите кнопку, и мы отметим, что вас не было.<br><br>Didn't make it to the event? Press the button and we'll note it.",
+      `/api/didnt-attend?i=${i}&a=${a}&s=${sig}`, "Меня там не было / I wasn’t there"));
   }
 
   try {

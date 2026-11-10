@@ -8,6 +8,7 @@
 (function () {
   if (location.hostname !== "feedback.qaravan.org") return;
   var d = null; try { d = JSON.parse(localStorage.getItem("qaravan.club.v1") || "null"); } catch (e) {}
+  if (d && d.at && Date.now() - d.at >= 4838400000) { try { localStorage.removeItem("qaravan.club.v1"); } catch (e) {} d = null; } // a draft older than 8 weeks doesn't count
   if (d && d.view !== "done" && (d.name || d.email || d.key || (d.order && d.order.length))) return;
   var lang = new URLSearchParams(location.search).get("lang") || (d && d.lang) || "ru";   // the club opened in Russian here unless told otherwise
   location.replace("https://www.qaravan.org" + (lang === "ru" ? "/ru" : "") + "/forms/club/");
@@ -247,6 +248,16 @@ dialog[open]{overflow:visible; margin-top:max(64px,calc(50vh - 30vw))}
 // Сервер — lib/club.mjs через /api/club. Коды ответов должны совпадать с картой L там.
 const API = "/api/club";
 const DRAFT = "qaravan.club.v1";
+// A draft not touched for 8 weeks is dropped, so answers don't stay on a shared device for ever.
+// A draft saved before this rule (no `at`) gets its 8 weeks from the first visit after it.
+const DRAFT_TTL = 56 * 864e5;
+function draftFresh(key, d) {
+  if (!d || typeof d !== "object") return false;
+  if (!(d.at > 0)) { d.at = Date.now(); try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) {} return true; }
+  if (Date.now() - d.at < DRAFT_TTL) return true;
+  try { localStorage.removeItem(key); } catch (e) {}
+  return false;
+}
 
 // ===== все тексты — редактируются здесь =====
 const STRINGS = {
@@ -374,8 +385,8 @@ const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); for (const k of kids) if (k != null) e.append(k); return e; };
 
 let S = { lang: "ru", step: 1, name: "", email: "", order: [], added: [], topics: [], topicOther: "", talk: "", helps: [], promise: false, key: "", view: "join", tier: 10, reasons: [], xOther: "", xComment: "", state: "", shuffle: [] };
-try { Object.assign(S, JSON.parse(localStorage.getItem(DRAFT) || "{}")); } catch {}
-const save = () => { try { localStorage.setItem(DRAFT, JSON.stringify(S)); } catch {} };
+try { const d = JSON.parse(localStorage.getItem(DRAFT) || "null"); if (draftFresh(DRAFT, d)) Object.assign(S, d); } catch {}
+const save = () => { S.at = Date.now(); try { localStorage.setItem(DRAFT, JSON.stringify(S)); } catch {} };
 const t = (k) => STRINGS[S.lang][k];
 
 let FILMS = [], LINKS = {}, TMDB_ON = false;

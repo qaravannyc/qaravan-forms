@@ -9,6 +9,7 @@
   var q = new URLSearchParams(location.search);
   if (q.get("r")) return;
   var d = null; try { d = JSON.parse(localStorage.getItem("qsurvey26.v1") || "null"); } catch (e) {}
+  if (d && d.at && Date.now() - d.at >= 4838400000) { try { localStorage.removeItem("qsurvey26.v1"); } catch (e) {} d = null; } // a draft older than 8 weeks doesn't count
   if (d && !d.done && d.A && Object.keys(d.A).length) return;
   var lang = (d && d.lang) || q.get("lang") || "ru";
   if (lang !== "ru" && lang !== "en") return;
@@ -754,6 +755,16 @@ const VISIBLE = {
 
 // ===== состояние + локальное сохранение =====
 const LSKEY = "qsurvey26.v1";
+// A draft not touched for 8 weeks is dropped, so answers don't stay on a shared device for ever.
+// A draft saved before this rule (no `at`) gets its 8 weeks from the first visit after it.
+const DRAFT_TTL = 56 * 864e5;
+function draftFresh(key, d) {
+  if (!d || typeof d !== "object") return false;
+  if (!(d.at > 0)) { d.at = Date.now(); try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) {} return true; }
+  if (Date.now() - d.at < DRAFT_TTL) return true;
+  try { localStorage.removeItem(key); } catch (e) {}
+  return false;
+}
 const $ = id => document.getElementById(id);
 const uuid = () => (crypto.randomUUID ? crypto.randomUUID() :
   "xxxx-xxxx-4xxx-yxxx-xxxx".replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==="x"?r:(r&0x3|0x8)).toString(16); }) + "-" + Date.now().toString(16));
@@ -761,7 +772,7 @@ const uuid = () => (crypto.randomUUID ? crypto.randomUUID() :
 let S;
 function freshState(){ return { rid: uuid(), A: {}, step: 0, maxSection: 0, startedAt: 0, done: false, lang: "" }; }
 function load(){
-  try { const d = JSON.parse(localStorage.getItem(LSKEY) || "null"); if (d && d.rid && d.A) return d; } catch (e) {}
+  try { const d = JSON.parse(localStorage.getItem(LSKEY) || "null"); if (d && d.rid && d.A && draftFresh(LSKEY, d)) return d; } catch (e) {}
   return null;
 }
 S = load() || freshState();
@@ -771,7 +782,7 @@ let lang = LANGS.includes(S.lang) ? S.lang : (LANGS.includes(urlLang) ? urlLang 
 const STR = () => STRINGS[lang];
 const tx = v => Array.isArray(v) ? (v[LX[lang]] ?? v[0]) : v;               // текст вопроса/подсказки
 const optLabel = o => o[1 + LX[lang]] || o[1];                               // подпись варианта
-function persist(){ S.lang = lang; try { localStorage.setItem(LSKEY, JSON.stringify(S)); } catch (e) {} }
+function persist(){ S.lang = lang; S.at = Date.now(); try { localStorage.setItem(LSKEY, JSON.stringify(S)); } catch (e) {} }
 const RID_RX = /^[0-9a-zA-Z-]{12,64}$/;
 const resumeURL = () => location.origin + location.pathname.replace(/\/index\.html$/, "") + "?r=" + S.rid;
 

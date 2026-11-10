@@ -1,4 +1,6 @@
 // GET /api/unsubscribe?e=<base64url email>&s=<signature>
+// The GET only asks (mail scanners open every link in a message); its button POSTs the same signed
+// address, and the POST (also a mail app's one-click unsubscribe) registers it.
 // Registers an unsubscribe: marks the person "Unsubscribed" in the «Рассылка»
 // column on the Community Members board (creates the row if the email is not
 // there yet), so the send robot never emails them again.
@@ -6,7 +8,7 @@
 // UNSUB_SECRET (set in Vercel and in GitHub Actions) — so nobody can
 // unsubscribe someone else by guessing their address.
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { statusPage as page } from "../lib/status-page.mjs";
+import { statusPage as page, confirmPage } from "../lib/status-page.mjs";
 
 const MONDAY = "https://api.monday.com/v2";
 const ATTENDEES_BOARD = "18425190164";
@@ -41,6 +43,11 @@ export default async function handler(req, res) {
   if (!ok) {
     res.statusCode = 400;
     return res.end(page("Ссылка не сработала", "Похоже, ссылка повреждена или устарела. Напишите нам на info@qaravan.org — отпишем вручную.<br><br>This link didn't work. Email info@qaravan.org and we'll unsubscribe you by hand."));
+  }
+  if (req.method !== "POST") {
+    res.setHeader("Cache-Control", "no-store");
+    return res.end(confirmPage("Отписаться от писем?", "Нажмите кнопку, и письма с опросами больше не придут.<br><br>Unsubscribe from survey emails? Press the button.",
+      `/api/unsubscribe?e=${encodeURIComponent(u.searchParams.get("e") || "")}&s=${sig}`, "Отписаться / Unsubscribe"));
   }
 
   try {

@@ -30,7 +30,7 @@ const RESPONDENT_COL = "text_mm63r903"; // eventId:attendeeId, on the feedback b
 // Каждый отдельный отзыв, «не был(а)» и фото-квитанция уходят ОТВЕТОМ в её
 // тред — канал видит одну строку на событие, а не карточку на каждый отклик.
 const THREAD_COL = "text_mm681056";
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { albumTitle } from "../lib/album.mjs";
 import { sendAnswersCopy, isEmail } from "../lib/answers-copy.mjs";
 
@@ -122,23 +122,25 @@ async function getEvent(id) {
 
 
 // ---------- personal token (?p=attendeeId.sig) ----------
-function respondentKey(eventId, p) {
+// Signatures are compared in constant time (both sides are 16 hex characters by the regex).
+const sameSig = (want, got) => want.length === got.length && timingSafeEqual(Buffer.from(want), Buffer.from(got));
+export function respondentKey(eventId, p) {
   const secret = process.env.UNSUB_SECRET;
   if (!secret || !p) return null;
   const m = String(p).match(/^(\d+)\.([0-9a-f]{16})$/);
   if (!m) return null;
   const want = createHmac("sha256", secret).update(`${eventId}:${m[1]}`).digest("hex").slice(0, 16);
-  return want === m[2] ? `${eventId}:${m[1]}` : null;
+  return sameSig(want, m[2]) ? `${eventId}:${m[1]}` : null;
 }
 
 // Personal token of the Sunday combined form: attendeeId.hmac16("multi:attendeeId")
-function multiAttendee(p) {
+export function multiAttendee(p) {
   const secret = process.env.UNSUB_SECRET;
   if (!secret || !p) return null;
   const m = String(p).match(/^(\d+)\.([0-9a-f]{16})$/);
   if (!m) return null;
   const want = createHmac("sha256", secret).update(`multi:${m[1]}`).digest("hex").slice(0, 16);
-  return want === m[2] ? m[1] : null;
+  return sameSig(want, m[2]) ? m[1] : null;
 }
 
 // ---------- копия ответов человеку (lib/answers-copy.mjs) ----------

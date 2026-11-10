@@ -230,6 +230,16 @@ const $ = (id) => document.getElementById(id);
 const GROUP = document.body.dataset.group;
 const FIELDS = FORMS[GROUP];
 const DRAFT_KEY = `qaravan.support.${GROUP}.v1`;
+// A draft not touched for 8 weeks is dropped, so answers don't stay on a shared device for ever.
+// A draft saved before this rule (no `at`) gets its 8 weeks from the first visit after it.
+const DRAFT_TTL = 56 * 864e5;
+function draftFresh(key, d) {
+  if (!d || typeof d !== "object") return false;
+  if (!(d.at > 0)) { d.at = Date.now(); try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) {} return true; }
+  if (Date.now() - d.at < DRAFT_TTL) return true;
+  try { localStorage.removeItem(key); } catch (e) {}
+  return false;
+}
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const params = new URLSearchParams(location.search);
 let lang = "ru", sending = false, tried = false;
@@ -262,12 +272,12 @@ const star = () => { const s = el("span", { className: "req", textContent: "*" }
 
 // ===== черновик: всё, что человек ввёл, переживает перезагрузку страницы =====
 function saveDraft() {
-  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ lang, A })); } catch (e) {}
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ lang, A, at: Date.now() })); } catch (e) {}
 }
 function loadDraft() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) {}
-  if (!d || typeof d !== "object" || !d.A || typeof d.A !== "object") return;
+  if (!draftFresh(DRAFT_KEY, d) || !d.A || typeof d.A !== "object") return;
   for (const [k, v] of Object.entries(d.A)) if (typeof v === "string" || typeof v === "boolean" || Array.isArray(v)) A[k] = v;
   if (d.lang === "en" || d.lang === "ru") lang = d.lang;
 }

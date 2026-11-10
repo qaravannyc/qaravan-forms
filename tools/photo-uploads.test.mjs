@@ -520,10 +520,9 @@ test('multi: the 50-file allowance applies independently to each event', async (
 // observable boundary, so this catches server-side truncation after the UI.
 async function submitToServer(body) {
   const source = readFileSync(new URL('../api/submit.mjs', import.meta.url), 'utf8')
-    .replace(/^import \{ createHmac \} from "node:crypto";$/m, '')
-    .replace(/^import \{ albumTitle \} from "\.\.\/lib\/album\.mjs";$/m, '')
-    .replace(/^import \{ sendAnswersCopy, isEmail \} from "\.\.\/lib\/answers-copy\.mjs";$/m, '')
-    .replace('export default async function handler', 'async function handler');
+    // every top-level import line goes and exports become plain declarations (the file runs as a script)
+    .replace(/^import [^\n]* from "[^"]+";$/gm, '')
+    .replace(/^export (?:default )?(async function|function|const)/gm, '$1');
   const batches = [];
   const context = vm.createContext({
     Buffer, URLSearchParams, process: { env: {} },
