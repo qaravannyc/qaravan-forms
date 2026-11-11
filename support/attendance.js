@@ -40,17 +40,20 @@ function loadDraft() {
 const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} };
 
 // ===== люди =====
-const ST = { New: "новая анкета", Contacted: "связались", "Intro call done": "знакомство прошло", Joined: "в группе", "Not now": "не сейчас" };
+// статусы доски — по-русски, как их назвала команда (2026-11-11); старые названия — на время переименования
+const ST = { New: "новая анкета", "Invited to meet": "написала письмо/предложение о встрече", "No reply": "не ответил на письмо",
+  "No-show": "не явился на встречу", Met: "встреча прошла", "Added to mailing": "добавлен в рассылку", "Not added to mailing": "не добавлен в рассылку",
+  Contacted: "написала письмо/предложение о встрече", "Intro call done": "встреча прошла", Joined: "добавлен в рассылку", "Not now": "не добавлен в рассылку" };
 // в сетке — коротко: у свёрнутых остальных — статус и сколько раз были
 function meta(p, s) {
   if (s.key !== "old") return "";
-  return [p.status ? `${p.status} — ${ST[p.status] || p.status}` : "", p.past ? `был(а) на встречах: ${p.past}` : ""].filter(Boolean).join(", ");
+  return [p.status ? ST[p.status] || p.status : "", p.past ? `был(а) на встречах: ${p.past}` : ""].filter(Boolean).join(", ");
 }
 // Список не двигается, пока ведущая ставит галочки: разделы и порядок (по имени) задаются один
 // раз при загрузке (support/roster.js). Сверху — участники группы, под ними новые анкеты с
 // меткой и уже отмеченные на этой встрече; остальные свёрнуты; добавленные вручную — в конце.
 const SECTIONS = [
-  { key: "member", title: "Участники группы" }, { key: "new", title: "Новые анкеты (New)", mark: "new" },
+  { key: "member", title: "Участники группы" }, { key: "new", title: "Новые анкеты", mark: "new" },
   { key: "marked", title: "Уже отмечены на этой встрече" }, { key: "old", title: "Остальные анкеты", fold: true },
   { key: "added", title: "Добавлены вручную" },
 ];
