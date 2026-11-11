@@ -69,7 +69,7 @@ test("page: name, email, date, the current status and every status with its mean
   assert.equal(d.date, "2026-09-01");
   assert.equal(d.status, "New");
   assert.deepEqual(d.options.map((o) => o.label), ["New", "Invited to meet", "No reply", "No-show", "Met", "Added to mailing", "Not added to mailing"]);
-  assert.deepEqual(d.options.map((o) => o.name), ["Новая анкета", "Написала письмо/предложение о встрече", "Не ответил на письмо", "Не явился на встречу", "Встреча прошла", "Добавлен в рассылку", "Не добавлен в рассылку"]);
+  assert.deepEqual(d.options.map((o) => o.name), ["Новая анкета", "Написали письмо/предложение о встрече", "Нет ответа на письмо", "Не было на встрече", "Встреча прошла", "В рассылке", "Не в рассылке"]);
   assert.match(d.options.find((o) => o.label === "Added to mailing").hint, /олучает письма со ссылкой на встречу/);
   assert.equal(d.url, "https://qaravan.monday.com/boards/18433061986/pulses/10000000001");
 });
@@ -79,7 +79,7 @@ test("save: the chosen status goes to the board with an update; the same one wri
   const r = await S.saveStatus(key(), { status: "Added to mailing" }, NOW);
   assert.deepEqual([r.status, r.label, r.was, r.changed], [200, "Added to mailing", "New", true]);
   assert.deepEqual(s.set, [["gina", "10000000001", "Added to mailing"]]);
-  assert.match(s.notes[0].text, /^Статус: Новая анкета → Добавлен в рассылку\. По кнопке «Изменить статус» из письма о новой анкете\.$/);
+  assert.match(s.notes[0].text, /^Статус: Новая анкета → В рассылке\. По кнопке «Изменить статус» из письма о новой анкете\.$/);
   const same = await S.saveStatus(key(), { status: "Added to mailing" }, NOW);
   assert.equal(same.changed, false); assert.equal(s.set.length, 1); assert.equal(s.notes.length, 1);
   assert.equal((await S.saveStatus(key(), { status: "Old label" }, NOW)).status, 400); // выключенный
@@ -122,7 +122,7 @@ test("team email: Gina's has «Изменить статус» leading to the st
   assert.ok(btn > html.indexOf(">Чего ждёт от группы<") && btn > html.indexOf(">Контакты<") && btn < html.indexOf("Письмо отправила анкета"));
   assert.ok(html.includes(`href="${statusUrl}"`));
   assert.match(html, /Статус сейчас — «Новая анкета»/);
-  assert.match(Mail.signupEmail(p, { itemUrl: "https://x/1", statusUrl, status: "Added to mailing", now: NOW }).html, /Статус сейчас — «Добавлен в рассылку»/); // пересылка старой анкеты
+  assert.match(Mail.signupEmail(p, { itemUrl: "https://x/1", statusUrl, status: "Added to mailing", now: NOW }).html, /Статус сейчас — «В рассылке»/); // пересылка старой анкеты
   const { p: ps } = SG.parseSignup({ group: "simon", lang: "ru", name: "Боря", email: "b@example.com", phone: "2125550123", format: "remote", city: "NYC" });
   const simon = Mail.signupEmail(ps, { itemUrl: "https://qaravan.monday.com/boards/5469799506/pulses/7", now: NOW }).html;
   assert.doesNotMatch(simon, /Изменить статус/);
