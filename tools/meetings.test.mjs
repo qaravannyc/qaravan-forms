@@ -85,7 +85,7 @@ test("page data: last meeting's link and text by default, one row per email, tic
   assert.equal(d.subject, "Еженедельная группа поддержки🏳️‍🌈");
   // страница показывает Joined, под ними New (d.show), остальных — Мария без статуса, Олег (Not now), Таня (Contacted) — сворачивает
   assert.deepEqual(d.show, ["New"]);
-  assert.deepEqual(d.people.map((p) => [p.email, p.checked, p.status]), [["alex@example.com", true, "Joined"], ["nina@example.com", false, "New"], ["maria@example.com", false, ""], ["tanya@example.com", false, "Contacted"], ["oleg@example.com", false, "Not now"]]);
+  assert.deepEqual(d.people.map((p) => [p.email, p.checked, p.status]), [["alex@example.com", true, "Added to mailing"], ["nina@example.com", false, "New"], ["maria@example.com", false, ""], ["tanya@example.com", false, "Contacted"], ["oleg@example.com", false, "Not now"]]);
   const none = fakeStore(); none.meetings["800"].mail = {}; none.meetings["800"].link = ""; M.setStore(none);
   const d2 = await M.pageData(token(), NOW);
   assert.equal(d2.link, "https://meet.google.com/tyu-nksn-hpd"); // постоянная ссылка Джины
@@ -129,12 +129,13 @@ test("send: one email, leader in To, everyone else in Bcc, replies to the leader
 });
 
 test("who gets the emails on the board: Gina — status Joined, Simon — the checkbox", async () => {
-  assert.equal(M.isOn("gina", { sg_status: { text: "Joined" } }), true);
-  for (const st of ["New", "Contacted", "Intro call done", "Not now", ""]) assert.equal(M.isOn("gina", { sg_status: { text: st } }), false);
+  assert.equal(M.isOn("gina", { sg_status: { text: "Added to mailing" } }), true);
+  assert.equal(M.isOn("gina", { sg_status: { text: "Joined" } }), true); // прежнее название того же статуса
+  for (const st of ["New", "Invited to meet", "No reply", "No-show", "Met", "Not added to mailing", "Contacted", "Intro call done", "Not now", ""]) assert.equal(M.isOn("gina", { sg_status: { text: st } }), false);
   assert.equal(M.isOn("simon", { mailing: { value: '{"checked":"true"}' } }), true);
   assert.equal(M.isOn("simon", { mailing: { value: null } }), false);
-  assert.deepEqual(M.mailingValue("gina", true), { sg_status: { label: "Joined" } });
-  assert.deepEqual(M.mailingValue("gina", false), { sg_status: { label: "Not now" } });
+  assert.deepEqual(M.mailingValue("gina", true), { sg_status: { label: "Added to mailing" } });
+  assert.deepEqual(M.mailingValue("gina", false), { sg_status: { label: "Not added to mailing" } });
   assert.deepEqual(M.mailingValue("simon", false), { mailing: null });
 
   // настоящий store против поддельного monday: что читается и что пишется на доску Джины
@@ -154,9 +155,9 @@ test("who gets the emails on the board: Gina — status Joined, Simon — the ch
     assert.deepEqual(rows.map((r) => [r.email, r.checked, r.status]), [["alex@example.com", true, "Joined"], ["maria@example.com", false, "New"]]);
     assert.doesNotMatch(calls[0].query, /mailing/);
     await M.mondayStore.setMailing("gina", [{ id: "1", checked: false }, { id: "2", checked: true }]);
-    assert.deepEqual([calls[1].variables.v0, calls[1].variables.v1].map((v) => JSON.parse(v)), [{ sg_status: { label: "Not now" } }, { sg_status: { label: "Joined" } }]);
+    assert.deepEqual([calls[1].variables.v0, calls[1].variables.v1].map((v) => JSON.parse(v)), [{ sg_status: { label: "Not added to mailing" } }, { sg_status: { label: "Added to mailing" } }]);
     await M.mondayStore.addPerson("gina", { name: "Новый", email: "new@example.com" });
-    assert.deepEqual(JSON.parse(calls[2].variables.v), { email: { email: "new@example.com", text: "new@example.com" }, sg_status: { label: "Joined" }, source: { label: "Added by hand" } });
+    assert.deepEqual(JSON.parse(calls[2].variables.v), { email: { email: "new@example.com", text: "new@example.com" }, sg_status: { label: "Added to mailing" }, source: { label: "Added by hand" } });
     await M.mondayStore.addPerson("simon", { name: "Новый", email: "new@example.com" });
     assert.deepEqual(JSON.parse(calls[3].variables.v), { email_2: { email: "new@example.com", text: "new@example.com" }, mailing: { checked: "true" } });
   } finally { globalThis.fetch = real; }
