@@ -120,12 +120,12 @@ test("ask: right after the meeting ends, once, to the leader and the team, each 
   assert.match(body, /Отметить, кто пришёл/);
   assert.match(body, /https:\/\/feedback\.qaravan\.org\/support\/attendance\?t=[\w-]+\.[\w-]+/);
   assert.match(body, /Среда, 30 сентября, 19:30–20:45 по/);
-  assert.match(body, /Такое же письмо со своей кнопкой получили Глеб, Анна и Алекс/);
+  assert.match(body, /Такое же письмо со своей кнопкой получили другие волонтёры-ведущие группы поддержки/);
   assert.doesNotMatch(gina, /^Bcc:/m);
   // у каждого своя кнопка: по ключу видно, кто отмечает
   const who = mails.map((m) => M.verifyToken(new URL(/https:\/\/feedback\.qaravan\.org\/support\/attendance\?t=[\w.-]+/.exec(decode(m))[0]).searchParams.get("t"), AFTER.getTime(), process.env, "att").who);
   assert.deepEqual(who, ["gina@rusalgbtq.org", "gleb@rusalgbtq.org", "anna@rusalgbtq.org", "alexbersenev@rusalgbtq.org"]);
-  assert.match(mails[1], /^To: gleb@rusalgbtq\.org/m); assert.match(decode(mails[1]), /получили Джина, Анна и Алекс/);
+  assert.match(mails[1], /^To: gleb@rusalgbtq\.org/m); assert.match(decode(mails[1]), /получили другие волонтёры-ведущие группы поддержки/);
   assert.deepEqual(Object.keys(s.meetings["900"].mail).sort(), ["attendanceAsked", "prompted"]); // прежние отметки на строке сохранились
   // второй прогон через 15 минут — уже спрашивали
   mails.length = 0;

@@ -155,7 +155,9 @@ $("f").addEventListener("submit", (ev) => {
 $("cancel").onclick = () => { $("confirm").hidden = true; $("send").hidden = false; $("send").focus(); };
 // «Джина, 30 сентября в 12:10 — 32 участникам»
 const sentBy = (x) => `${x.byName ? x.byName + ", " : ""}${fmtWhen(x.at)} — ${x.n} ${plural(x.n)}`;
-const copies = () => `Копия придёт на ${data.leaderEmail}${data.me && data.me !== data.leaderEmail ? ` и вам на ${data.me}` : ""}.`;
+// копии: ведущей (она в «Кому»), тому, кто отправляет, и тем, кому копия положена всегда (copyTo)
+const copyList = () => [...new Set([data.leaderEmail, data.me, ...(data.copyTo || [])].filter(Boolean).map((e) => e.toLowerCase()))];
+const copies = () => `Копия придёт на ${copyList().join(", ")}.`;
 $("go").onclick = async () => {
   if (sending) return;
   sending = true; $("go").disabled = true; $("go").textContent = "Отправляем…";
@@ -222,7 +224,7 @@ function renderSent() {
   document.title = `Письмо участникам: ${j.meeting.line}`;
   $("groupTitle").textContent = j.title;
   $("when").textContent = j.meeting.line;
-  $("bccHint").textContent = `Все получат одно письмо в скрытой копии и не увидят адреса друг друга. Копия придёт вам на ${j.leaderEmail}, ответы участников — тоже вам. ` +
+  $("bccHint").textContent = `Все получат одно письмо в скрытой копии и не увидят адреса друг друга. Копия придёт на ${copyList().join(", ")}, ответы участников — на ${j.leaderEmail}. ` +
     (j.member ? "Сверху участники группы (статус Joined), под ними новые анкеты (New), остальные анкеты свёрнуты. Галочка — это статус на доске: отметите человека — он станет Joined и будет получать письма и дальше; снимете — Not now."
       : "Галочки запоминаются до следующей встречи.");
   $("cancelNote").hidden = !j.meeting.cancelled;
