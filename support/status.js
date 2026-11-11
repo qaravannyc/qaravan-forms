@@ -18,7 +18,7 @@ function render() {
   for (const o of data.options) {
     const i = el("input", { type: "radio", name: "status", value: o.label, checked: o.label === data.status });
     const now = o.label === data.status ? el("span", { className: "now", textContent: "сейчас" }) : null;
-    wrap.append(el("label", {}, i, el("span", {}, el("span", { className: "st" }, o.label, now), o.hint ? el("span", { className: "ht", textContent: o.hint }) : null)));
+    wrap.append(el("label", {}, i, el("span", {}, el("span", { className: "st" }, o.name || o.label, now), o.hint ? el("span", { className: "ht", textContent: o.hint }) : null)));
   }
 }
 
@@ -36,9 +36,10 @@ $("f").addEventListener("submit", async (ev) => {
     if (!r.ok || !j.ok) throw new Error(j.error || "HTTP " + r.status);
     data.status = j.label;
     $("view").hidden = true; $("done").hidden = false;
-    $("doneT").textContent = j.changed ? `Статус: ${j.label}` : `Статус не изменился: ${j.label}`;
+    const nm = (l) => data.options.find((o) => o.label === l)?.name || l;
+    $("doneT").textContent = j.changed ? `Статус: ${nm(j.label)}` : `Статус не изменился: ${nm(j.label)}`;
     const hint = data.options.find((o) => o.label === j.label)?.hint;
-    $("doneP").textContent = (j.changed ? `Записали в monday: было ${j.was || "без статуса"}, стало ${j.label}.` : "В monday уже стоял этот статус.") + (hint ? ` ${hint}.` : "");
+    $("doneP").textContent = (j.changed ? `Записали в monday: было «${j.was ? nm(j.was) : "без статуса"}», стало «${nm(j.label)}».` : "В monday уже стоял этот статус.") + (hint ? ` ${hint}.` : "");
     window.scrollTo(0, 0); $("doneT").focus();
   } catch (e) {
     $("err").textContent = "Не удалось сохранить. Проверьте интернет и нажмите «Сохранить статус» ещё раз.";
