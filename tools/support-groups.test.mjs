@@ -196,7 +196,7 @@ test("the plain /api/support-groups path is routed too; event volunteers still g
 test("team email: sections, links, needs in Russian, everything escaped, no middle dots", () => {
   const { p } = S.parseSignup({ ...gina(), name: "Алекс <b>Иванов</b>", needs: ["mental", "other"], needs_text: "Психолог & юрист", notes: "Строка 1\nСтрока 2" });
   const { subject, html } = M.signupEmail(p, { itemUrl: "https://qaravan.monday.com/boards/1/pulses/2", now: new Date("2026-09-28T22:20:00Z") });
-  assert.equal(subject, "Новая анкета в группу поддержки с Джиной: Алекс <b>Иванов</b>");
+  assert.equal(subject, "Новая анкета в группу взаимной поддержки: Алекс <b>Иванов</b>");
   assert.match(html, /Алекс &lt;b&gt;Иванов&lt;\/b&gt;/);
   assert.doesNotMatch(html, /<b>Иванов/);
   assert.match(html, /28 сентября в 18:20 по Нью-Йорку/);

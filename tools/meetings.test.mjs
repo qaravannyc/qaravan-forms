@@ -191,7 +191,7 @@ test("prompt: the evening before, from 8 pm New York time, to the leader and the
   assert.deepEqual(M.verifyToken(keyOf(html), NOW.getTime()), { item: "900", group: "gina", who: "gina@rusalgbtq.org" });
   assert.deepEqual(M.verifyToken(keyOf(htmlOf(mails[2])), NOW.getTime()).who, "anna@rusalgbtq.org");
   assert.match(html, /Сейчас в списке: 1 человек/);
-  assert.match(html, /Такое же письмо со своей кнопкой получили Глеб, Анна и Алекс/);
+  assert.match(html, /Такое же письмо со своей кнопкой получили другие волонтёры-ведущие группы поддержки/);
   assert.ok(s.meetings["900"].mail.prompted);
   mails.length = 0;
   assert.deepEqual(await M.promptDue({ now: at("2026-09-30T01:10:00Z") }), []); // второй крон, 21:10 — уже спрашивали
