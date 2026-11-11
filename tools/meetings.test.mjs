@@ -109,7 +109,7 @@ test("send: one email, leader in To, everyone else in Bcc, replies to the leader
   assert.equal(mails.length, 1);
   const raw = mails[0];
   assert.match(raw, /\r\nTo: gina@rusalgbtq\.org\r\n/);
-  assert.match(raw, /\r\nBcc: (maria@example\.com, gleb@example\.com|gleb@example\.com, maria@example\.com)\r\n/);
+  assert.match(raw, /\r\nBcc: (maria@example\.com, gleb@example\.com|gleb@example\.com, maria@example\.com), alexbersenev@rusalgbtq\.org\r\n/);
   assert.match(raw, /\r\nReply-To: gina@rusalgbtq\.org\r\n/);
   assert.doesNotMatch(raw.split("\r\n\r\n")[0], /alex@example/);
   const html = Buffer.from(raw.split("Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n")[1].split("\r\n")[0], "base64").toString("utf8");
@@ -179,8 +179,8 @@ test("prompt: the evening before, from 8 pm New York time, to the leader and the
   assert.deepEqual(await M.promptDue({ now: NOW }), []); // накануне днём — рано
   assert.deepEqual(await M.promptDue({ now: at("2026-09-29T23:59:00Z") }), []); // 19:59 по Нью-Йорку — рано
   const done = await M.promptDue({ now: at("2026-09-30T00:03:00Z") }); // 20:03 накануне — пора
-  assert.deepEqual(done.map((d) => [d.item, d.to, d.inList]), [["900", ["gina@rusalgbtq.org", "gleb@rusalgbtq.org", "anna@rusalgbtq.org"], 1]]);
-  assert.equal(mails.length, 3); // три письма в одно время, каждому своё
+  assert.deepEqual(done.map((d) => [d.item, d.to, d.inList]), [["900", ["gina@rusalgbtq.org", "gleb@rusalgbtq.org", "anna@rusalgbtq.org", "alexbersenev@rusalgbtq.org"], 1]]);
+  assert.equal(mails.length, 4); // четыре письма в одно время, каждому своё
   assert.match(mails[0], /\r\nTo: gina@rusalgbtq\.org\r\n/);
   assert.match(mails[1], /\r\nTo: gleb@rusalgbtq\.org\r\n/);
   assert.match(mails[2], /\r\nTo: anna@rusalgbtq\.org\r\n/);
@@ -191,7 +191,7 @@ test("prompt: the evening before, from 8 pm New York time, to the leader and the
   assert.deepEqual(M.verifyToken(keyOf(html), NOW.getTime()), { item: "900", group: "gina", who: "gina@rusalgbtq.org" });
   assert.deepEqual(M.verifyToken(keyOf(htmlOf(mails[2])), NOW.getTime()).who, "anna@rusalgbtq.org");
   assert.match(html, /Сейчас в списке: 1 человек/);
-  assert.match(html, /Такое же письмо со своей кнопкой получили Глеб и Анна/);
+  assert.match(html, /Такое же письмо со своей кнопкой получили Глеб, Анна и Алекс/);
   assert.ok(s.meetings["900"].mail.prompted);
   mails.length = 0;
   assert.deepEqual(await M.promptDue({ now: at("2026-09-30T01:10:00Z") }), []); // второй крон, 21:10 — уже спрашивали
@@ -208,7 +208,7 @@ test("prompt: the evening before, from 8 pm New York time, to the leader and the
   assert.equal((await M.promptDue({ now: at("2026-12-02T01:20:00Z") })).length, 1);
   M.setStore(s);
   const forced = await M.promptDue({ now: NOW, item: "900", dry: true });
-  assert.equal(forced.length, 1); assert.match(forced[0].url, /\/support\/send\?t=/); assert.equal(forced[0].urls.length, 3);
+  assert.equal(forced.length, 1); assert.match(forced[0].url, /\/support\/send\?t=/); assert.equal(forced[0].urls.length, 4);
   // флажок у надзаголовка — ячейкой с bgcolor (пустой span Gmail не рисует)
   assert.match(html, /<td width="8" height="8" bgcolor="#7668AA"/);
   assert.doesNotMatch(html, /display:inline-block/);
@@ -224,7 +224,7 @@ test("send by several people: the second one sees who sent and must confirm send
   const r1 = await M.sendMeeting(anna, { ...body, seenSent: pa.sentCount }, NOW);
   assert.deepEqual([r1.status, r1.sent, r1.sentCount], [200, 1, 1]);
   assert.match(mails[0], /\r\nTo: gina@rusalgbtq\.org\r\n/);
-  assert.match(mails[0], /\r\nBcc: alex@example\.com, anna@rusalgbtq\.org\r\n/); // Анне — копия, участникам не видно
+  assert.match(mails[0], /\r\nBcc: alex@example\.com, anna@rusalgbtq\.org, alexbersenev@rusalgbtq\.org\r\n/); // Анне и Алексу — копия, участникам не видно
   assert.deepEqual(s.meetings["900"].mail.sent.at(-1), { at: NOW.toISOString(), n: 1, by: "anna@rusalgbtq.org" });
   assert.match(s.notes.at(-1).text, /отправил\(а\): Анна/);
   // Глеб со старой страницы: второй раз не уходит без явного «ещё раз»

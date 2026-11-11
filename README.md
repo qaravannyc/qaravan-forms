@@ -237,7 +237,7 @@ Typeform (dbH75jNe), `feedback.qaravan.org/support/simon` — форму monday 
   Джины кнопка — «Изменить статус» (страница `/support/status`, см. ниже), а «Открыть в
   monday» — ссылкой под ней; у Саймона на доске статуса нет, и кнопка — «Открыть в
   monday». Кому — `NOTIFY` в том же файле (сейчас у Джины —
-  info@qaravan.org, gina@rusalgbtq.org и ezra@qaravan.org, у Саймона — simon@rusalgbtq.org и ezra@qaravan.org);
+  info@qaravan.org, gina@rusalgbtq.org, ezra@qaravan.org и alexbersenev@rusalgbtq.org, у Саймона — simon@rusalgbtq.org и ezra@qaravan.org);
   переменные Vercel `SUPPORT_NOTIFY_GINA` и `SUPPORT_NOTIFY_SIMON` (адреса через запятую)
   их переопределяют. У доски Саймона ещё работает автоматизация monday «Email
   peer-support registrations to Ezra» (выключить может только владелец доски), так что
@@ -272,7 +272,7 @@ monday и оставляет на строке апдейт «Статус: New 
   вечером так и не вышло, — в день встречи с 8 утра до её начала. Для каждой такой встречи в
   календаре событий (строка, в названии которой есть Gina / Simon; «Cancelled» пропускается)
   письмо «Завтра встреча…» с кнопкой «Проверить и отправить» уходит от info@qaravan.org
-  ведущей и команде группы (`team` в `GROUPS`: у Джины — Глеб и Анна) — одновременно, каждому
+  ведущей и команде группы (`team` в `GROUPS`: у Джины — Глеб, Анна и Алекс; у Алекса `copy: true` — он ещё получает скрытую копию каждого письма участникам, кто бы его ни отправил) — одновременно, каждому
   отдельным письмом со своей кнопкой (в ключе — чья это кнопка). Спрашиваем один раз на
   встречу (отметка `prompted` в «⚙️ Meeting email»). Адреса ведущих — `GROUPS` в
   `lib/meetings.mjs` (gina@rusalgbtq.org, simon@rusalgbtq.org), переопределяются
