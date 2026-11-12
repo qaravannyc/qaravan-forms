@@ -11,7 +11,8 @@
   if (d && d.at && Date.now() - d.at >= 4838400000) { try { localStorage.removeItem("qaravan.club.v1"); } catch (e) {} d = null; } // a draft older than 8 weeks doesn't count
   if (d && d.view !== "done" && (d.name || d.email || d.key || (d.order && d.order.length))) return;
   var lang = new URLSearchParams(location.search).get("lang") || (d && d.lang) || "ru";   // the club opened in Russian here unless told otherwise
-  location.replace("https://www.qaravan.org" + (lang === "ru" ? "/ru" : "") + "/forms/club/");
+  if (!/^(ru|uk|uz|tg|ky|az|tk|es|en)$/.test(lang)) lang = "ru";
+  location.replace("https://www.qaravan.org" + (lang === "en" ? "" : "/" + lang) + "/forms/club/");
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -388,7 +389,7 @@ let S = { lang: "ru", step: 1, name: "", email: "", order: [], added: [], topics
 try { const d = JSON.parse(localStorage.getItem(DRAFT) || "null"); if (d) draftFresh(DRAFT, d); } catch {} // an old draft goes first (the next line is qaravan-site's import anchor: keep it as is)
 try { Object.assign(S, JSON.parse(localStorage.getItem(DRAFT) || "{}")); } catch {}
 const save = () => { S.at = Date.now(); try { localStorage.setItem(DRAFT, JSON.stringify(S)); } catch {} };
-const t = (k) => STRINGS[S.lang][k];
+const t = (k) => (STRINGS[S.lang] || STRINGS.ru)[k];
 
 let FILMS = [], LINKS = {}, TMDB_ON = false;
 
@@ -449,7 +450,7 @@ function shuffled(list) {
 }
 function allFilms() {
   const own = S.added.map((f) => ({ key: "t:" + f.tmdb, title: f.title, year: f.year, poster: f.poster || "", trailer: "", note: "", mine: true }));
-  const pool = FILMS.map((f) => ({ key: "m:" + f.id, title: S.lang === "ru" && f.titleRu ? f.titleRu : f.title, year: f.year, poster: f.poster, trailer: f.trailer, note: S.lang === "ru" ? f.noteRu : f.noteEn }));
+  const pool = FILMS.map((f) => ({ key: "m:" + f.id, title: S.lang !== "en" && f.titleRu ? f.titleRu : f.title, year: f.year, poster: f.poster, trailer: f.trailer, note: S.lang !== "en" ? f.noteRu : f.noteEn }));
   return [...own, ...shuffled(pool)];
 }
 let CARDS = {}, BYKEY = {};

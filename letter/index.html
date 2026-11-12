@@ -11,7 +11,8 @@
   var d = null; try { d = JSON.parse(localStorage.getItem("qaravan-intake-draft-v2") || "null"); } catch (e) {}
   if (d && !d.submitted && (d.startedAt || (d.log && d.log.length)) && Date.now() - (+d.savedAt || 0) < 4838400000) return; // a draft untouched for 8 weeks doesn't count
   var lang = q.get("lang") || "";
-  location.replace("https://www.qaravan.org" + (lang === "ru" ? "/ru" : "") + "/forms/letter/" + (lang && lang !== "ru" && lang !== "en" ? "?lang=" + encodeURIComponent(lang) : ""));
+  var site = ["ru", "uk", "uz", "tg", "ky", "az", "tk", "es"].indexOf(lang) >= 0;   // the languages qaravan.org has its own page in
+  location.replace("https://www.qaravan.org" + (site ? "/" + lang : "") + "/forms/letter/" + (lang && !site && lang !== "en" ? "?lang=" + encodeURIComponent(lang) : ""));
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">

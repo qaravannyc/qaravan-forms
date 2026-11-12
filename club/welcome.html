@@ -61,7 +61,7 @@ const T = {
   },
 };
 let lang = "ru";
-try { lang = JSON.parse(localStorage.getItem("qaravan.club.v1") || "{}").lang === "en" ? "en" : "ru"; } catch {}
+try { const l = JSON.parse(localStorage.getItem("qaravan.club.v1") || "{}").lang; if (Object.hasOwn(T, l)) lang = l; } catch {}
 const t = T[lang];
 const $ = (id) => document.getElementById(id);
 document.documentElement.lang = lang;
@@ -78,7 +78,7 @@ async function check(tries) {
     } else if (j.state === "unpaid" && tries > 0) { return setTimeout(() => check(tries - 1), 2500); }
     else if (j.state === "unpaid") {
       $("h1").textContent = t.unpaid; $("text").textContent = t.unpaid_text;
-      $("join").href = "/club"; $("join").removeAttribute("target"); $("join").textContent = t.back; $("joinBox").hidden = false;
+      $("join").href = "https://www.qaravan.org" + (lang === "en" ? "" : "/" + lang) + "/forms/club/"; $("join").removeAttribute("target"); $("join").textContent = t.back; $("joinBox").hidden = false;
     } else { $("h1").textContent = t.pending; $("text").textContent = t.pending_text; }
   } catch { $("h1").textContent = t.pending; $("text").textContent = t.pending_text; }
   $("h1").focus();
