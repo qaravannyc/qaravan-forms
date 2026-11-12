@@ -62,7 +62,7 @@ test("dossier: attended = confirmed + verified registrations on past, not cancel
   assert.match(text, /Проводил\(а\) мероприятия \(1\): 3 марта 2025 — Вечер настолок/);
   assert.match(text, /Волонтёрство: На карточке: Volunteer\. Навыки: фото\n  Заявка 1 августа 2026: Event lead, Maker \(Новая\)/);
   assert.match(text, /Community Agreement: Подписано 28 сентября 2026/);
-  assert.match(text, /Прежние анкеты в группу Джины: 1, последняя 2 февраля 2025, статус Joined/);
+  assert.match(text, /Прежние анкеты в группу взаимной поддержки: 1, последняя 2 февраля 2025, статус Joined/);
   assert.doesNotMatch(text, /·/);
 });
 
@@ -85,7 +85,7 @@ test("dossier: an earlier row added by hand has no sign-up date, and the day it 
   const hand = { ...FIRST, earlier: { items: [{ id: "9", created_at: "2026-09-30T13:49:34Z", column_values: cv({ sg_status: "Joined", submitted: "" }) }] } };
   const d = L.buildDossier(hand, EVENTS, { now: NOW, group: GINA });
   assert.equal(d.earlier[0].date, "");
-  assert.match(L.dossierText(d, { group: "gina" }), /Прежние анкеты в группу Джины: 1, без даты анкеты, статус Joined/);
+  assert.match(L.dossierText(d, { group: "gina" }), /Прежние анкеты в группу взаимной поддержки: 1, без даты анкеты, статус Joined/);
 });
 
 test("lookup: events are asked only for a found card; errors and slowness give ok:false", async () => {

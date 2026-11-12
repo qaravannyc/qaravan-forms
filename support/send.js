@@ -49,13 +49,16 @@ const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch (e)
 
 // ===== люди =====
 // статус с доски Джины — как на доске, с пояснением по-русски
-const ST = { New: "новая анкета", Contacted: "связались", "Intro call done": "знакомство прошло", Joined: "в группе", "Not now": "не сейчас" };
+// статусы доски — по-русски, как их назвала команда (2026-11-11); старые названия — на время переименования
+const ST = { New: "новая анкета", "Invited to meet": "написали письмо/предложение о встрече", "No reply": "нет ответа на письмо",
+  "No-show": "не было на встрече", Met: "встреча прошла", "Added to mailing": "в рассылке", "Not added to mailing": "не в рассылке",
+  Contacted: "написали письмо/предложение о встрече", "Intro call done": "встреча прошла", Joined: "в рассылке", "Not now": "не в рассылке" };
 const fmtDay = (d) => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(d.slice(0, 10) + "T12:00:00Z")).replace(/ г\.$/, "");
 // в сетке — коротко: у новых анкет дата, у свёрнутых остальных — статус и дата
 function meta(p, s) {
   if (s.key === "new") return p.date ? fmtDay(p.date) : "";
   if (s.key !== "old") return "";
-  return [p.status ? `${p.status} — ${ST[p.status] || p.status}` : "без статуса", p.date ? fmtDay(p.date) : ""].filter(Boolean).join(", ");
+  return [p.status ? ST[p.status] || p.status : "без статуса", p.date ? fmtDay(p.date) : ""].filter(Boolean).join(", ");
 }
 // Список не двигается, пока ведущая ставит галочки: разделы и порядок (по имени) задаются один
 // раз при загрузке (support/roster.js). Сверху — участники группы, под ними новые анкеты с
@@ -67,7 +70,7 @@ function arrange() {
   const rank = { on: 0, new: 1, old: 2, added: 3 };
   people.sort((a, b) => rank[a.sec] - rank[b.sec] || (a.sec === "added" ? 0 : COLL.compare(a.name || a.email, b.name || b.email)));
   SECTIONS = data.member
-    ? [{ key: "on", title: "Участники группы (Joined)" }, { key: "new", title: "Новые анкеты (New)", mark: "new" }, { key: "old", title: "Остальные анкеты", fold: true }, { key: "added", title: "Добавлены вручную" }]
+    ? [{ key: "on", title: "Участники группы (в рассылке)" }, { key: "new", title: "Новые анкеты", mark: "new" }, { key: "old", title: "Остальные анкеты", fold: true }, { key: "added", title: "Добавлены вручную" }]
     : [{ key: "on", title: "Получают письма" }, { key: "old", title: "Остальные анкеты", fold: true }, { key: "added", title: "Добавлены вручную" }];
   if (!people.some((p) => p.sec === "on")) SECTIONS.find((x) => x.key === "old").open = true; // пока никто не получает — показать всех
 }
@@ -155,7 +158,9 @@ $("f").addEventListener("submit", (ev) => {
 $("cancel").onclick = () => { $("confirm").hidden = true; $("send").hidden = false; $("send").focus(); };
 // «Джина, 30 сентября в 12:10 — 32 участникам»
 const sentBy = (x) => `${x.byName ? x.byName + ", " : ""}${fmtWhen(x.at)} — ${x.n} ${plural(x.n)}`;
-const copies = () => `Копия придёт на ${data.leaderEmail}${data.me && data.me !== data.leaderEmail ? ` и вам на ${data.me}` : ""}.`;
+// копии: ведущей (она в «Кому»), тому, кто отправляет, и тем, кому копия положена всегда (copyTo)
+const copyList = () => [...new Set([data.leaderEmail, data.me, ...(data.copyTo || [])].filter(Boolean).map((e) => e.toLowerCase()))];
+const copies = () => `Копия придёт на ${copyList().join(", ")}.`;
 $("go").onclick = async () => {
   if (sending) return;
   sending = true; $("go").disabled = true; $("go").textContent = "Отправляем…";
@@ -222,8 +227,8 @@ function renderSent() {
   document.title = `Письмо участникам: ${j.meeting.line}`;
   $("groupTitle").textContent = j.title;
   $("when").textContent = j.meeting.line;
-  $("bccHint").textContent = `Все получат одно письмо в скрытой копии и не увидят адреса друг друга. Копия придёт вам на ${j.leaderEmail}, ответы участников — тоже вам. ` +
-    (j.member ? "Сверху участники группы (статус Joined), под ними новые анкеты (New), остальные анкеты свёрнуты. Галочка — это статус на доске: отметите человека — он станет Joined и будет получать письма и дальше; снимете — Not now."
+  $("bccHint").textContent = `Все получат одно письмо в скрытой копии и не увидят адреса друг друга. Копия придёт на ${copyList().join(", ")}, ответы участников — на ${j.leaderEmail}. ` +
+    (j.member ? "Сверху участники группы (статус «В рассылке»), под ними новые анкеты, остальные анкеты свёрнуты. Галочка — это статус на доске: отметите человека — статус станет «В рассылке», и письма со ссылкой будут приходить и дальше; снимете — «Не в рассылке»."
       : "Галочки запоминаются до следующей встречи.");
   $("cancelNote").hidden = !j.meeting.cancelled;
   // тестовая копия: отправка — только проверяющему, участникам ничего не уходит

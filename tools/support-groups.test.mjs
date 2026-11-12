@@ -196,7 +196,7 @@ test("the plain /api/support-groups path is routed too; event volunteers still g
 test("team email: sections, links, needs in Russian, everything escaped, no middle dots", () => {
   const { p } = S.parseSignup({ ...gina(), name: "Алекс <b>Иванов</b>", needs: ["mental", "other"], needs_text: "Психолог & юрист", notes: "Строка 1\nСтрока 2" });
   const { subject, html } = M.signupEmail(p, { itemUrl: "https://qaravan.monday.com/boards/1/pulses/2", now: new Date("2026-09-28T22:20:00Z") });
-  assert.equal(subject, "Новая анкета в группу поддержки с Джиной: Алекс <b>Иванов</b>");
+  assert.equal(subject, "Новая анкета в группу взаимной поддержки: Алекс <b>Иванов</b>");
   assert.match(html, /Алекс &lt;b&gt;Иванов&lt;\/b&gt;/);
   assert.doesNotMatch(html, /<b>Иванов/);
   assert.match(html, /28 сентября в 18:20 по Нью-Йорку/);
@@ -222,7 +222,7 @@ test("team email: sections, links, needs in Russian, everything escaped, no midd
 test("team email: every option has a Russian name; recipients can be overridden", () => {
   assert.deepEqual(Object.keys(M.NEEDS_RU).sort(), Object.keys(S.NEEDS).sort());
   assert.deepEqual(Object.keys(M.IDENTITIES_RU).sort(), Object.keys(S.IDENTITIES).sort());
-  assert.deepEqual(M.recipients("gina", {}), ["info@qaravan.org", "gina@rusalgbtq.org", "ezra@qaravan.org"]);
+  assert.deepEqual(M.recipients("gina", {}), ["info@qaravan.org", "gina@rusalgbtq.org", "ezra@qaravan.org", "alexbersenev@rusalgbtq.org"]);
   assert.deepEqual(M.recipients("simon", {}), ["simon@rusalgbtq.org", "ezra@qaravan.org"]);
   assert.deepEqual(M.recipients("gina", { SUPPORT_NOTIFY_GINA: " gina@rusalgbtq.org, nope ,ezra@qaravan.org" }), ["gina@rusalgbtq.org", "ezra@qaravan.org"]);
   assert.deepEqual(M.recipients("gina", { SUPPORT_NOTIFY_GINA: "" }), []);
@@ -234,7 +234,7 @@ test("a sign-up sends the team email with the row link; a failed email doesn't f
   const { res } = await send(gina());
   assert.equal(res.body, '{"ok":true}');
   assert.equal(mails.length, 1);
-  assert.match(mails[0], /^From: QARAVAN <info@qaravan\.org>\r\nTo: info@qaravan\.org, gina@rusalgbtq\.org, ezra@qaravan\.org\r\n/);
+  assert.match(mails[0], /^From: QARAVAN <info@qaravan\.org>\r\nTo: info@qaravan\.org, gina@rusalgbtq\.org, ezra@qaravan\.org, alexbersenev@rusalgbtq\.org\r\n/);
   assert.match(mails[0], /boards\/18433061986\/pulses\/888/);
   // у Джины — «Изменить статус» в конце письма (после ответов, перед подписью), ключ — на эту строку
   const html = Buffer.from(mails[0].split("\r\n\r\n").slice(1).join("\r\n\r\n"), "utf8").toString("utf8");

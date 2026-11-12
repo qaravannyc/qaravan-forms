@@ -15,8 +15,8 @@ const SG = await import("../lib/support-groups.mjs");
 const survey = (await import("../api/survey.mjs")).default;
 
 // колонка Status доски Джины, как её отдаёт monday (settings_str)
-const SETTINGS = JSON.stringify({ labels: { 0: "Contacted", 1: "Joined", 4: "Intro call done", 7: "New", 17: "Not now", 9: "Old label" },
-  labels_positions_v2: { 0: 1, 1: 3, 4: 2, 7: 0, 17: 4, 9: 5 }, deactivated_labels: [9] });
+const SETTINGS = JSON.stringify({ labels: { 0: "Invited to meet", 1: "Added to mailing", 4: "Met", 7: "New", 17: "Not added to mailing", 9: "Old label", 2: "No reply", 3: "No-show" },
+  labels_positions_v2: { 0: 1, 2: 2, 3: 3, 4: 4, 1: 5, 7: 0, 17: 6, 9: 7 }, deactivated_labels: [9] });
 function fake() {
   const s = {
     rows: { "10000000001": { id: "10000000001", name: "Sasha", status: "New", email: "sasha@example.org", date: "2026-09-01 12:00" } },
@@ -39,7 +39,7 @@ async function call(method, url, body, headers = {}) {
 }
 
 test("labels: the board's own statuses in monday's order, without switched-off ones", () => {
-  assert.deepEqual(S.labelsOf(SETTINGS), ["New", "Contacted", "Intro call done", "Joined", "Not now"]);
+  assert.deepEqual(S.labelsOf(SETTINGS), ["New", "Invited to meet", "No reply", "No-show", "Met", "Added to mailing", "Not added to mailing"]);
   assert.deepEqual(S.labelsOf(""), []);
   assert.equal(S.hasStatus("gina"), true);
   assert.equal(S.hasStatus("simon"), false); // у доски Саймона статуса нет
@@ -68,23 +68,24 @@ test("page: name, email, date, the current status and every status with its mean
   assert.equal(d.email, "sasha@example.org");
   assert.equal(d.date, "2026-09-01");
   assert.equal(d.status, "New");
-  assert.deepEqual(d.options.map((o) => o.label), ["New", "Contacted", "Intro call done", "Joined", "Not now"]);
-  assert.match(d.options.find((o) => o.label === "Joined").hint, /получает письма со ссылкой на встречу/);
+  assert.deepEqual(d.options.map((o) => o.label), ["New", "Invited to meet", "No reply", "No-show", "Met", "Added to mailing", "Not added to mailing"]);
+  assert.deepEqual(d.options.map((o) => o.name), ["Новая анкета", "Написали письмо/предложение о встрече", "Нет ответа на письмо", "Не было на встрече", "Встреча прошла", "В рассылке", "Не в рассылке"]);
+  assert.match(d.options.find((o) => o.label === "Added to mailing").hint, /олучает письма со ссылкой на встречу/);
   assert.equal(d.url, "https://qaravan.monday.com/boards/18433061986/pulses/10000000001");
 });
 
 test("save: the chosen status goes to the board with an update; the same one writes nothing; others refused", async () => {
   const s = fake(); S.setStore(s);
-  const r = await S.saveStatus(key(), { status: "Joined" }, NOW);
-  assert.deepEqual([r.status, r.label, r.was, r.changed], [200, "Joined", "New", true]);
-  assert.deepEqual(s.set, [["gina", "10000000001", "Joined"]]);
-  assert.match(s.notes[0].text, /^Статус: New → Joined\. По кнопке «Изменить статус» из письма о новой анкете\.$/);
-  const same = await S.saveStatus(key(), { status: "Joined" }, NOW);
+  const r = await S.saveStatus(key(), { status: "Added to mailing" }, NOW);
+  assert.deepEqual([r.status, r.label, r.was, r.changed], [200, "Added to mailing", "New", true]);
+  assert.deepEqual(s.set, [["gina", "10000000001", "Added to mailing"]]);
+  assert.match(s.notes[0].text, /^Статус: Новая анкета → В рассылке\. По кнопке «Изменить статус» из письма о новой анкете\.$/);
+  const same = await S.saveStatus(key(), { status: "Added to mailing" }, NOW);
   assert.equal(same.changed, false); assert.equal(s.set.length, 1); assert.equal(s.notes.length, 1);
   assert.equal((await S.saveStatus(key(), { status: "Old label" }, NOW)).status, 400); // выключенный
   assert.equal((await S.saveStatus(key(), { status: "Whatever" }, NOW)).status, 400);
-  assert.equal((await S.saveStatus("nope", { status: "Joined" }, NOW)).status, 403);
-  assert.equal((await S.saveStatus(key(undefined, undefined, NOW.getTime() - 1), { status: "Joined" }, NOW)).status, 403);
+  assert.equal((await S.saveStatus("nope", { status: "Added to mailing" }, NOW)).status, 403);
+  assert.equal((await S.saveStatus(key(undefined, undefined, NOW.getTime() - 1), { status: "Added to mailing" }, NOW)).status, 403);
   assert.equal(s.set.length, 1);
 });
 
@@ -94,8 +95,8 @@ test("routes: /api/status through the survey function", async () => {
   const g = await call("GET", `/api/survey?form=status&t=${t}`);
   assert.equal(g.status, 200); assert.equal(g.json.status, "New");
   assert.equal((await call("GET", "/api/survey?form=status&t=bad")).status, 403);
-  const p = await call("POST", "/api/survey?form=status", { t, status: "Contacted" });
-  assert.equal(p.status, 200); assert.equal(s.rows["10000000001"].status, "Contacted");
+  const p = await call("POST", "/api/survey?form=status", { t, status: "No reply" });
+  assert.equal(p.status, 200); assert.equal(s.rows["10000000001"].status, "No reply");
   assert.equal((await call("POST", "/api/survey?form=status", "{x")).status, 400);
   // ссылка для старой анкеты — только с секретом
   process.env.CRON_SECRET = "cron";
@@ -120,8 +121,8 @@ test("team email: Gina's has «Изменить статус» leading to the st
   // кнопка — в конце письма: после ответов и «Чего ждёт от группы», перед подписью
   assert.ok(btn > html.indexOf(">Чего ждёт от группы<") && btn > html.indexOf(">Контакты<") && btn < html.indexOf("Письмо отправила анкета"));
   assert.ok(html.includes(`href="${statusUrl}"`));
-  assert.match(html, /Статус на доске сейчас — New/);
-  assert.match(Mail.signupEmail(p, { itemUrl: "https://x/1", statusUrl, status: "Joined", now: NOW }).html, /Статус на доске сейчас — Joined/); // пересылка старой анкеты
+  assert.match(html, /Статус сейчас — «Новая анкета»/);
+  assert.match(Mail.signupEmail(p, { itemUrl: "https://x/1", statusUrl, status: "Added to mailing", now: NOW }).html, /Статус сейчас — «В рассылке»/); // пересылка старой анкеты
   const { p: ps } = SG.parseSignup({ group: "simon", lang: "ru", name: "Боря", email: "b@example.com", phone: "2125550123", format: "remote", city: "NYC" });
   const simon = Mail.signupEmail(ps, { itemUrl: "https://qaravan.monday.com/boards/5469799506/pulses/7", now: NOW }).html;
   assert.doesNotMatch(simon, /Изменить статус/);

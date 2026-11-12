@@ -12,7 +12,7 @@ see "Keeping this file live". Human-facing details are in `README.md`.
 | Repository | What it is | Runs on |
 | - | - | - |
 | `qaravannyc/qaravan-forms` (this one, public) | feedback.qaravan.org: survey, lead and photo forms, the weekly combined form, unsubscribe, letters, volunteer and support-group forms, monday and Slack webhooks | Vercel |
-| `qaravannyc/events-robot` (private) | Robots between Partiful, monday.com, Gmail, Google Photos and Slack; the Telegram bot @qaravan_door_bot | GitHub Actions; Cloudflare Workers |
+| `qaravannyc/events-robot` (private) | Robots between qaravan.org's guest lists, monday.com, Gmail, Google Photos and Slack; the Telegram bot @qaravan_door_bot | GitHub Actions; Cloudflare Workers |
 | `qaravannyc/qaravan-events` | Retired (owner, 2026-11-07): holds the bio page server's code. events.qaravan.org is a custom domain of qaravan-site's Worker since 2026-11-08, which answers the `.ics` feeds and redirects every other address to www.qaravan.org | nothing served from it |
 
 Shared state outside git: monday.com boards, info@qaravan.org (Gmail, Google

@@ -85,7 +85,7 @@ test("page data: last meeting's link and text by default, one row per email, tic
   assert.equal(d.subject, "Еженедельная группа поддержки🏳️‍🌈");
   // страница показывает Joined, под ними New (d.show), остальных — Мария без статуса, Олег (Not now), Таня (Contacted) — сворачивает
   assert.deepEqual(d.show, ["New"]);
-  assert.deepEqual(d.people.map((p) => [p.email, p.checked, p.status]), [["alex@example.com", true, "Joined"], ["nina@example.com", false, "New"], ["maria@example.com", false, ""], ["tanya@example.com", false, "Contacted"], ["oleg@example.com", false, "Not now"]]);
+  assert.deepEqual(d.people.map((p) => [p.email, p.checked, p.status]), [["alex@example.com", true, "Added to mailing"], ["nina@example.com", false, "New"], ["maria@example.com", false, ""], ["tanya@example.com", false, "Contacted"], ["oleg@example.com", false, "Not now"]]);
   const none = fakeStore(); none.meetings["800"].mail = {}; none.meetings["800"].link = ""; M.setStore(none);
   const d2 = await M.pageData(token(), NOW);
   assert.equal(d2.link, "https://meet.google.com/tyu-nksn-hpd"); // постоянная ссылка Джины
@@ -109,7 +109,7 @@ test("send: one email, leader in To, everyone else in Bcc, replies to the leader
   assert.equal(mails.length, 1);
   const raw = mails[0];
   assert.match(raw, /\r\nTo: gina@rusalgbtq\.org\r\n/);
-  assert.match(raw, /\r\nBcc: (maria@example\.com, gleb@example\.com|gleb@example\.com, maria@example\.com)\r\n/);
+  assert.match(raw, /\r\nBcc: (maria@example\.com, gleb@example\.com|gleb@example\.com, maria@example\.com), alexbersenev@rusalgbtq\.org\r\n/);
   assert.match(raw, /\r\nReply-To: gina@rusalgbtq\.org\r\n/);
   assert.doesNotMatch(raw.split("\r\n\r\n")[0], /alex@example/);
   const html = Buffer.from(raw.split("Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n")[1].split("\r\n")[0], "base64").toString("utf8");
@@ -129,12 +129,13 @@ test("send: one email, leader in To, everyone else in Bcc, replies to the leader
 });
 
 test("who gets the emails on the board: Gina — status Joined, Simon — the checkbox", async () => {
-  assert.equal(M.isOn("gina", { sg_status: { text: "Joined" } }), true);
-  for (const st of ["New", "Contacted", "Intro call done", "Not now", ""]) assert.equal(M.isOn("gina", { sg_status: { text: st } }), false);
+  assert.equal(M.isOn("gina", { sg_status: { text: "Added to mailing" } }), true);
+  assert.equal(M.isOn("gina", { sg_status: { text: "Joined" } }), true); // прежнее название того же статуса
+  for (const st of ["New", "Invited to meet", "No reply", "No-show", "Met", "Not added to mailing", "Contacted", "Intro call done", "Not now", ""]) assert.equal(M.isOn("gina", { sg_status: { text: st } }), false);
   assert.equal(M.isOn("simon", { mailing: { value: '{"checked":"true"}' } }), true);
   assert.equal(M.isOn("simon", { mailing: { value: null } }), false);
-  assert.deepEqual(M.mailingValue("gina", true), { sg_status: { label: "Joined" } });
-  assert.deepEqual(M.mailingValue("gina", false), { sg_status: { label: "Not now" } });
+  assert.deepEqual(M.mailingValue("gina", true), { sg_status: { label: "Added to mailing" } });
+  assert.deepEqual(M.mailingValue("gina", false), { sg_status: { label: "Not added to mailing" } });
   assert.deepEqual(M.mailingValue("simon", false), { mailing: null });
 
   // настоящий store против поддельного monday: что читается и что пишется на доску Джины
@@ -154,9 +155,9 @@ test("who gets the emails on the board: Gina — status Joined, Simon — the ch
     assert.deepEqual(rows.map((r) => [r.email, r.checked, r.status]), [["alex@example.com", true, "Joined"], ["maria@example.com", false, "New"]]);
     assert.doesNotMatch(calls[0].query, /mailing/);
     await M.mondayStore.setMailing("gina", [{ id: "1", checked: false }, { id: "2", checked: true }]);
-    assert.deepEqual([calls[1].variables.v0, calls[1].variables.v1].map((v) => JSON.parse(v)), [{ sg_status: { label: "Not now" } }, { sg_status: { label: "Joined" } }]);
+    assert.deepEqual([calls[1].variables.v0, calls[1].variables.v1].map((v) => JSON.parse(v)), [{ sg_status: { label: "Not added to mailing" } }, { sg_status: { label: "Added to mailing" } }]);
     await M.mondayStore.addPerson("gina", { name: "Новый", email: "new@example.com" });
-    assert.deepEqual(JSON.parse(calls[2].variables.v), { email: { email: "new@example.com", text: "new@example.com" }, sg_status: { label: "Joined" }, source: { label: "Added by hand" } });
+    assert.deepEqual(JSON.parse(calls[2].variables.v), { email: { email: "new@example.com", text: "new@example.com" }, sg_status: { label: "Added to mailing" }, source: { label: "Added by hand" } });
     await M.mondayStore.addPerson("simon", { name: "Новый", email: "new@example.com" });
     assert.deepEqual(JSON.parse(calls[3].variables.v), { email_2: { email: "new@example.com", text: "new@example.com" }, mailing: { checked: "true" } });
   } finally { globalThis.fetch = real; }
@@ -179,8 +180,8 @@ test("prompt: the evening before, from 8 pm New York time, to the leader and the
   assert.deepEqual(await M.promptDue({ now: NOW }), []); // накануне днём — рано
   assert.deepEqual(await M.promptDue({ now: at("2026-09-29T23:59:00Z") }), []); // 19:59 по Нью-Йорку — рано
   const done = await M.promptDue({ now: at("2026-09-30T00:03:00Z") }); // 20:03 накануне — пора
-  assert.deepEqual(done.map((d) => [d.item, d.to, d.inList]), [["900", ["gina@rusalgbtq.org", "gleb@rusalgbtq.org", "anna@rusalgbtq.org"], 1]]);
-  assert.equal(mails.length, 3); // три письма в одно время, каждому своё
+  assert.deepEqual(done.map((d) => [d.item, d.to, d.inList]), [["900", ["gina@rusalgbtq.org", "gleb@rusalgbtq.org", "anna@rusalgbtq.org", "alexbersenev@rusalgbtq.org"], 1]]);
+  assert.equal(mails.length, 4); // четыре письма в одно время, каждому своё
   assert.match(mails[0], /\r\nTo: gina@rusalgbtq\.org\r\n/);
   assert.match(mails[1], /\r\nTo: gleb@rusalgbtq\.org\r\n/);
   assert.match(mails[2], /\r\nTo: anna@rusalgbtq\.org\r\n/);
@@ -191,7 +192,7 @@ test("prompt: the evening before, from 8 pm New York time, to the leader and the
   assert.deepEqual(M.verifyToken(keyOf(html), NOW.getTime()), { item: "900", group: "gina", who: "gina@rusalgbtq.org" });
   assert.deepEqual(M.verifyToken(keyOf(htmlOf(mails[2])), NOW.getTime()).who, "anna@rusalgbtq.org");
   assert.match(html, /Сейчас в списке: 1 человек/);
-  assert.match(html, /Такое же письмо со своей кнопкой получили Глеб и Анна/);
+  assert.match(html, /Такое же письмо со своей кнопкой получили другие волонтёры-ведущие группы поддержки/);
   assert.ok(s.meetings["900"].mail.prompted);
   mails.length = 0;
   assert.deepEqual(await M.promptDue({ now: at("2026-09-30T01:10:00Z") }), []); // второй крон, 21:10 — уже спрашивали
@@ -208,7 +209,7 @@ test("prompt: the evening before, from 8 pm New York time, to the leader and the
   assert.equal((await M.promptDue({ now: at("2026-12-02T01:20:00Z") })).length, 1);
   M.setStore(s);
   const forced = await M.promptDue({ now: NOW, item: "900", dry: true });
-  assert.equal(forced.length, 1); assert.match(forced[0].url, /\/support\/send\?t=/); assert.equal(forced[0].urls.length, 3);
+  assert.equal(forced.length, 1); assert.match(forced[0].url, /\/support\/send\?t=/); assert.equal(forced[0].urls.length, 4);
   // флажок у надзаголовка — ячейкой с bgcolor (пустой span Gmail не рисует)
   assert.match(html, /<td width="8" height="8" bgcolor="#7668AA"/);
   assert.doesNotMatch(html, /display:inline-block/);
@@ -224,7 +225,7 @@ test("send by several people: the second one sees who sent and must confirm send
   const r1 = await M.sendMeeting(anna, { ...body, seenSent: pa.sentCount }, NOW);
   assert.deepEqual([r1.status, r1.sent, r1.sentCount], [200, 1, 1]);
   assert.match(mails[0], /\r\nTo: gina@rusalgbtq\.org\r\n/);
-  assert.match(mails[0], /\r\nBcc: alex@example\.com, anna@rusalgbtq\.org\r\n/); // Анне — копия, участникам не видно
+  assert.match(mails[0], /\r\nBcc: alex@example\.com, anna@rusalgbtq\.org, alexbersenev@rusalgbtq\.org\r\n/); // Анне и Алексу — копия, участникам не видно
   assert.deepEqual(s.meetings["900"].mail.sent.at(-1), { at: NOW.toISOString(), n: 1, by: "anna@rusalgbtq.org" });
   assert.match(s.notes.at(-1).text, /отправил\(а\): Анна/);
   // Глеб со старой страницы: второй раз не уходит без явного «ещё раз»
