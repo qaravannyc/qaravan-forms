@@ -7,7 +7,7 @@
  */
 (function () {
 "use strict";
-const LANGS = [["ru", "Русский"], ["en", "English"], ["uk", "Українська"], ["ka", "ქართული"], ["uz", "O‘zbekcha"], ["kk", "Қазақша"]];
+const LANGS = [["ru", "Русский"], ["en", "English"], ["uk", "Українська"], ["ka", "ქართული"], ["uz", "O‘zbekcha"], ["kk", "Қазақша"], ["tg", "Тоҷикӣ"], ["ky", "Кыргызча"], ["az", "Azərbaycanca"], ["tk", "Türkmençe"], ["es", "Español"]];
 const STEPS = [
   ["name", 0], ["age", 0], ["contact", 0],
   ["proceeding", 1], ["country", 1], ["claim", 1], ["attorney", 1], ["deadline", 1], ["incidents", 1], ["otherLetters", 1],
