@@ -28,6 +28,7 @@
 // (POST /api/legal-help → /api/survey?form=legal-help) — lib/legal-help.mjs. И киноклуб:
 // анкета, членство, исключения и ссылка отмены (/api/club, /club/cancel → ?form=club) и его
 // пятиминутный тик (/api/club-tick → ?form=club-tick) — lib/club.mjs.
+import { fitJson } from "../lib/fit-json.mjs";
 import { eventVolunteersHandler } from "../lib/event-volunteers.mjs";
 import { supportGroupsHandler } from "../lib/support-groups.mjs";
 import { meetingsHandler, meetingPromptsHandler, meetingAttendanceHandler } from "../lib/meetings.mjs";
@@ -296,7 +297,8 @@ function columnValues(a, mode, meta) {
   };
   const others = OTHER_ORDER.filter((q) => a[q + "_other"]).map((q) => `Q${q.slice(1)}: ${a[q + "_other"]}`);
   cv[C.others] = others.length ? { text: others.join("\n").slice(0, 9500) } : "";
-  cv[C.raw] = { text: JSON.stringify({ rid: meta.rid, savedAt: new Date().toISOString(), mode, lang: meta.lang, progress: meta.progress, lastSection: meta.lastSection, startedAt: meta.startedAt || undefined, answers: a }).slice(0, 9500) };
+  // always a text that parses: the personal link reads the draft back from it (lib/fit-json.mjs)
+  cv[C.raw] = { text: fitJson({ rid: meta.rid, savedAt: new Date().toISOString(), mode, lang: meta.lang, progress: meta.progress, lastSection: meta.lastSection, startedAt: meta.startedAt || undefined, answers: a }, 9500) };
   if (mode === "submit") {
     const now = new Date();
     cv[C.submittedAt] = { date: now.toISOString().slice(0, 10), time: now.toISOString().slice(11, 19) };

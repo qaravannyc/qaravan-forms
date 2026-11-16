@@ -332,3 +332,31 @@ test("board rows: the sign-up date comes only from Submitted on Gina's board; Si
     assert.equal((await M.mondayStore.people("simon"))[0].date, "2026-05-01T10:00:00Z");
   } finally { globalThis.fetch = real; }
 });
+
+test("the automatic emails never repeat: no note on the meeting, no email; two runs at the same moment, one email each", async () => {
+  // the note can't be saved (a renamed column, monday down): nothing is sent, however often the robots come back
+  const s = fakeStore(); M.setStore(s); mails.length = 0;
+  s.saveMeeting = async () => { throw new Error("monday is down"); };
+  const t1 = at("2026-10-07T00:03:00Z"); s.meetings["900"].start = at("2026-10-07T23:30:00Z");
+  assert.deepEqual(await M.promptDue({ now: t1 }), []);
+  assert.deepEqual(await M.promptDue({ now: at("2026-10-07T00:20:00Z") }), []);
+  assert.equal(mails.length, 0);
+  // two robots at the same moment, each with its own (not yet updated) reading of the board
+  const a = fakeStore(), b = fakeStore(); mails.length = 0;
+  for (const x of [a, b]) x.meetings["900"].start = at("2026-10-14T23:30:00Z");
+  const t2 = at("2026-10-14T00:03:00Z");
+  M.setStore(a); const one = await M.promptDue({ now: t2 });
+  M.setStore(b); const two = await M.promptDue({ now: t2 });
+  assert.equal(one.length, 1); assert.deepEqual(two, []);
+  assert.equal(mails.length, 4, "one email to each of the four, not two");
+});
+
+test("a saved copy that is too long is shortened, never cut: it still parses", async () => {
+  const { fitJson } = await import("../lib/fit-json.mjs");
+  const big = { rid: "r", emailSent: "2026-11-16T19:32:00Z", answers: { a: "я".repeat(8000), b: "б".repeat(8000), c: ["в".repeat(3000)], short: "ok" } };
+  const s = fitJson(big, 9500);
+  assert.ok(s.length <= 9500);
+  const back = JSON.parse(s);
+  assert.equal(back.emailSent, big.emailSent); assert.equal(back.answers.short, "ok");
+  assert.equal(fitJson({ a: 1 }, 100), '{"a":1}');
+});

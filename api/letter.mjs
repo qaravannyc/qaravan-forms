@@ -16,6 +16,7 @@
 // invents the id (UUID); it is unguessable, so the resume link is private.
 // Free text is stored verbatim in whatever language the person wrote;
 // board labels are English (repository rule). Column ids: lib/letter-board.mjs.
+import { fitJson } from "../lib/fit-json.mjs";
 import { BOARD, C, L, LANGS, RID_RX, GROUP_ANSWERS, monday, findByRid, createRow } from "../lib/letter-board.mjs";
 import { sendResumeEmail, sendSubmitEmail, sendEmail } from "../lib/letter-mail.mjs";
 import { sendAnswersCopy, formQuestions } from "../lib/answers-copy.mjs";
@@ -355,7 +356,7 @@ export default async function handler(req, res) {
       const prev = existing && existing.raw ? existing.raw : { rid };
       const list = [...(Array.isArray(prev.feedback) ? prev.feedback : []), { at: new Date().toISOString(), lang: langOf(b.lang), q, text }].slice(-20);
       const col = list.map((f) => `[${f.at.slice(0, 16).replace("T", " ")} · ${f.lang.toUpperCase()}${f.q ? ` · Q${f.q}` : ""}] ${f.text}`).join("\n\n").slice(0, 9000);
-      const cv = { [C.translationFeedback]: { text: col }, [C.raw]: { text: JSON.stringify({ ...prev, rid, feedback: list }).slice(0, 9000) } };
+      const cv = { [C.translationFeedback]: { text: col }, [C.raw]: { text: fitJson({ ...prev, rid, feedback: list }, RAW_MAX) } };
       const itemId = existing ? existing.id : await createRow(rid, `Intake ${rid.slice(0, 8)}`);
       await monday(`mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id:$b, item_id:$i, column_values:$v) { id } }`, { b: "18429448469", i: String(itemId), v: JSON.stringify(cv) });
       return res.end('{"ok":true}');
