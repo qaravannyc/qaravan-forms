@@ -109,3 +109,21 @@ test("the link email after the contact step says the form is not sent yet, in ev
     assert.match(html, /border-left:6px solid #ff9933/);
   }
 });
+
+test("the saved copy of a long draft still parses, so the link email is never sent twice", async () => {
+  process.env.MONDAY_TOKEN = process.env.MONDAY_TOKEN || "x";
+  const { rawJson, linkAlreadySent, noteLinkSent, cleanAnswers } = await import("../api/letter.mjs");
+  const a = cleanAnswers({ email: "a@example.org", firstName: "A", anythingElse: "я".repeat(4000), incidents: "б".repeat(4000), whyLetter: "в".repeat(4000) });
+  const meta = { rid: "r1", mode: "draft", lang: "ru", lastQ: 12, progress: 60, startedAt: 1, feedback: [], emailSent: "2026-11-16T19:32:00.000Z" };
+  const s = rawJson(a, meta);
+  assert.ok(s.length <= 9000, "fits the column");
+  const back = JSON.parse(s);
+  assert.equal(back.emailSent, meta.emailSent, "the row remembers the link email");
+  assert.equal(back.a.email, "a@example.org", "short answers stay whole");
+  // the three guards
+  assert.equal(linkAlreadySent("new", null), false, "a new form gets its link once");
+  assert.equal(linkAlreadySent("r1", { id: "1", raw: back }), true);
+  assert.equal(linkAlreadySent("r2", { id: "2", raw: { emailSent: null } }), false);
+  assert.equal(linkAlreadySent("r3", { id: "3", raw: null }), true, "a row that can't be read never sends");
+  noteLinkSent("r4"); assert.equal(linkAlreadySent("r4", null), true, "a second save before monday finds the row");
+});

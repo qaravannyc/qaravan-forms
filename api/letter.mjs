@@ -254,13 +254,38 @@ export function teamEmail(a, meta, { itemId, known = null, now = new Date() } = 
   });
 }
 
-// The raw JSON is what the resume link reads back; trimmed only at the very end.
-function rawJson(a, meta) {
-  const body = { rid: meta.rid, feedback: meta.feedback, savedAt: new Date().toISOString(), lang: meta.lang, step: Math.max(0, meta.lastQ - 1), progress: meta.progress, startedAt: meta.startedAt, submitted: !!meta.submitted || meta.mode === "submit", submittedAt: meta.submittedAt || null, minutes: meta.minutes ?? null, emailSent: meta.emailSent || null, a };
+// The raw JSON is what the resume link reads back, and where the row remembers that the link email went. It must always
+// parse: cut in the middle (as it was until 2026-11-16) it read back as nothing, so a long draft forgot its email was sent
+// and every later autosave sent the link again (13 emails in 7 minutes to one person). Too long: the longest answers are
+// shortened in this copy only (the board's columns keep them whole) until it fits.
+export function rawJson(a, meta) {
+  const body = { rid: meta.rid, emailSent: meta.emailSent || null, feedback: meta.feedback, savedAt: new Date().toISOString(), lang: meta.lang, step: Math.max(0, meta.lastQ - 1), progress: meta.progress, startedAt: meta.startedAt, submitted: !!meta.submitted || meta.mode === "submit", submittedAt: meta.submittedAt || null, minutes: meta.minutes ?? null, a };
   let s = JSON.stringify(body);
-  if (s.length > RAW_MAX) { body.a = { ...a, anythingElse: a.anythingElse.slice(0, 300), incidents: a.incidents }; s = JSON.stringify(body); }
-  return s.slice(0, RAW_MAX);
+  if (s.length <= RAW_MAX) return s;
+  body.a = JSON.parse(JSON.stringify(a));
+  body.feedback = [];
+  const strings = [];   // every text of the answers, with where it sits
+  (function walk(o) { for (const k of Object.keys(o || {})) { const v = o[k]; if (typeof v === "string") strings.push({ o, k }); else if (v && typeof v === "object") walk(v); } })(body.a);
+  for (let i = 0; i < 60 && (s = JSON.stringify(body)).length > RAW_MAX; i++) {
+    const big = strings.reduce((m, x) => (x.o[x.k].length > (m ? m.o[m.k].length : 0) ? x : m), null);
+    if (!big || big.o[big.k].length < 40) break;
+    big.o[big.k] = big.o[big.k].slice(0, Math.floor(big.o[big.k].length / 2));
+  }
+  if (s.length > RAW_MAX) { body.a = {}; s = JSON.stringify(body); }
+  return s;
 }
+
+// The link email goes once per form. Three guards, since each has failed or can: the row's own note (emailSent), the same
+// note read from a raw text that no longer parses (older rows), and this instance's memory (monday's search can miss a row
+// made seconds ago). A row that exists but can't be read never sends: saving matters, the email doesn't.
+const LINK_SENT = new Map();
+export function linkAlreadySent(rid, existing) {
+  if (LINK_SENT.has(rid)) return true;
+  if (!existing) return false;
+  if (existing.raw) return !!existing.raw.emailSent;
+  return true;
+}
+export function noteLinkSent(rid) { if (LINK_SENT.size > 5000) LINK_SENT.clear(); LINK_SENT.set(rid, Date.now()); }
 
 function pathText(log) {
   const fmt = (t) => new Date(t).toISOString().replace("T", " ").slice(0, 19) + "Z";
@@ -369,7 +394,8 @@ export default async function handler(req, res) {
 
     // Personal resume link — emailed once, as soon as we have a valid email.
     let emailed = null;
-    if (mode === "draft" && EMAIL_RX.test(answers.email) && !meta.emailSent) {
+    if (mode === "draft" && EMAIL_RX.test(answers.email) && !meta.emailSent && !linkAlreadySent(rid, existing)) {
+      noteLinkSent(rid);   // before the send: two saves at the same moment send one email
       emailed = await sendResumeEmail({ to: answers.email, name: answers.firstName, lang: meta.lang, link: `${FORM_BASE}/letter?r=${rid}` }).then(() => true).catch((e) => { console.error("resume email failed:", e.message); return false; });
       if (emailed) meta.emailSent = new Date().toISOString();
     }
