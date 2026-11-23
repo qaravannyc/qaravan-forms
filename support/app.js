@@ -89,17 +89,21 @@ en: {
 
 const RULES_RU = "Правила простые: то, что сказано в группе, остаётся в группе; никто не обязан рассказывать больше, чем хочет, можно просто слушать.";
 const RULES_EN = "The rules are simple: what’s said in the group stays in the group, nobody has to share more than they want to, and it’s fine to just listen.";
-// Правила группы Джины (её текст): показываются списком над галочкой «Обещаю соблюдать».
+// Правила группы Джины (её текст, письмо участникам 2026-11): показываются списком над галочкой «Обещаю соблюдать».
 const GINA_RULES_RU = [
   ["Соблюдаем конфиденциальность.", "Не рассказываем и не пишем о том, что говорят участники группы на встречах."],
+  ["Бережём анонимность.", "Участвуем из места, где нас никто не слышит, в наушниках. Не включаем встречу на громкую связь, не записываем её и не делаем скриншоты."],
   ["Агрессия недопустима.", "Общаемся с уважением."],
+  ["Не ставим под сомнение идентичность друг друга.", "Каждый сам определяет свою ориентацию и гендер, и никто не обязан доказывать, что имеет право быть в группе."],
   ["Откровенность и участие каждого.", "Говорим о себе от первого лица."],
   ["Национальные распри запрещены.", "Каждый человек индивидуален, и мы не обобщаем по расовому или этническому признаку."],
   ["Относимся друг к другу бережно.", "Цель нашей группы — взаимоподдержка. Думаем о том, как наши слова и поступки влияют на других."],
 ];
 const GINA_RULES_EN = [
   ["We keep it confidential.", "We don’t retell or write about what members say at meetings."],
+  ["We protect anonymity.", "We join from a place where nobody can hear us, with headphones on. We don’t put the meeting on speaker, record it or take screenshots."],
   ["No aggression.", "We treat each other with respect."],
+  ["We don’t question each other’s identity.", "Everyone defines their own orientation and gender, and nobody has to prove they have a right to be in the group."],
   ["Openness, and everyone takes part.", "We speak about ourselves, in the first person."],
   ["No national feuds.", "Everyone is an individual, and we don’t generalize by race or ethnicity."],
   ["We take care of each other.", "Our group is here for mutual support. We think about how our words and actions affect others."],
@@ -427,7 +431,7 @@ function renderField(f) {
     i.setAttribute("aria-describedby", f.id + "Err");
     i.setAttribute("aria-required", "true");
     i.onchange = () => { A[f.id] = i.checked; onChange(); };
-    // сами правила — нумерованным списком перед галочкой (у Джины их пять)
+    // сами правила — нумерованным списком перед галочкой (у Джины их семь)
     const list = T("list_" + f.id);
     const rules = Array.isArray(list) ? el("ol", { className: "rules", id: f.id + "List" }, ...list.map(([t, d]) => el("li", {}, el("span", {}, el("b", { textContent: t }), " ", d)))) : null;
     if (rules) i.setAttribute("aria-describedby", `${f.id}List ${f.id}Err`);
