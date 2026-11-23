@@ -24,7 +24,7 @@ there are verified here; `GOOGLE_*` belong to info@qaravan.org in both.
 
 **URLs already sent in emails or stored on boards.** Never change a shape
 without still serving the old one.
-- `/<event item id>`, `/<id>/lead`, `/<id>/photos` (`api/page.mjs`), `/<id>` with optional `?p=<attendeeId>.<sig>`; the older `/feedback/<id>[/lead|/photos]` is still served. Built by events-robot (`robot/send.mjs`, `robot/photos-link.mjs`) and by the Event Calendar formula columns "Feedback link" (`formula_mm64pdt9`) and "Photo upload link" (`formula_mm688t01`), which people paste into chats.
+- `/<event item id>`, `/<id>/lead`, `/<id>/photos` (`api/page.mjs`), `/<id>` with optional `?p=<attendeeId>.<sig>`; the older `/feedback/<id>[/lead|/photos]` is still served. Built by events-robot (`robot/send.mjs`; its photo-link email to event leads was removed on 2026-11-23, links already sent still work) and by the Event Calendar formula columns "Feedback link" (`formula_mm64pdt9`) and "Photo upload link" (`formula_mm688t01`), which people paste into chats.
 - `/multi?e=<up to 10 ids>&p=<attendeeId>.<sig>`, `/api/didnt-attend?i=&a=&s=`, `/api/unsubscribe?e=&s=`: in events-robot emails, built in its `robot/emails.mjs`. Since 2026-11-10 the last two only ask on a GET (mail scanners open links) and act on a POST of the same address (the page's button, or a mail app's one-click unsubscribe). Known, left as is: the `/multi` token never expires and isn't tied to its events (`multi:attendeeId`); changing it changes events-robot's emails.
 - `/support/gina` (the `link` of the support group in qaravan.org's events, `/data/site-events.json`, and in its calendar feeds) and `/support/simon`.
 - `/logo-email.png`: the logo in events-robot's emails.
